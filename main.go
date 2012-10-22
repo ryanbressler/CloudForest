@@ -1,6 +1,6 @@
 package main
 package io
-package bufio
+package encoding/csv
 
 import "fmt"
 
@@ -28,9 +28,10 @@ type Feature struct {
 }
 
 func ParseData(input io.Reader) []Feature {
-	br := bufio.NewReader(input)
-	line,err := br.ReadString("\n")
-	last := false
+	data := make([]Feature,0,100)
+	tsv := csv.NewReader(input)
+	tsv.Comma = '\t'
+	
 	for {
 		line, err := r.ReadString("\n")
 		if err != nil { 
@@ -41,8 +42,6 @@ func ParseData(input io.Reader) []Feature {
 			break
 		}
 	}
-	; err != io.EOF {
-    // ...
 }
 
 }
