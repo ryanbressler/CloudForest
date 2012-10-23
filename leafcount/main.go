@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
 )
@@ -19,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer datafile.Close()
-	data := ParseAFM(datafile)
+	data := CloudForest.ParseAFM(datafile)
 	log.Print("Data file ", len(data.Data), " by ", len(data.Data[0].Data))
 
 	forestfile, err := os.Open(*rf) // For read access.
@@ -27,11 +28,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer forestfile.Close()
-	forest := ParseRfAcePredictor(forestfile)
+	forest := CloudForest.ParseRfAcePredictor(forestfile)
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
-	counts := new(SparseCounter)
-	caseFeatureCounts := new(SparseCounter)
+	counts := new(CloudForest.SparseCounter)
+	caseFeatureCounts := new(CloudForest.SparseCounter)
 
 	for i := 0; i < len(forest.Trees); i++ {
 		leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
