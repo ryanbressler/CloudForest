@@ -169,12 +169,12 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 					splitter.Numerical = false
 
 					splitter.Left = make(map[string]bool)
-					for _, f := range strings.Split(parsed["LVALUES"], ",") {
+					for _, f := range strings.Split(parsed["LVALUES"], ":") {
 						splitter.Left[f] = true
 					}
 
 					splitter.Right = make(map[string]bool)
-					for _, f := range strings.Split(parsed["RVALUES"], ",") {
+					for _, f := range strings.Split(parsed["RVALUES"], ":") {
 						splitter.Right[f] = true
 					}
 
