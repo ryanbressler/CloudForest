@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 )
@@ -10,7 +9,9 @@ import (
 func main() {
 	fm := flag.String("fm", "featurematrix.afm", "AFM formated feature matrix to use.")
 	rf := flag.String("rfpred", "rface.sf", "A predictor forest as outputed by rf-ace")
-	outf := flag.String("out", "leaves.tsv", "a case by case matrix of leaf cooccurance in tsv format")
+	outf := flag.String("leaves", "leaves.tsv", "a case by case sparse matrix of leaf cooccurance in tsv format")
+	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of leaf cooccurance in tsv format")
+
 	flag.Parse()
 
 	datafile, err := os.Open(*fm) // For read access.
@@ -29,19 +30,16 @@ func main() {
 	forest := ParseRfAcePredictor(forestfile)
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
-	ncases := len(data.Data[0].Data)
-	counts := make([][]int, 0, ncases)
-	for i := 0; i < ncases; i++ {
-		counts = append(counts, make([]int, ncases, ncases))
-	}
+	counts := new(SparseCounter)
+	caseFeatureCounts := new(SparseCounter)
 
 	for i := 0; i < len(forest.Trees); i++ {
-		leaves := forest.Trees[i].GetLeaves(data)
+		leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
 		for _, leaf := range leaves {
 			for j := 0; j < len(leaf.Cases); j++ {
 				for k := 0; k < len(leaf.Cases); k++ {
 
-					counts[leaf.Cases[j]][leaf.Cases[k]] += 1
+					counts.Add(leaf.Cases[j], leaf.Cases[k], 1)
 
 				}
 			}
@@ -49,25 +47,19 @@ func main() {
 
 	}
 
-	log.Print("Outputing Counts")
+	log.Print("Outputing Case Case  Cocurance Counts")
 	outfile, err := os.Create(*outf) // For read access.
 	if err != nil {
 		log.Fatal(err)
 	}
-	for i := 0; i < ncases; i++ {
-		for j := 0; j < ncases; j++ {
-			if _, err := fmt.Fprintf(outfile, "%v", counts[i][j]); err != nil {
-				log.Fatal(err)
-			}
-			if j != ncases-1 {
-				if _, err := outfile.WriteString("\t"); err != nil {
-					log.Fatal(err)
-				}
+	defer outfile.Close()
+	counts.WriteTsv(outfile)
 
-			}
-		}
-		if _, err := outfile.WriteString("\n"); err != nil {
-			log.Fatal(err)
-		}
+	log.Print("Outputing Case Feature Cocurance Counts")
+	boutfile, err := os.Create(*boutf) // For read access.
+	if err != nil {
+		log.Fatal(err)
 	}
+	defer boutfile.Close()
+	caseFeatureCounts.WriteTsv(boutfile)
 }

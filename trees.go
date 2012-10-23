@@ -49,7 +49,7 @@ func (t *Tree) AddNode(path string, pred Num, splitter *Splitter) {
 
 }
 
-func (t *Tree) GetLeaves(fm *FeatureMatrix) []Leaf {
+func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
 	ncases := len(fm.Data[0].Data)
 	cases := make([]int, 0, ncases)
@@ -60,6 +60,11 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix) []Leaf {
 	t.Root.Recurse(func(n *Node, cases []int) {
 		if n.Left == nil && n.Right == nil {
 			leaves = append(leaves, Leaf{cases, n.Pred})
+		}
+		if fbycase != nil && n.Splitter != nil {
+			for _, c := range cases {
+				fbycase.Add(c, fm.Map[n.Splitter.Feature], 1)
+			}
 		}
 
 	}, fm, cases)
