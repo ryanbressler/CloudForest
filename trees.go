@@ -105,7 +105,7 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
 
 	switch s.Numerical {
 	case true:
-		for i := range cases {
+		for _, i := range cases {
 			if f.Missing[i] == false {
 				switch {
 				case f.Data[i] <= s.Value:
