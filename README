@@ -11,10 +11,18 @@ Parse an a predictor forest from rf-ace.
 Parse an AFM feature matrix.
 Apply a predictor forest to a feature matrix.
 Call a closure/function of type Recursable at each node of each tree while doing the above.
+
+Comand Line Utilities:
+leafcount
 Count case-case (leaves) and case-feature (branches) coocurance and output in tsv (the only functionality availible on the comand line)
+Usage of ./leafcount:
+  -branches="branches.tsv": a case by feature sparse matrix of leaf cooccurance in tsv format
+  -fm="featurematrix.afm": AFM formated feature matrix to use.
+  -leaves="leaves.tsv": a case by case sparse matrix of leaf cooccurance in tsv format
+  -rfpred="rface.sf": A predictor forest as outputed by rf-ace
+
 
 Road Map:
-Refactor into a package and set of comandline utilities/websevices that use the package.
 Abstraction of collection data structures to support in memory or from disc/over network computation. 
-Iterative/online combination of trees forest to support monitoring/steering of in progress computation.
-Growing of Random Forests predictors from data in pure go (for use on app engine etc).
+Iterative/online computation on forests to support monitoring/steering of in progress computation.
+Growing and application of Random Forests predictors in pure go (for use on app engine etc).
