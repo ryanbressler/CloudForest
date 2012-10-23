@@ -10,7 +10,7 @@ Current Capabilities:
 Parse an a predictor forest from rf-ace.
 Parse an AFM feature matrix.
 Apply a predictor forest to a feature matrix.
-Call a closure/function of type Recursable at each node of each tree while doing the above.
+Call a closure/function of type CloudForest.Recursable at each node of each tree while doing the above.
 
 Comand Line Utilities:
 leafcount
