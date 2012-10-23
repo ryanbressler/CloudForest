@@ -49,11 +49,45 @@ func (t *Tree) AddNode(path string, pred Num, splitter *Splitter) {
 
 }
 
+func (t *Tree) GetLeaves(fm *FeatureMatrix) []Leaf {
+	leaves := make([]Leaf, 0)
+	ncases := len(fm.Data[0].Data)
+	cases := make([]int, 0, ncases)
+	for i := 0; i < ncases; i++ {
+		cases = append(cases, i)
+	}
+
+	t.Root.Recurse(func(n *Node, cases []int) {
+		if n.Left == nil && n.Right == nil {
+			leaves = append(leaves, Leaf{cases, n.Pred})
+		}
+
+	}, fm, cases)
+	return leaves
+
+}
+
+type Leaf struct {
+	Cases []int
+	Pred  Num
+}
+
+type Recursable func(*Node, []int)
+
 type Node struct {
 	Left     *Node
 	Right    *Node
 	Pred     Num
 	Splitter *Splitter
+}
+
+func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
+	r(n, cases)
+	if n.Splitter != nil {
+		ls, rs := n.Splitter.Split(fm, cases)
+		n.Left.Recurse(r, fm, ls)
+		n.Right.Recurse(r, fm, rs)
+	}
 }
 
 type Splitter struct {
@@ -62,6 +96,43 @@ type Splitter struct {
 	Value     Num
 	Left      map[string]bool
 	Right     map[string]bool
+}
+
+func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
+	l := make([]int, 0)
+	r := make([]int, 0)
+	f := fm.Data[fm.Map[s.Feature]]
+
+	switch s.Numerical {
+	case true:
+		for i := range cases {
+			if f.Missing[i] == false {
+				switch {
+				case f.Data[i] <= s.Value:
+					l = append(l, i)
+				default:
+					r = append(r, i)
+				}
+			}
+
+		}
+	case false:
+		for _, i := range cases {
+			if f.Missing[i] == false {
+
+				v := f.Back[f.Data[i]]
+				switch {
+				case s.Left[v]:
+					l = append(l, i)
+				case s.Right[v]:
+					r = append(r, i)
+				}
+			}
+
+		}
+	}
+
+	return l, r
 }
 
 func ParseRfAcePredictor(input io.Reader) *Forest {

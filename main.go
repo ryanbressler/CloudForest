@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 )
@@ -9,6 +10,7 @@ import (
 func main() {
 	fm := flag.String("fm", "featurematrix.afm", "AFM formated feature matrix to use.")
 	rf := flag.String("rfpred", "rface.sf", "A predictor forest as outputed by rf-ace")
+	outf := flag.String("out", "leaves.tsv", "a case by case matrix of leaf cooccurance in tsv format")
 	flag.Parse()
 
 	datafile, err := os.Open(*fm) // For read access.
@@ -17,7 +19,7 @@ func main() {
 	}
 	defer datafile.Close()
 	data := ParseAFM(datafile)
-	log.Print("Data file ", len(data), " by ", len(data[0].Data))
+	log.Print("Data file ", len(data.Data), " by ", len(data.Data[0].Data))
 
 	forestfile, err := os.Open(*rf) // For read access.
 	if err != nil {
@@ -25,6 +27,47 @@ func main() {
 	}
 	defer forestfile.Close()
 	forest := ParseRfAcePredictor(forestfile)
-	log.Print("Fores has ", len(forest.Trees), " trees ")
+	log.Print("Forest has ", len(forest.Trees), " trees ")
 
+	ncases := len(data.Data[0].Data)
+	counts := make([][]int, 0, ncases)
+	for i := 0; i < ncases; i++ {
+		counts = append(counts, make([]int, ncases, ncases))
+	}
+
+	for i := 0; i < len(forest.Trees); i++ {
+		leaves := forest.Trees[i].GetLeaves(data)
+		for _, leaf := range leaves {
+			for j := 0; j < len(leaf.Cases); j++ {
+				for k := 0; k < len(leaf.Cases); k++ {
+
+					counts[leaf.Cases[j]][leaf.Cases[k]] += 1
+
+				}
+			}
+		}
+
+	}
+
+	log.Print("Outputing Counts")
+	outfile, err := os.Create(*outf) // For read access.
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i := 0; i < ncases; i++ {
+		for j := 0; j < ncases; j++ {
+			if _, err := fmt.Fprintf(outfile, "%v", counts[i][j]); err != nil {
+				log.Fatal(err)
+			}
+			if j != ncases-1 {
+				if _, err := outfile.WriteString("\t"); err != nil {
+					log.Fatal(err)
+				}
+
+			}
+		}
+		if _, err := outfile.WriteString("\n"); err != nil {
+			log.Fatal(err)
+		}
+	}
 }

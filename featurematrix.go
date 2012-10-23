@@ -68,19 +68,26 @@ func NewFeature(record []string, capacity int) Feature {
 
 }
 
-func ParseAFM(input io.Reader) []Feature {
+type FeatureMatrix struct {
+	Data []Feature
+	Map  map[string]int
+}
+
+func ParseAFM(input io.Reader) *FeatureMatrix {
 	data := make([]Feature, 0, 100)
+	lookup := make(map[string]int, 0)
 	tsv := csv.NewReader(input)
 	tsv.Comma = '\t'
 	_, err := tsv.Read()
 	if err == io.EOF {
-		return data
+		return &FeatureMatrix{data, lookup}
 	} else if err != nil {
 		log.Print("Error:", err)
-		return data
+		return &FeatureMatrix{data, lookup}
 	}
 	capacity := tsv.FieldsPerRecord
 
+	count := 0
 	for {
 		record, err := tsv.Read()
 		if err == io.EOF {
@@ -90,6 +97,8 @@ func ParseAFM(input io.Reader) []Feature {
 			break
 		}
 		data = append(data, NewFeature(record, capacity))
+		lookup[record[0]] = count
+		count++
 	}
-	return data
+	return &FeatureMatrix{data, lookup}
 }
