@@ -13,7 +13,7 @@ func main() {
 	rf := flag.String("rfpred", "rface.sf", "A predictor forest as outputed by rf-ace")
 	outf := flag.String("splits", "splits.tsv", "a case by case sparse matrix of leaf cooccurance in tsv format")
 	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of case/splitter cooccurance in tsv format")
-	rboutf := flag.String("branches", "relativeBranches.tsv", "a case by feature sparse matrix of split direction for each case/feature in tsv format")
+	rboutf := flag.String("relbranches", "relativeBranches.tsv", "a case by feature sparse matrix of split direction for each case/feature in tsv format")
 
 	flag.Parse()
 
