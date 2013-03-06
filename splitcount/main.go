@@ -34,15 +34,15 @@ func main() {
 	forest := CloudForest.ParseRfAcePredictor(forestfile)
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
-	counts := make([]int, nfeatures)  // a total count of the number of times each feature was used to split
+	featureCounts := make([]int, nfeatures)  // a total count of the number of times each feature was used to split
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 	relativeSplitCount := new(CloudForest.SparseCounter)
 
 	for i := 0; i < len(forest.Trees); i++ {
 		splits := forest.Trees[i].GetSplits(data, caseFeatureCounts, relativeSplitCount)
 		
-		for _, split = range splits {
-				counts[data.Map[split.Feature]]++	//increment the count for the total # of times the feature was a splitter
+		for _, split := range splits {
+				featureCounts[data.Map[split.Feature]]++	//increment the count for the total # of times the feature was a splitter
 		}
 	}
 
@@ -52,7 +52,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer outfile.Close()
-	counts.WriteTsv(outfile)
+	for feature, count := range featureCounts {
+		if _, err := fmt.Fprintf("%v\t%v\n", feature, count); err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	log.Print("Outputing Case Feature Cooccurance Counts")
 	boutfile, err := os.Create(*boutf) // For read access.
