@@ -5,6 +5,7 @@ import (
 	"github.com/rbkreisberg/CloudForest"
 	"log"
 	"os"
+	"fmt"
 )
 
 func main() {
@@ -23,8 +24,8 @@ func main() {
 	defer datafile.Close()
 	data := CloudForest.ParseAFM(datafile)
 	nfeatures := len(data.Data)
-	ncases := len(data.Data[0].Data))
-	log.Print("Data file ", nfeatures, " by ", cases)
+	ncases := len(data.Data[0].Data)
+	log.Print("Data file ", nfeatures, " by ", ncases)
 
 	forestfile, err := os.Open(*rf) // For read access.
 	if err != nil {
@@ -34,15 +35,15 @@ func main() {
 	forest := CloudForest.ParseRfAcePredictor(forestfile)
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
-	featureCounts := make([]int, nfeatures)  // a total count of the number of times each feature was used to split
+	featureCounts := make([]int, nfeatures) // a total count of the number of times each feature was used to split
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 	relativeSplitCount := new(CloudForest.SparseCounter)
 
 	for i := 0; i < len(forest.Trees); i++ {
 		splits := forest.Trees[i].GetSplits(data, caseFeatureCounts, relativeSplitCount)
-		
+
 		for _, split := range splits {
-				featureCounts[data.Map[split.Feature]]++	//increment the count for the total # of times the feature was a splitter
+			featureCounts[data.Map[split.Feature]]++ //increment the count for the total # of times the feature was a splitter
 		}
 	}
 
@@ -53,7 +54,7 @@ func main() {
 	}
 	defer outfile.Close()
 	for feature, count := range featureCounts {
-		if _, err := fmt.Fprintf("%v\t%v\n", feature, count); err != nil {
+		if _, err := fmt.Fprintf(outfile, "%v\t%v\n", feature, count); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -65,7 +66,6 @@ func main() {
 	}
 	defer boutfile.Close()
 	caseFeatureCounts.WriteTsv(boutfile)
-}
 
 	log.Print("Outputing Case Feature Splitter Direction")
 	rboutfile, err := os.Create(*rboutf) // For read access.

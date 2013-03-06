@@ -53,7 +53,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 	splitters := make([]Splitter, 0)
 	ncases := len(fm.Data[0].Data) // grab the number of samples for the first feature
 	cases := make([]int, ncases)   //make an array that large
-	for i, v := range cases {
+	for i, _ := range cases {
 		cases[i] = i
 	}
 
@@ -61,19 +61,20 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 		//if we're on a splitting node
 		if fbycase != nil && n.Splitter != nil {
 			//add this splitter to the list
-			splitters.append(n.Splitter)
-			f := n.Splitter.Feature   //get the feature at this splitter
+			splitters  = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left, n.Splitter.Right})
+			f_id := n.Splitter.Feature   //get the feature at this splitter
+			f := fm.Data[fm.Map[n.Splitter.Feature]]   //get the feature at this splitter
 			for _, c := range cases { //for each case
 
 				if f.Missing[c] == false { //if there isa value for this case
-					fbycase.Add(c, fm.Map[f], 1) //count the number of times each case is present for a split by a feature
-					fvalue = f.Back[f.Data[c]]   //what is the feature value for this case?
+					fbycase.Add(c, fm.Map[f_id], 1) //count the number of times each case is present for a split by a feature
+					fvalue := f.Back[f.Data[c]]   //what is the feature value for this case?
 
 					switch {
 					case n.Splitter.Left[fvalue]: //if the value was split to the left
-						relativeCount.Add(c, fm.Map[f], -1) //subtract one
+						relativeSplitCount.Add(c, fm.Map[f_id], -1) //subtract one
 					case n.Splitter.Right[fvalue]:
-						relativeCount.Add(c, fm.Map[f], 1) //add one
+						relativeSplitCount.Add(c, fm.Map[f_id], 1) //add one
 					}
 				}
 			}
