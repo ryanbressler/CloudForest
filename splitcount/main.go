@@ -73,5 +73,5 @@ func main() {
 		log.Fatal(err)
 	}
 	defer rboutfile.Close()
-	relativeSplitCount.WriteTsv(boutfile)
+	relativeSplitCount.WriteTsv(rboutfile)
 }
