@@ -39,11 +39,21 @@ func main() {
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 	relativeSplitCount := new(CloudForest.SparseCounter)
 
+	splitValueList := make(map[int][]float, nfeatures)
+
 	for i := 0; i < len(forest.Trees); i++ {
 		splits := forest.Trees[i].GetSplits(data, caseFeatureCounts, relativeSplitCount)
 
 		for _, split := range splits {
-			featureCounts[data.Map[split.Feature]]++ //increment the count for the total # of times the feature was a splitter
+			featureId := data.Map[split.Feature]
+			featureCounts[featureId]++ //increment the count for the total # of times the feature was a splitter
+			
+			if split.Feature.Numerical == true {
+				if splitValueList[featureId] == nil { 
+					splitValueList[featureId] := make([]float, 0)
+				}
+				splitValueList[featureId] = append(splitValueList[featureId], split.Value)
+			}
 		}
 	}
 
@@ -57,6 +67,25 @@ func main() {
 		if _, err := fmt.Fprintf(outfile, "%v\t%v\n", feature, count); err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	log.Print("Outputing Split Distribution")
+	splitdistfile, err := os.Create(*splitdistf) // For read access.
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer splitdistfile.Close()
+	for feature, list := range splitValueList {
+		if _, err := fmt.Fprintf(splitdistfile, "%v", feature); err != nil {
+			log.Fatal(err)
+		}
+		for _, value := range list {
+			if _, err := fmt.Fprintf(splitdistfile, "\t%v", value); err != nil {
+				log.Fatal(err)
+			}
+		}
+		fmt.Fprintf(splitdistfile, "\n")
+
 	}
 
 	log.Print("Outputing Case Feature Cooccurance Counts")
