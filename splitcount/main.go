@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/rbkreisberg/CloudForest"
 	"log"
 	"os"
-	"fmt"
 )
 
 func main() {
@@ -14,6 +14,7 @@ func main() {
 	outf := flag.String("splits", "splits.tsv", "a case by case sparse matrix of leaf cooccurance in tsv format")
 	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of case/splitter cooccurance in tsv format")
 	rboutf := flag.String("relbranches", "relativeBranches.tsv", "a case by feature sparse matrix of split direction for each case/feature in tsv format")
+	splitdistf := flag.String("splitlist", "splitList.tsv", "a list of values for each feature that was split on")
 
 	flag.Parse()
 
@@ -39,7 +40,7 @@ func main() {
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 	relativeSplitCount := new(CloudForest.SparseCounter)
 
-	splitValueList := make(map[int][]float, nfeatures)
+	splitValueList = make(map[int][]float64, nfeatures)
 
 	for i := 0; i < len(forest.Trees); i++ {
 		splits := forest.Trees[i].GetSplits(data, caseFeatureCounts, relativeSplitCount)
@@ -47,10 +48,10 @@ func main() {
 		for _, split := range splits {
 			featureId := data.Map[split.Feature]
 			featureCounts[featureId]++ //increment the count for the total # of times the feature was a splitter
-			
-			if split.Feature.Numerical == true {
-				if splitValueList[featureId] == nil { 
-					splitValueList[featureId] := make([]float, 0)
+
+			if split.Numerical == true {
+				if splitValueList[featureId] == nil {
+					splitValueList[featureId] = make([]float64, 0)
 				}
 				splitValueList[featureId] = append(splitValueList[featureId], split.Value)
 			}
