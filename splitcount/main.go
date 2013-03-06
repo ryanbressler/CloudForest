@@ -40,7 +40,7 @@ func main() {
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 	relativeSplitCount := new(CloudForest.SparseCounter)
 
-	splitValueList = make(map[int][]float64, nfeatures)
+	splitValueList := make(map[int][]float64, nfeatures)
 
 	for i := 0; i < len(forest.Trees); i++ {
 		splits := forest.Trees[i].GetSplits(data, caseFeatureCounts, relativeSplitCount)
@@ -53,7 +53,7 @@ func main() {
 				if splitValueList[featureId] == nil {
 					splitValueList[featureId] = make([]float64, 0)
 				}
-				splitValueList[featureId] = append(splitValueList[featureId], split.Value)
+				splitValueList[featureId] = append(splitValueList[featureId], float64(split.Value))
 			}
 		}
 	}
@@ -81,7 +81,7 @@ func main() {
 			log.Fatal(err)
 		}
 		for _, value := range list {
-			if _, err := fmt.Fprintf(splitdistfile, "\t%v", value); err != nil {
+			if _, err := fmt.Fprintf(splitdistfile, "\t%g", value); err != nil {
 				log.Fatal(err)
 			}
 		}
