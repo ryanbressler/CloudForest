@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"github.com/ryanbressler/CloudForest"
+	"github.com/rbkreisberg/CloudForest"
 	"log"
 	"os"
 )
@@ -11,6 +11,8 @@ func main() {
 	fm := flag.String("fm", "featurematrix.afm", "AFM formated feature matrix to use.")
 	rf := flag.String("rfpred", "rface.sf", "A predictor forest as outputed by rf-ace")
 	outf := flag.String("splits", "splits.tsv", "a case by case sparse matrix of leaf cooccurance in tsv format")
+	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of case/splitter cooccurance in tsv format")
+	rboutf := flag.String("branches", "relativeBranches.tsv", "a case by feature sparse matrix of split direction for each case/feature in tsv format")
 
 	flag.Parse()
 
@@ -20,7 +22,9 @@ func main() {
 	}
 	defer datafile.Close()
 	data := CloudForest.ParseAFM(datafile)
-	log.Print("Data file ", len(data.Data), " by ", len(data.Data[0].Data))
+	nfeatures := len(data.Data)
+	ncases := len(data.Data[0].Data))
+	log.Print("Data file ", nfeatures, " by ", cases)
 
 	forestfile, err := os.Open(*rf) // For read access.
 	if err != nil {
@@ -30,24 +34,19 @@ func main() {
 	forest := CloudForest.ParseRfAcePredictor(forestfile)
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
-	counts := new(CloudForest.SparseCounter)
+	counts := make([]int, nfeatures)  // a total count of the number of times each feature was used to split
 	caseFeatureCounts := new(CloudForest.SparseCounter)
+	relativeSplitCount := new(CloudForest.SparseCounter)
 
 	for i := 0; i < len(forest.Trees); i++ {
-		leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
-		for _, leaf := range leaves {
-			for j := 0; j < len(leaf.Cases); j++ {
-				for k := 0; k < len(leaf.Cases); k++ {
-
-					counts.Add(leaf.Cases[j], leaf.Cases[k], 1)
-
-				}
-			}
+		splits := forest.Trees[i].GetSplits(data, caseFeatureCounts, relativeSplitCount)
+		
+		for _, split = range splits {
+				counts[data.Map[split.Feature]]++	//increment the count for the total # of times the feature was a splitter
 		}
-
 	}
 
-	log.Print("Outputing Case Case  Cocurance Counts")
+	log.Print("Outputing Split Feature/Case Cooccurance Counts")
 	outfile, err := os.Create(*outf) // For read access.
 	if err != nil {
 		log.Fatal(err)
@@ -55,11 +54,20 @@ func main() {
 	defer outfile.Close()
 	counts.WriteTsv(outfile)
 
-	log.Print("Outputing Case Feature Cocurance Counts")
+	log.Print("Outputing Case Feature Cooccurance Counts")
 	boutfile, err := os.Create(*boutf) // For read access.
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer boutfile.Close()
 	caseFeatureCounts.WriteTsv(boutfile)
+}
+
+	log.Print("Outputing Case Feature Splitter Direction")
+	rboutfile, err := os.Create(*rboutf) // For read access.
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rboutfile.Close()
+	relativeSplitCount.WriteTsv(boutfile)
 }
