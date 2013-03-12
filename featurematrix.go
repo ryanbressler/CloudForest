@@ -16,8 +16,8 @@ type Feature struct {
 	Data      []Num
 	Missing   []bool
 	Numerical bool
-	Map       map[string]Num
-	Back      map[Num]string
+	Map       map[string]Num //map categories from string to integer
+	Back      map[Num]string // map categories from integer to string
 	Name      string
 }
 

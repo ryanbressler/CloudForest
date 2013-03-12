@@ -49,6 +49,41 @@ func (t *Tree) AddNode(path string, pred Num, splitter *Splitter) {
 
 }
 
+func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
+	splitters := make([]Splitter, 0)
+	ncases := len(fm.Data[0].Data) // grab the number of samples for the first feature
+	cases := make([]int, ncases)   //make an array that large
+	for i, _ := range cases {
+		cases[i] = i
+	}
+
+	t.Root.Recurse(func(n *Node, cases []int) {
+		//if we're on a splitting node
+		if fbycase != nil && n.Splitter != nil {
+			//add this splitter to the list
+			splitters  = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left, n.Splitter.Right})
+			f_id := n.Splitter.Feature   //get the feature at this splitter
+			f := fm.Data[fm.Map[n.Splitter.Feature]]   //get the feature at this splitter
+			for _, c := range cases { //for each case
+
+				if f.Missing[c] == false { //if there isa value for this case
+					fbycase.Add(c, fm.Map[f_id], 1) //count the number of times each case is present for a split by a feature
+					fvalue := f.Back[f.Data[c]]   //what is the feature value for this case?
+
+					switch {
+					case n.Splitter.Left[fvalue]: //if the value was split to the left
+						relativeSplitCount.Add(c, fm.Map[f_id], -1) //subtract one
+					case n.Splitter.Right[fvalue]:
+						relativeSplitCount.Add(c, fm.Map[f_id], 1) //add one
+					}
+				}
+			}
+		}
+	}, fm, cases)
+	return splitters //return the array of all splitters from the tree
+
+}
+
 func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
 	ncases := len(fm.Data[0].Data)
@@ -58,10 +93,10 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	}
 
 	t.Root.Recurse(func(n *Node, cases []int) {
-		if n.Left == nil && n.Right == nil {
+		if n.Left == nil && n.Right == nil { // I'm in a leaf node
 			leaves = append(leaves, Leaf{cases, n.Pred})
 		}
-		if fbycase != nil && n.Splitter != nil {
+		if fbycase != nil && n.Splitter != nil { //I'm not in a leaf node?
 			for _, c := range cases {
 				fbycase.Add(c, fm.Map[n.Splitter.Feature], 1)
 			}
