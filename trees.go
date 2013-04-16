@@ -61,14 +61,14 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 		//if we're on a splitting node
 		if fbycase != nil && n.Splitter != nil {
 			//add this splitter to the list
-			splitters  = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left, n.Splitter.Right})
-			f_id := n.Splitter.Feature   //get the feature at this splitter
-			f := fm.Data[fm.Map[n.Splitter.Feature]]   //get the feature at this splitter
-			for _, c := range cases { //for each case
+			splitters = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left, n.Splitter.Right})
+			f_id := n.Splitter.Feature               //get the feature at this splitter
+			f := fm.Data[fm.Map[n.Splitter.Feature]] //get the feature at this splitter
+			for _, c := range cases {                //for each case
 
 				if f.Missing[c] == false { //if there isa value for this case
 					fbycase.Add(c, fm.Map[f_id], 1) //count the number of times each case is present for a split by a feature
-					fvalue := f.Back[f.Data[c]]   //what is the feature value for this case?
+					fvalue := f.Back[f.Data[c]]     //what is the feature value for this case?
 
 					switch {
 					case n.Splitter.Left[fvalue]: //if the value was split to the left
@@ -105,6 +105,23 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	}, fm, cases)
 	return leaves
 
+}
+
+func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox) {
+	ncases := len(fm.Data)
+	cases := make([]int, 0, ncases)
+	for i := 0; i < ncases; i++ {
+		cases = append(cases, i)
+	}
+
+	t.Root.Recurse(func(n *Node, cases []int) {
+		if n.Left == nil && n.Right == nil {
+			// I'm in a leaf node
+			for i := 0; i < len(cases); i++ {
+				bb.Vote(cases[i], n.Pred)
+			}
+		}
+	}, fm, cases)
 }
 
 type Leaf struct {

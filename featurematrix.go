@@ -10,7 +10,10 @@ import (
 
 type Num float64
 
-//this data strucutre is related to the one in rf-ace. In the future we may wish to represent
+//Structure representing a single feature in a feature matrix.
+//this data strucutre is related to the one in rf-ace which uses 
+//the NUm/float64 data type for all feature values.
+// In the future we may wish to represent
 //catagorical features usings ints to speed up hash look up etc.
 type Feature struct {
 	Data      []Num
