@@ -8,20 +8,27 @@ import (
 	"strings"
 )
 
+//Forest represents a collection of decision trees grown to predict Target.
 type Forest struct {
-	/*Forest string
+	//Forest string
 	Target string
-	Ntrees int
-	Categories string
-	Shrinkage int*/
+	//Ntrees int
+	//Categories string
+	//Shrinkage int*/
 	Trees []*Tree
 }
 
+//Tree represents a single decision tree.
 type Tree struct {
 	//Tree int
 	Root *Node
 }
 
+//AddNode adds a node a the specified path with the specivied pred value and/or
+//Splitter. Paths are specified in the same format as in rf-aces sf files, as a 
+//string of 'L' and 'R'. Nodes must be added from the root up as the case where 
+//the path specifies a node whose parent does not allready exist in the tree is 
+//not handled well.
 func (t *Tree) AddNode(path string, pred Num, splitter *Splitter) {
 	n := new(Node)
 	n.Pred = pred
@@ -49,6 +56,7 @@ func (t *Tree) AddNode(path string, pred Num, splitter *Splitter) {
 
 }
 
+//Returns the arrays of all spliters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
 	ncases := len(fm.Data[0].Data) // grab the number of samples for the first feature
@@ -84,6 +92,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 
 }
 
+//Gather the leaves of a tree.
 func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
 	ncases := len(fm.Data[0].Data)
@@ -107,6 +116,9 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 
 }
 
+//Tree.Vote casts a vote for the predicted value of each case in fm *FeatureMatrix.
+//into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
+//into the same BallotBox in parralel. 
 func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox) {
 	ncases := len(fm.Data)
 	cases := make([]int, 0, ncases)
@@ -129,8 +141,13 @@ type Leaf struct {
 	Pred  Num
 }
 
+//Recurssable defines a function signature for functions that can be called at every
+//down stream node of a tree as Node.Recurse recurses up the tree. The function should
+//have two paramaters, the current node and an array of ints specifying the cases that
+//have not been split away.
 type Recursable func(*Node, []int)
 
+//A node of a decision tree.
 type Node struct {
 	Left     *Node
 	Right    *Node
@@ -138,6 +155,17 @@ type Node struct {
 	Splitter *Splitter
 }
 
+//Recurse is used to apply a Recursable function at every downstream node as the cases
+//specified by case []int are split using the data in fm *Featurematrix.
+//For example votes can be tabulated using code like
+//	t.Root.Recurse(func(n *Node, cases []int) {
+//		if n.Left == nil && n.Right == nil {
+//			// I'm in a leaf node
+//			for i := 0; i < len(cases); i++ {
+//				bb.Vote(cases[i], n.Pred)
+//			}
+//		}
+//	}, fm, cases)
 func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
 	r(n, cases)
 	if n.Splitter != nil {
@@ -147,6 +175,9 @@ func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
 	}
 }
 
+//Splitter contains fields that can be used to cases by a single feature. The split
+//can be either numerical in which case it is defined by the Value field or 
+//catagorical in which case it is defined by the Left and Right fields.
 type Splitter struct {
 	Feature   string
 	Numerical bool
@@ -155,6 +186,11 @@ type Splitter struct {
 	Right     map[string]bool
 }
 
+//Splitter.Split seperates cases []int using the data in fm *FeatureMatrix
+//and returns left and right []ints.
+//It applies either a Numerical or Catagorical split. In the Numerical case
+//everything <= to Value is sent left; for the Catagorical case a look up 
+//table is used.
 func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
 	l := make([]int, 0)
 	r := make([]int, 0)
@@ -192,6 +228,13 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
 	return l, r
 }
 
+//ParseRfAcePredictor reads a forest from an io.Reader.
+//The forest should be in rf-ace's "stoicastic forest" sf format
+//It ignores fields that are not use by cloud forest.
+// Start of an example file:
+// FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800,CATEGORIES="",SHRINKAGE=0
+// TREE=0
+// NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false",RVALUES="true"
 func ParseRfAcePredictor(input io.Reader) *Forest {
 	r := bufio.NewReader(input)
 	var forest *Forest
@@ -205,6 +248,7 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 		switch {
 		case strings.HasPrefix(line, "FOREST"):
 			forest = new(Forest)
+			forest.Target = parsed["TARGET"]
 
 		case strings.HasPrefix(line, "TREE"):
 			tree = new(Tree)
@@ -254,6 +298,12 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 
 }
 
+//ParseRfAcePredictorLine parses a single line of an rf-ace sf "stoicastic forest"
+//and returns a map[string]string of the key value pairs
+//Some examples of valid input lines:
+// FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800,CATEGORIES="",SHRINKAGE=0
+// TREE=0
+// NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false",RVALUES="true"
 func ParseRfAcePredictorLine(line string) map[string]string {
 	clauses := make([]string, 0)
 	insidequotes := make([]string, 0)
