@@ -76,8 +76,9 @@ func (bb *BallotBox) TallyError(feature *Feature) (e float64) {
 		d := 0.0
 		c := 0
 		for i, value := range feature.Data {
-			if !feature.Missing[i] {
-				d = float64(value) - bb.TallyNumerical(i)
+			predicted := bb.TallyNumerical(i)
+			if !feature.Missing[i] && !math.IsNaN(predicted) {
+				d = float64(value) - predicted
 				e += d * d
 				c += 1
 			}
@@ -87,8 +88,9 @@ func (bb *BallotBox) TallyError(feature *Feature) (e float64) {
 		//Catagorical feature. Calculate error rate
 		c := 0
 		for i, value := range feature.Data {
-			if !feature.Missing[i] {
-				if int(value) != int(bb.TallyCatagorical(i)) {
+			predicted := bb.TallyCatagorical(i)
+			if !feature.Missing[i] && !math.IsNaN(predicted) {
+				if int(value) != int(predicted) {
 					e += 1.0
 				}
 

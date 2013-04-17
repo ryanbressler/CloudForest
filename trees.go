@@ -92,7 +92,10 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 
 }
 
-//Gather the leaves of a tree.
+//GetLeaves is called by the leaf count utility to
+//gather statistics about the nodes of a tree including the sets of cases at
+//"leaf" nodes that aren't split further and the number of times each feature
+//is used to split away each case.
 func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
 	ncases := len(fm.Data[0].Data)
@@ -120,7 +123,7 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
 //into the same BallotBox in parralel. 
 func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox) {
-	ncases := len(fm.Data)
+	ncases := len(fm.Data[0].Data)
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
 		cases = append(cases, i)
