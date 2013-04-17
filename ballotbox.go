@@ -68,6 +68,7 @@ func (bb *BallotBox) TallyCatagorical(i int) (predicted float64) {
 //The provided feature must use the same index as the feature matrix 
 //the ballot box was constructed with.
 //Missing values are ignored.
+//Gini imurity is not used so not for algorythmic use.
 func (bb *BallotBox) TallyError(feature *Feature) (e float64) {
 	e = 0.0
 	switch feature.Numerical {
