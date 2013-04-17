@@ -235,8 +235,11 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
 //The forest should be in rf-ace's "stoicastic forest" sf format
 //It ignores fields that are not use by cloud forest.
 // Start of an example file:
+//
 // FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800,CATEGORIES="",SHRINKAGE=0
+//
 // TREE=0
+//
 // NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false",RVALUES="true"
 func ParseRfAcePredictor(input io.Reader) *Forest {
 	r := bufio.NewReader(input)
@@ -304,8 +307,11 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 //ParseRfAcePredictorLine parses a single line of an rf-ace sf "stoicastic forest"
 //and returns a map[string]string of the key value pairs
 //Some examples of valid input lines:
+//
 // FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800,CATEGORIES="",SHRINKAGE=0
+//
 // TREE=0
+//
 // NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false",RVALUES="true"
 func ParseRfAcePredictorLine(line string) map[string]string {
 	clauses := make([]string, 0)
