@@ -1,6 +1,8 @@
 package CloudForest
 
-import ()
+import (
+	"fmt"
+)
 
 //Tree represents a single decision tree.
 type Tree struct {
@@ -46,32 +48,51 @@ func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, l
 	t.Root.Recurse(func(n *Node, cases []int) {
 		if leafSize < len(cases) {
 			best := BestSplitter(fm, target, cases, mTry)
-			//TODO: see if split is good enough
+			//BUG(ryan): see if split is good enough
 			n.Splitter = best
 			n.Left = new(Node)
 			n.Right = new(Node)
 			goto EndRecurse
 		}
-		//This is a leaf node so we need to find the predictive value
 
+		//Leaf node so find the predictive value and set it in n.Pred
 		switch target.Numerical {
 		case true:
-			bb := NewBallotBox(len(cases))
+			//numerical
+			pred := 0.0
+			count := 0
 			for i := range cases {
 				if !target.Missing[i] {
-					bb.VoteNum(i, target.Data[i])
+					d := target.Data[i]
+					pred += float64(d)
+					count += 1
 				}
 
 			}
+			n.Pred = fmt.Sprintf("%v", pred/float64(count))
 
 		case false:
-			bb := NewBallotBox(len(cases))
+			//catagorical
+			m := make(map[string]int)
 			for i := range cases {
 				if !target.Missing[i] {
-					bb.VoteCat(i, target.Back[target.Data[i]])
+					v := target.Back[target.Data[i]]
+					if _, ok := m[v]; !ok {
+						m[v] = 0
+					}
+					m[v] += 1
 				}
 
 			}
+			pred := ""
+			max := 0
+			for k, v := range m {
+				if v > max {
+					pred = k
+					max = v
+				}
+			}
+			n.Pred = pred
 
 		}
 

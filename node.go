@@ -9,6 +9,8 @@ import ()
 type Recursable func(*Node, []int)
 
 //A node of a decision tree.
+//Pred is a string containg either the catagory or a representation of a float
+//(less then ideal)
 type Node struct {
 	Left     *Node
 	Right    *Node
