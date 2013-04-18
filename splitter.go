@@ -13,6 +13,12 @@ type Splitter struct {
 	Right     map[string]bool
 }
 
+//BUG(ryan) not done yet...just a stub
+//Find the best splitter
+func BestSplitter(fm *FeatureMatrix, target *Feature, cases []int, mTry int) (s *Splitter) {
+	return
+}
+
 //Splitter.Split seperates cases []int using the data in fm *FeatureMatrix
 //and returns left and right []ints.
 //It applies either a Numerical or Catagorical split. In the Numerical case

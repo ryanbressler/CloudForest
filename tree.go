@@ -40,6 +40,45 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 
 }
 
+//BUG(ryan) not done yet ... just wires together some stubs like BestSplitte
+//Grow the tree as a random forest tree
+func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, leafSize int) {
+	t.Root.Recurse(func(n *Node, cases []int) {
+		if leafSize < len(cases) {
+			best := BestSplitter(fm, target, cases, mTry)
+			//TODO: see if split is good enough
+			n.Splitter = best
+			n.Left = new(Node)
+			n.Right = new(Node)
+			goto EndRecurse
+		}
+		//This is a leaf node so we need to find the predictive value
+
+		switch target.Numerical {
+		case true:
+			bb := NewBallotBox(len(cases))
+			for i := range cases {
+				if !target.Missing[i] {
+					bb.VoteNum(i, target.Data[i])
+				}
+
+			}
+
+		case false:
+			bb := NewBallotBox(len(cases))
+			for i := range cases {
+				if !target.Missing[i] {
+					bb.VoteCat(i, target.Back[target.Data[i]])
+				}
+
+			}
+
+		}
+
+	EndRecurse:
+	}, fm, cases)
+}
+
 //Returns the arrays of all spliters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)

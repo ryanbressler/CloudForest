@@ -87,6 +87,7 @@ func (bb *BallotBox) TallyCatagorical(i int) (predicted string) {
 	for k, v := range bb.box[i] {
 		if v > votes {
 			predictedn = k
+			votes = v
 
 		}
 
