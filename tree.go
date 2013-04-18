@@ -103,6 +103,13 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 
 }
 
+//Leaf is a struct for storing the index of the cases at a terminal "Leaf" node
+//along with the Numeric predicted value.
+type Leaf struct {
+	Cases []int
+	Pred  Num
+}
+
 //Tree.Vote casts a vote for the predicted value of each case in fm *FeatureMatrix.
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
 //into the same BallotBox in parralel. 
@@ -117,13 +124,8 @@ func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox) {
 		if n.Left == nil && n.Right == nil {
 			// I'm in a leaf node
 			for i := 0; i < len(cases); i++ {
-				bb.Vote(cases[i], n.Pred)
+				bb.VoteNum(cases[i], n.Pred)
 			}
 		}
 	}, fm, cases)
-}
-
-type Leaf struct {
-	Cases []int
-	Pred  Num
 }
