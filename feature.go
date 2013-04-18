@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -91,5 +92,50 @@ func NewFeature(record []string, capacity int) Feature {
 
 	}
 	return f
+
+}
+
+//Find predicted takes the indexes of a set of cases and returns the 
+//predicted value. For catagorical features this is a string containing the
+//most common catagory and for numerical it is the mean of the values.
+func (f *Feature) FindPredicted(cases []int) (pred string) {
+	switch f.Numerical {
+	case true:
+		//numerical
+		v := 0.0
+		count := 0
+		for i := range cases {
+			if !f.Missing[i] {
+				d := f.Data[i]
+				v += float64(d)
+				count += 1
+			}
+
+		}
+		pred = fmt.Sprintf("%v", v/float64(count))
+
+	case false:
+		//catagorical
+		m := make(map[string]int)
+		for i := range cases {
+			if !f.Missing[i] {
+				v := f.Back[f.Data[i]]
+				if _, ok := m[v]; !ok {
+					m[v] = 0
+				}
+				m[v] += 1
+			}
+
+		}
+		max := 0
+		for k, v := range m {
+			if v > max {
+				pred = k
+				max = v
+			}
+		}
+
+	}
+	return
 
 }

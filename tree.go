@@ -1,8 +1,6 @@
 package CloudForest
 
-import (
-	"fmt"
-)
+import ()
 
 //Tree represents a single decision tree.
 type Tree struct {
@@ -49,54 +47,17 @@ func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, l
 		if leafSize < len(cases) {
 			best := BestSplitter(fm, target, cases, mTry)
 			//BUG(ryan): see if split is good enough
+			//not a leaf node so define the spliter and left and right nodes
+			//so recursion will continue
 			n.Splitter = best
 			n.Left = new(Node)
 			n.Right = new(Node)
-			goto EndRecurse
+			return
 		}
 
 		//Leaf node so find the predictive value and set it in n.Pred
-		switch target.Numerical {
-		case true:
-			//numerical
-			pred := 0.0
-			count := 0
-			for i := range cases {
-				if !target.Missing[i] {
-					d := target.Data[i]
-					pred += float64(d)
-					count += 1
-				}
+		n.Pred = target.FindPredicted(cases)
 
-			}
-			n.Pred = fmt.Sprintf("%v", pred/float64(count))
-
-		case false:
-			//catagorical
-			m := make(map[string]int)
-			for i := range cases {
-				if !target.Missing[i] {
-					v := target.Back[target.Data[i]]
-					if _, ok := m[v]; !ok {
-						m[v] = 0
-					}
-					m[v] += 1
-				}
-
-			}
-			pred := ""
-			max := 0
-			for k, v := range m {
-				if v > max {
-					pred = k
-					max = v
-				}
-			}
-			n.Pred = pred
-
-		}
-
-	EndRecurse:
 	}, fm, cases)
 }
 
