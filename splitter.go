@@ -1,3 +1,13 @@
+package CloudForest
+
+import (
+	"bufio"
+	"io"
+	"log"
+	"strconv"
+	"strings"
+)
+
 //Splitter contains fields that can be used to cases by a single feature. The split
 //can be either numerical in which case it is defined by the Value field or 
 //catagorical in which case it is defined by the Left and Right fields.
