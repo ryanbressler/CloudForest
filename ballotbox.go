@@ -1,7 +1,9 @@
 package CloudForest
 
 import (
+	"log"
 	"math"
+	"strconv"
 )
 
 //Keeps track of votes by trees.
@@ -25,8 +27,25 @@ func NewBallotBox(size int) *BallotBox {
 	return &bb
 }
 
-//Vote registers a vote that case "casei" should be predicted to have the value
-//"vote". 
+//VoteNum registers a vote that case "casei" should be predicted to have the
+//value "vote." If numerical is true "vote" is parsed as a numerical value and
+//if not it is treated as catagorical.
+func (bb *BallotBox) Vote(casei int, vote string, numerical bool) {
+	switch numerical {
+	case true:
+		pred, err := strconv.ParseFloat(vote, 64)
+		if err != nil {
+			log.Print("Error parsing predictor value ", err)
+		}
+
+		bb.VoteNum(casei, Num(pred))
+	case false:
+		bb.VoteCat(casei, vote)
+	}
+}
+
+//VoteNum registers a vote that case "casei" should be predicted to have the
+//numerical value "vote."
 func (bb *BallotBox) VoteNum(casei int, vote Num) {
 
 	if _, ok := bb.box[casei][vote]; !ok {
@@ -35,8 +54,8 @@ func (bb *BallotBox) VoteNum(casei int, vote Num) {
 	bb.box[casei][vote] = bb.box[casei][vote] + 1
 }
 
-//Vote registers a vote that case "casei" should be predicted to have the value
-//"vote". 
+//VoteCat registers a vote that case "casei" should be predicted to have the
+//catagorical "vote". 
 func (bb *BallotBox) VoteCat(casei int, vote string) {
 	voten := bb.CatToNum(vote)
 	if _, ok := bb.box[casei][voten]; !ok {

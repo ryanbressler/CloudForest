@@ -12,7 +12,7 @@ type Recursable func(*Node, []int)
 type Node struct {
 	Left     *Node
 	Right    *Node
-	Pred     Num
+	Pred     string
 	Splitter *Splitter
 }
 

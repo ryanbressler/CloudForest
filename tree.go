@@ -13,7 +13,7 @@ type Tree struct {
 //string of 'L' and 'R'. Nodes must be added from the root up as the case where 
 //the path specifies a node whose parent does not allready exist in the tree is 
 //not handled well.
-func (t *Tree) AddNode(path string, pred Num, splitter *Splitter) {
+func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 	n := new(Node)
 	n.Pred = pred
 	n.Splitter = splitter
@@ -107,13 +107,14 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 //along with the Numeric predicted value.
 type Leaf struct {
 	Cases []int
-	Pred  Num
+	Pred  string
 }
 
 //Tree.Vote casts a vote for the predicted value of each case in fm *FeatureMatrix.
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
-//into the same BallotBox in parralel. 
-func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox) {
+//into the same BallotBox in parralel. The target feature should be provided but need not
+//have data ...only target.Numerical is used currentelly.
+func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox, target *Feature) {
 	ncases := len(fm.Data[0].Data)
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
@@ -124,7 +125,7 @@ func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox) {
 		if n.Left == nil && n.Right == nil {
 			// I'm in a leaf node
 			for i := 0; i < len(cases); i++ {
-				bb.VoteNum(cases[i], n.Pred)
+				bb.Vote(cases[i], n.Pred, target.Numerical)
 			}
 		}
 	}, fm, cases)

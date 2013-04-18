@@ -29,13 +29,13 @@ func main() {
 	}
 	defer forestfile.Close()
 	forest := CloudForest.ParseRfAcePredictor(forestfile)
-
+	target := &data.Data[data.Map[forest.Target]]
 	bb := CloudForest.NewBallotBox(len(data.Data[0].Data))
 
 	for _, tree := range forest.Trees {
-		tree.Vote(data, bb)
+		tree.Vote(data, bb, target)
 	}
-	er := bb.TallyError(&data.Data[data.Map[forest.Target]])
+	er := bb.TallyError(target)
 	fmt.Printf("%v\n", er)
 
 }

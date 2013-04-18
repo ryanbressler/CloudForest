@@ -50,10 +50,7 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 		case strings.HasPrefix(line, "NODE"):
 			var splitter *Splitter
 
-			pred, err := strconv.ParseFloat(parsed["PRED"], 64)
-			if err != nil {
-				log.Print("Error parsing predictor value ", err)
-			}
+			pred := parsed["PRED"]
 
 			if stype, ok := parsed["SPLITTERTYPE"]; ok {
 				splitter = new(Splitter)
@@ -82,7 +79,7 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 				}
 			}
 
-			tree.AddNode(parsed["NODE"], Num(pred), splitter)
+			tree.AddNode(parsed["NODE"], pred, splitter)
 
 		}
 	}
