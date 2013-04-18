@@ -1,12 +1,6 @@
 package CloudForest
 
-import (
-	"bufio"
-	"io"
-	"log"
-	"strconv"
-	"strings"
-)
+import ()
 
 //Tree represents a single decision tree.
 type Tree struct {

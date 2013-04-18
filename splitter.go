@@ -1,12 +1,6 @@
 package CloudForest
 
-import (
-	"bufio"
-	"io"
-	"log"
-	"strconv"
-	"strings"
-)
+import ()
 
 //Splitter contains fields that can be used to cases by a single feature. The split
 //can be either numerical in which case it is defined by the Value field or 
