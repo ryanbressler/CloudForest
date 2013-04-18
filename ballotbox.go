@@ -8,28 +8,41 @@ import (
 //Not thread safe....could be made so or abstracted to an 
 //interface to support diffrent implementations.
 type BallotBox struct {
+	*CatMap
 	box []map[Num]int
 }
 
 //Build a new ballot box for the number of cases specified by "size".
 func NewBallotBox(size int) *BallotBox {
-	bb := new(BallotBox)
-	bb.box = make([]map[Num]int, 0, size)
+	bb := BallotBox{
+		&CatMap{make(map[string]Num),
+			make(map[Num]string),
+			0.0},
+		make([]map[Num]int, 0, size)}
 	for i := 0; i < size; i++ {
 		bb.box = append(bb.box, make(map[Num]int, 0))
 	}
-	return bb
+	return &bb
 }
 
 //Vote registers a vote that case "casei" should be predicted to have the value
-//"vote". For catagorical values "vote" should be the numerical value used in 
-//the feature matrix.
-func (bb *BallotBox) Vote(casei int, vote Num) {
+//"vote". 
+func (bb *BallotBox) VoteNum(casei int, vote Num) {
 
 	if _, ok := bb.box[casei][vote]; !ok {
 		bb.box[casei][vote] = 0
 	}
 	bb.box[casei][vote] = bb.box[casei][vote] + 1
+}
+
+//Vote registers a vote that case "casei" should be predicted to have the value
+//"vote". 
+func (bb *BallotBox) VoteCat(casei int, vote string) {
+	voten := bb.CatToNum(vote)
+	if _, ok := bb.box[casei][voten]; !ok {
+		bb.box[casei][voten] = 0
+	}
+	bb.box[casei][voten] = bb.box[casei][voten] + 1
 }
 
 //TallyNumerical tallies the votes for the case specified by i as
@@ -49,15 +62,17 @@ func (bb *BallotBox) TallyNumerical(i int) (predicted float64) {
 //TallyCatagorical tallies the votes for the case specified by i as 
 //if it is a Catagorical or boolean feature. Ie it returns the mode
 //(the most frequent value) of all votes.
-func (bb *BallotBox) TallyCatagorical(i int) (predicted float64) {
+func (bb *BallotBox) TallyCatagorical(i int) (predicted string) {
+	predictedn := Num(0.0)
 	votes := 0
 	for k, v := range bb.box[i] {
 		if v > votes {
-			predicted = float64(k)
+			predictedn = k
 
 		}
 
 	}
+	predicted = bb.Back[predictedn]
 	return
 
 }
@@ -90,8 +105,8 @@ func (bb *BallotBox) TallyError(feature *Feature) (e float64) {
 		c := 0
 		for i, value := range feature.Data {
 			predicted := bb.TallyCatagorical(i)
-			if !feature.Missing[i] && !math.IsNaN(predicted) {
-				if int(value) != int(predicted) {
+			if !feature.Missing[i] {
+				if feature.Back[value] != predicted {
 					e += 1.0
 				}
 
