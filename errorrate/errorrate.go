@@ -30,10 +30,17 @@ func main() {
 	defer forestfile.Close()
 	forest := CloudForest.ParseRfAcePredictor(forestfile)
 	target := &data.Data[data.Map[forest.Target]]
-	bb := CloudForest.NewBallotBox(len(data.Data[0].Data))
+	var bb CloudForest.VoteTallyer
+	switch target.Numerical {
+	case true:
+		bb = CloudForest.NewNumBallotBox(len(data.Data[0].Missing))
+	case false:
+		bb = CloudForest.NewCatBallotBox(len(data.Data[0].Missing))
+
+	}
 
 	for _, tree := range forest.Trees {
-		tree.Vote(data, bb, target)
+		tree.Vote(data, bb)
 	}
 	er := bb.TallyError(target)
 	fmt.Printf("%v\n", er)

@@ -61,7 +61,7 @@ func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, l
 	}, fm, cases)
 }
 
-//BUG(Dick): only works for numerical
+//BUG(Dick): only works for catagorical data???
 //Returns the arrays of all spliters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
@@ -134,9 +134,8 @@ type Leaf struct {
 
 //Tree.Vote casts a vote for the predicted value of each case in fm *FeatureMatrix.
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
-//into the same BallotBox in parralel. The target feature should be provided but need not
-//have data ...only target.Numerical is used currentelly.
-func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox, target *Feature) {
+//into the same BallotBox in parralel. 
+func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
 	ncases := len(fm.Data[0].Missing)
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
@@ -147,7 +146,7 @@ func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox, target *Feature) {
 		if n.Left == nil && n.Right == nil {
 			// I'm in a leaf node
 			for i := 0; i < len(cases); i++ {
-				bb.Vote(cases[i], n.Pred, target.Numerical)
+				bb.Vote(cases[i], n.Pred)
 			}
 		}
 	}, fm, cases)

@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"math"
+	"strconv"
 )
 
 //Keeps track of votes by trees.
@@ -21,9 +22,18 @@ func NewNumBallotBox(size int) *NumBallotBox {
 	return &bb
 }
 
+//Vote parses the float in the string and votes for it
+func (bb *NumBallotBox) Vote(casei int, vote string) {
+	v, err := strconv.ParseFloat(vote, 64)
+	if err == nil {
+		bb.VoteNum(casei, v)
+	}
+
+}
+
 //VoteNum registers a vote that case "casei" should be predicted to have the
 //numerical value "vote."
-func (bb *NumBallotBox) Vote(casei int, vote float64) {
+func (bb *NumBallotBox) VoteNum(casei int, vote float64) {
 
 	if _, ok := bb.box[casei][vote]; !ok {
 		bb.box[casei][vote] = 0

@@ -40,7 +40,7 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 			log.Print("Error:", err)
 			break
 		}
-		data = append(data, NewFeature(record, capacity))
+		data = append(data, ParseFeature(record, capacity))
 		lookup[record[0]] = count
 		count++
 	}

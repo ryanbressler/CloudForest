@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-//CatMap is for mapping catagorical values to integers.
-//It contains:
-//
-// Map  : a map of ints by the string used fot the catagory
-// Back : a slice of strings by the int that represents them
-//
+/*CatMap is for mapping catagorical values to integers.
+It contains:
+
+	Map  : a map of ints by the string used fot the catagory
+	Back : a slice of strings by the int that represents them
+*/
 type CatMap struct {
 	Map  map[string]int //map categories from string to Num
 	Back []string       // map categories from Num to string
@@ -32,14 +32,14 @@ func (cm *CatMap) CatToNum(value string) (numericv int) {
 	return
 }
 
-//Structure representing a single feature in a feature matrix.
-//It contains:
-// An embedded CatMap (may only be instantiated for cat data)
-// NumData   : A slice of floates used for numerical data and nil otherwise
-// CatData   : A slice of ints for catagorical data and nil otherwise
-// Missing   : A slice of bools indicating missing values. Measure this for length.
-// Numerical : is the feature numerical
-// Name      : the name of the feature
+/*Structure representing a single feature in a feature matrix.
+It contains:
+An embedded CatMap (may only be instantiated for cat data)
+	NumData   : A slice of floates used for numerical data and nil otherwise
+	CatData   : A slice of ints for catagorical data and nil otherwise
+	Missing   : A slice of bools indicating missing values. Measure this for length.
+	Numerical : is the feature numerical
+	Name      : the name of the feature*/
 type Feature struct {
 	*CatMap
 	NumData   []float64
@@ -49,16 +49,16 @@ type Feature struct {
 	Name      string
 }
 
-//Construct a NewFeature from an array of strings and a capacity 
+//ParseFeature parses a Feature from an array of strings and a capacity 
 //capacity is the number of cases and will usually be len(record)-1 but
 //but doesn't need to be calculated for every row of a large file.
 //The type of the feature us infered from the start ofthe first (header) field 
 //in record:
 //"N:"" indicating numerical, anything else (usually "C:" and "B:") for catagorical
-func NewFeature(record []string, capacity int) Feature {
+func ParseFeature(record []string, capacity int) Feature {
 	f := Feature{
-		&CatMap{make(map[string]int, capacity),
-			make([]string, 0, capacity)},
+		&CatMap{make(map[string]int, 0),
+			make([]string, 0, 0)},
 		nil,
 		nil,
 		make([]bool, 0, capacity),

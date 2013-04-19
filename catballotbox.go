@@ -22,7 +22,7 @@ func NewCatBallotBox(size int) *CatBallotBox {
 	return &bb
 }
 
-//VoteCat registers a vote that case "casei" should be predicted to have the
+//Vote registers a vote that case "casei" should be predicted to have the
 //catagorical "vote". 
 func (bb *CatBallotBox) Vote(casei int, vote string) {
 	voten := bb.CatToNum(vote)
