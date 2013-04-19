@@ -8,7 +8,7 @@ import ()
 type Splitter struct {
 	Feature   string
 	Numerical bool
-	Value     Num
+	Value     float64
 	Left      map[string]bool
 	Right     map[string]bool
 }
@@ -30,7 +30,7 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
 		for _, i := range cases {
 			if f.Missing[i] == false {
 				switch {
-				case f.Data[i] <= s.Value:
+				case f.NumData[i] <= s.Value:
 					l = append(l, i)
 				default:
 					r = append(r, i)
@@ -42,7 +42,7 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) ([]int, []int) {
 		for _, i := range cases {
 			if f.Missing[i] == false {
 
-				v := f.Back[f.Data[i]]
+				v := f.Back[f.CatData[i]]
 				switch {
 				case s.Left[v]:
 					l = append(l, i)

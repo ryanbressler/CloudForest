@@ -61,11 +61,12 @@ func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, l
 	}, fm, cases)
 }
 
+//BUG(Dick): only works for numerical
 //Returns the arrays of all spliters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
-	ncases := len(fm.Data[0].Data) // grab the number of samples for the first feature
-	cases := make([]int, ncases)   //make an array that large
+	ncases := len(fm.Data[0].Missing) // grab the number of samples for the first feature
+	cases := make([]int, ncases)      //make an array that large
 	for i, _ := range cases {
 		cases[i] = i
 	}
@@ -81,7 +82,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 
 				if f.Missing[c] == false { //if there isa value for this case
 					fbycase.Add(c, fm.Map[f_id], 1) //count the number of times each case is present for a split by a feature
-					fvalue := f.Back[f.Data[c]]     //what is the feature value for this case?
+					fvalue := f.Back[f.CatData[c]]  //what is the feature value for this case?
 
 					switch {
 					case n.Splitter.Left[fvalue]: //if the value was split to the left
@@ -103,7 +104,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 //is used to split away each case.
 func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
-	ncases := len(fm.Data[0].Data)
+	ncases := len(fm.Data[0].Missing)
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
 		cases = append(cases, i)
@@ -136,7 +137,7 @@ type Leaf struct {
 //into the same BallotBox in parralel. The target feature should be provided but need not
 //have data ...only target.Numerical is used currentelly.
 func (t *Tree) Vote(fm *FeatureMatrix, bb *BallotBox, target *Feature) {
-	ncases := len(fm.Data[0].Data)
+	ncases := len(fm.Data[0].Missing)
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
 		cases = append(cases, i)

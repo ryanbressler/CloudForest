@@ -75,7 +75,7 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 					if err != nil {
 						log.Print("Error parsing lvalues value ", err)
 					}
-					splitter.Value = Num(lvalue)
+					splitter.Value = float64(lvalue)
 				}
 			}
 

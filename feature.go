@@ -2,40 +2,48 @@ package CloudForest
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
 
-type Num float64
-
+//CatMap is for mapping catagorical values to integers.
+//It contains:
+//
+// Map  : a map of ints by the string used fot the catagory
+// Back : a slice of strings by the int that represents them
+//
 type CatMap struct {
-	Map     map[string]Num //map categories from string to Num
-	Back    map[Num]string // map categories from Num to string
-	nvalues Num
+	Map  map[string]int //map categories from string to Num
+	Back []string       // map categories from Num to string
 }
 
 //CatToNum provides the Num equivelent of the provided catagorical value
 //if it allready exists or adds it to the map and returns the new value if 
 //it doesn't.
-func (cm *CatMap) CatToNum(value string) (numericv Num) {
+func (cm *CatMap) CatToNum(value string) (numericv int) {
 	numericv, exsists := cm.Map[value]
 	if exsists == false {
-		cm.Map[value] = cm.nvalues
-		cm.Back[cm.nvalues] = value
-		numericv = cm.nvalues
-		cm.nvalues += 1.0
+		numericv = len(cm.Back)
+		cm.Map[value] = numericv
+		cm.Back = append(cm.Back, value)
+
 	}
 	return
 }
 
 //Structure representing a single feature in a feature matrix.
-//this data strucutre is related to the one in rf-ace which uses 
-//the NUm/float64 data type for all feature values.
-// In the future we may wish to represent
-//catagorical features usings ints to speed up hash look up etc.
+//It contains:
+// An embedded CatMap (may only be instantiated for cat data)
+// NumData   : A slice of floates used for numerical data and nil otherwise
+// CatData   : A slice of ints for catagorical data and nil otherwise
+// Missing   : A slice of bools indicating missing values. Measure this for length.
+// Numerical : is the feature numerical
+// Name      : the name of the feature
 type Feature struct {
 	*CatMap
-	Data      []Num
+	NumData   []float64
+	CatData   []int
 	Missing   []bool
 	Numerical bool
 	Name      string
@@ -49,31 +57,33 @@ type Feature struct {
 //"N:"" indicating numerical, anything else (usually "C:" and "B:") for catagorical
 func NewFeature(record []string, capacity int) Feature {
 	f := Feature{
-		&CatMap{make(map[string]Num, capacity),
-			make(map[Num]string, capacity),
-			0.0},
-		make([]Num, 0, capacity),
+		&CatMap{make(map[string]int, capacity),
+			make([]string, 0, capacity)},
+		nil,
+		nil,
 		make([]bool, 0, capacity),
 		false,
 		record[0]}
 
 	switch record[0][0:2] {
 	case "N:":
+		f.NumData = make([]float64, 0, capacity)
 		//Numerical
 		f.Numerical = true
 		for i := 1; i < len(record); i++ {
 			v, err := strconv.ParseFloat(record[i], 64)
 			if err != nil {
-				f.Data = append(f.Data, Num(0))
+				f.NumData = append(f.NumData, 0.0)
 				f.Missing = append(f.Missing, true)
 				continue
 			}
-			f.Data = append(f.Data, Num(v))
+			f.NumData = append(f.NumData, float64(v))
 			f.Missing = append(f.Missing, false)
 
 		}
 
 	default:
+		f.CatData = make([]int, 0, capacity)
 		//Assume Catagorical
 		f.Numerical = false
 		for i := 1; i < len(record); i++ {
@@ -81,11 +91,11 @@ func NewFeature(record []string, capacity int) Feature {
 			norm := strings.ToLower(v)
 			if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
 
-				f.Data = append(f.Data, Num(0))
+				f.CatData = append(f.CatData, 0)
 				f.Missing = append(f.Missing, true)
 				continue
 			}
-			f.Data = append(f.Data, Num(f.CatToNum(v)))
+			f.CatData = append(f.CatData, f.CatToNum(v))
 			f.Missing = append(f.Missing, false)
 
 		}
@@ -100,9 +110,7 @@ func NewFeature(record []string, capacity int) Feature {
 func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s *Splitter) {
 	switch target.Numerical {
 	case true:
-		for i, v := range fm.Data {
 
-		}
 	case false:
 	}
 	return
@@ -112,11 +120,11 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s
 //gini impurity is calculated as 1 - Sum(fi^2) where fi is the fraction
 //of cases in the ith catagory.
 func (target *Feature) Gini(cases []int) (e float64) {
-	counter := make(map[Num]int)
+	counter := make(map[int]int)
 	total := 0
 	for _, i := range cases {
 		if !target.Missing[i] {
-			v := Num(target.Data[i])
+			v := target.CatData[i]
 			if _, ok := counter[v]; !ok {
 				counter[v] = 0
 
@@ -126,10 +134,11 @@ func (target *Feature) Gini(cases []int) (e float64) {
 		}
 	}
 	e = 1.0
-	total = float64(total * total)
+	t := float64(total * total)
 	for _, v := range counter {
-		e -= v * v / total
+		e -= float64(v*v) / t
 	}
+	return
 }
 
 //RMS returns the Root Mean Square error of the cases specifed vs the predicted
@@ -139,29 +148,30 @@ func (target *Feature) RMS(cases []int, predicted float64) (e float64) {
 	n := 0
 	for _, i := range cases {
 		if !target.Missing[i] {
-			d := predicted - float64(target.Data[i])
+			d := predicted - target.NumData[i]
 			e += d * d
 			n += 1
 		}
 
 	}
 	e = math.Sqrt(e / float64(n))
+	return
 
 }
 
 //MEAN returns the mean of the feature for the cases specified 
-func (target *Feature) Mean(cases []int) (e float64) {
-	e = 0.0
+func (target *Feature) Mean(cases []int) (m float64) {
+	m = 0.0
 	n := 0
 	for _, i := range cases {
 		if !target.Missing[i] {
-			d := predicted - float64(target.Data[i])
-			e += d * d
+			m += target.NumData[i]
 			n += 1
 		}
 
 	}
-	e = math.Sqrt(e / float64(n))
+	m = m / float64(n)
+	return
 
 }
 
@@ -176,7 +186,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 		count := 0
 		for _, i := range cases {
 			if !f.Missing[i] {
-				d := f.Data[i]
+				d := f.NumData[i]
 				v += float64(d)
 				count += 1
 			}
@@ -189,7 +199,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 		m := make(map[string]int)
 		for _, i := range cases {
 			if !f.Missing[i] {
-				v := f.Back[f.Data[i]]
+				v := f.Back[f.CatData[i]]
 				if _, ok := m[v]; !ok {
 					m[v] = 0
 				}
