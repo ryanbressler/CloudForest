@@ -95,6 +95,76 @@ func NewFeature(record []string, capacity int) Feature {
 
 }
 
+//BUG(ryan) not done yet...just a stub
+//Find the best splitter
+func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s *Splitter) {
+	switch target.Numerical {
+	case true:
+		for i, v := range fm.Data {
+
+		}
+	case false:
+	}
+	return
+}
+
+//Gini returns the gini impurity for the specified cases in the feature
+//gini impurity is calculated as 1 - Sum(fi^2) where fi is the fraction
+//of cases in the ith catagory.
+func (target *Feature) Gini(cases []int) (e float64) {
+	counter := make(map[Num]int)
+	total := 0
+	for _, i := range cases {
+		if !target.Missing[i] {
+			v := Num(target.Data[i])
+			if _, ok := counter[v]; !ok {
+				counter[v] = 0
+
+			}
+			counter[v] = counter[v] + 1
+			total += 1
+		}
+	}
+	e = 1.0
+	total = float64(total * total)
+	for _, v := range counter {
+		e -= v * v / total
+	}
+}
+
+//RMS returns the Root Mean Square error of the cases specifed vs the predicted
+//value
+func (target *Feature) RMS(cases []int, predicted float64) (e float64) {
+	e = 0.0
+	n := 0
+	for _, i := range cases {
+		if !target.Missing[i] {
+			d := predicted - float64(target.Data[i])
+			e += d * d
+			n += 1
+		}
+
+	}
+	e = math.Sqrt(e / float64(n))
+
+}
+
+//MEAN returns the mean of the feature for the cases specified 
+func (target *Feature) Mean(cases []int) (e float64) {
+	e = 0.0
+	n := 0
+	for _, i := range cases {
+		if !target.Missing[i] {
+			d := predicted - float64(target.Data[i])
+			e += d * d
+			n += 1
+		}
+
+	}
+	e = math.Sqrt(e / float64(n))
+
+}
+
 //Find predicted takes the indexes of a set of cases and returns the 
 //predicted value. For catagorical features this is a string containing the
 //most common catagory and for numerical it is the mean of the values.
@@ -104,7 +174,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 		//numerical
 		v := 0.0
 		count := 0
-		for i := range cases {
+		for _, i := range cases {
 			if !f.Missing[i] {
 				d := f.Data[i]
 				v += float64(d)
@@ -117,7 +187,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 	case false:
 		//catagorical
 		m := make(map[string]int)
-		for i := range cases {
+		for _, i := range cases {
 			if !f.Missing[i] {
 				v := f.Back[f.Data[i]]
 				if _, ok := m[v]; !ok {

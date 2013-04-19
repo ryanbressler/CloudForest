@@ -45,7 +45,7 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, leafSize int) {
 	t.Root.Recurse(func(n *Node, cases []int) {
 		if leafSize < len(cases) {
-			best := BestSplitter(fm, target, cases, mTry)
+			best := target.BestSplitter(fm, cases, mTry)
 			//BUG(ryan): see if split is good enough
 			//not a leaf node so define the spliter and left and right nodes
 			//so recursion will continue
