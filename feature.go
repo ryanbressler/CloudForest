@@ -3,6 +3,7 @@ package CloudForest
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -105,15 +106,64 @@ func ParseFeature(record []string, capacity int) Feature {
 
 }
 
-//BUG(ryan) not done yet...just a stub
-//Find the best splitter
-func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s *Splitter) {
-	switch target.Numerical {
-	case true:
+//BestSplit finds the best split of the features that can be achieved using the specified target and cases
+//it returns a Splitter and the impurity
+func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity float64) {
 
+	switch f.Numerical {
+	case true:
+		s = &Splitter{f.Name, true, 0.0, nil, nil}
+		sortableCases := SortableFeature{f, cases}
+		sort.Sort(sortableCases)
+		for index, i := range sortableCases.Cases {
+			l := sortableCases.Cases[:i]
+			r := sortableCases.Cases[i:]
+			//BUG(ryan) is this the proper way to combine impurities??
+			innerimp := (target.Impurity(l) + target.Impurity(r)) / 2.0
+			if index == 0 || innerimp < impurity {
+				impurity = innerimp
+				s.Value = f.NumData[i]
+
+			}
+
+		}
 	case false:
+		//BUG(ryan) find the best way to split a catagorical feature
 	}
 	return
+
+}
+
+//BUG(ryan) BestSplitter not done yet...relies on stubs
+//Find the best splitter
+func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s *Splitter) {
+	//BUG(ryan) generate canidate features randomly or accept list of canidates
+	canidates := make([]int, 0)
+	bestImpurity := 0.0
+	for index, i := range canidates {
+		splitter, impurity := fm.Data[i].BestSplit(target, cases)
+		if index == 0 || impurity < bestImpurity {
+			bestImpurity = impurity
+			s = splitter
+		}
+
+	}
+	return
+}
+
+//Impurity returns Gini impurity or RMS vs the mean for a set of cases
+//depending on weather the feature is catagorical or numerical
+func (target *Feature) Impurity(cases []int) (e float64) {
+	switch target.Numerical {
+	case true:
+		//BUG(ryan) is this the right way to calculate impurity for numericals???
+		m := target.Mean(cases)
+		e = target.RMS(cases, m)
+	case false:
+		e = target.Gini(cases)
+	}
+	return
+
 }
 
 //Gini returns the gini impurity for the specified cases in the feature

@@ -18,6 +18,11 @@ type Forest struct {
 	Trees []*Tree
 }
 
+//BUG(ryan) stub... need to decide what all paramters to expose and then implment using Tree.Grow
+func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTries int, nTrees int) (f *Forest) {
+	return
+}
+
 /*ParseRfAcePredictor reads a forest from an io.Reader.
 The forest should be in rf-ace's "stoicastic forest" sf format
 It ignores fields that are not use by cloud forest.
