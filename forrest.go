@@ -23,6 +23,22 @@ func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTries i
 	return
 }
 
+/*BUG(Kale?) not yet implemented
+The forest will be in rf-ace's "stoicastic forest" sf format
+It won't include fields that are not use by cloud forest.
+Start of an example file:
+
+	FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800,CATEGORIES="",SHRINKAGE=0
+	TREE=0
+	NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false",RVALUES="true"
+	NODE=*L,PRED=3.75
+	NODE=*R,PRED=1
+
+Node should be a path the form *LRL where * indicates the root L and R indicate Left and Right.*/
+func SavePredictor(f *Forest, w io.Writer) {
+
+}
+
 /*ParseRfAcePredictor reads a forest from an io.Reader.
 The forest should be in rf-ace's "stoicastic forest" sf format
 It ignores fields that are not use by cloud forest.
