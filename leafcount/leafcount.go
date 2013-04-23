@@ -21,7 +21,7 @@ func main() {
 	}
 	defer datafile.Close()
 	data := CloudForest.ParseAFM(datafile)
-	log.Print("Data file ", len(data.Data), " by ", len(data.Data[0].Data))
+	log.Print("Data file ", len(data.Data), " by ", len(data.Data[0].Missing))
 
 	forestfile, err := os.Open(*rf) // For read access.
 	if err != nil {
