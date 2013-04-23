@@ -61,7 +61,7 @@ func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, l
 	}, fm, cases)
 }
 
-//BUG(Dick): only works for catagorical data???
+//BUG(Dick): only works for numerical data???
 //Returns the arrays of all spliters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
@@ -73,7 +73,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 
 	t.Root.Recurse(func(n *Node, cases []int) {
 		//if we're on a splitting node
-		if fbycase != nil && n.Splitter != nil {
+		if fbycase != nil && n.Splitter != nil && n.Splitter.Numerical == true {
 			//add this splitter to the list
 			splitters = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left, n.Splitter.Right})
 			f_id := n.Splitter.Feature               //get the feature at this splitter
@@ -82,12 +82,11 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 
 				if f.Missing[c] == false { //if there isa value for this case
 					fbycase.Add(c, fm.Map[f_id], 1) //count the number of times each case is present for a split by a feature
-					fvalue := f.Back[f.CatData[c]]  //what is the feature value for this case?
 
-					switch {
-					case n.Splitter.Left[fvalue]: //if the value was split to the left
+					switch f.NumData[c] <= n.Splitter.Value {
+					case true: //if the value was split to the left
 						relativeSplitCount.Add(c, fm.Map[f_id], -1) //subtract one
-					case n.Splitter.Right[fvalue]:
+					case false:
 						relativeSplitCount.Add(c, fm.Map[f_id], 1) //add one
 					}
 				}
