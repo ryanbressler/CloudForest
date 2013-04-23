@@ -18,12 +18,17 @@ type Forest struct {
 	Trees []*Tree
 }
 
-//BUG(ryan) stub... need to decide what all paramters to expose and then implment using Tree.Grow
-func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTries int, nTrees int) (f *Forest) {
+//BUG(ryan) GrowRandomForest is a stub... need to decide what all paramters to expose and then implment using Tree.Grow
+func GrowRandomForest(fm *FeatureMatrix, target *Feature, cases []int, nSamples int, mTry int, nTrees int, leafSize int) (f *Forest) {
+	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
+	for i := 0; i < nTrees; i++ {
+		f.Trees = append(f.Trees, &Tree{&Node{nil, nil, "", nil}})
+		f.Trees[i].Grow(fm, target, cases, mTry, leafSize)
+	}
 	return
 }
 
-/*BUG(Kale?) not yet implemented
+/*BUG(Kalle?) SavePredictor is a stub.
 The forest will be in rf-ace's "stoicastic forest" sf format
 It won't include fields that are not use by cloud forest.
 Start of an example file:

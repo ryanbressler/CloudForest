@@ -3,10 +3,13 @@ package CloudForest
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 )
+
+const maxExhaustiveCatagoires = 10
 
 /*CatMap is for mapping catagorical values to integers.
 It contains:
@@ -106,21 +109,36 @@ func ParseFeature(record []string, capacity int) Feature {
 
 }
 
-//BestSplit finds the best split of the features that can be achieved using the specified target and cases
-//it returns a Splitter and the impurity
+/*BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
+the specified target and cases it returns a Splitter and the impurity
+
+Notes:It works by evaluating the impurity instead of decrease in impurity in previous 
+implementations
+
+Splitting on a catagorical feature is not yet supported due to debate over how it 
+should be done.
+
+rf-ace finds the "best" catagorical split using a greedy method that starts with the
+single best catagory, and finds the best catagory to add on each iteration.
+
+Brieman's implementation and the R/Matlab implementations based on it use exsaustive 
+search overfor when there are less thatn 25/10 catagories and random splits above that.
+
+*/
 func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity float64) {
 
+	impurity = target.Impurity(cases)
 	switch f.Numerical {
 	case true:
 		s = &Splitter{f.Name, true, 0.0, nil, nil}
 		sortableCases := SortableFeature{f, cases}
 		sort.Sort(sortableCases)
-		for index, i := range sortableCases.Cases {
+		for _, i := range sortableCases.Cases {
 			l := sortableCases.Cases[:i]
 			r := sortableCases.Cases[i:]
 			//BUG(ryan) is this the proper way to combine impurities??
 			innerimp := (target.Impurity(l) + target.Impurity(r)) / 2.0
-			if index == 0 || innerimp < impurity {
+			if innerimp < impurity {
 				impurity = innerimp
 				s.Value = f.NumData[i]
 
@@ -128,18 +146,72 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 
 		}
 	case false:
-		//BUG(ryan) find the best way to split a catagorical feature
+		//BUG(ryan) double check this is an exahustive search and make work for n > 64 (bigint?)
+		//search for nCats>10
+		nCats := len(f.Back)
+
+		useExhaustive := nCats <= maxExhaustiveCatagoires
+		nPartitions := 1
+		if useExhaustive {
+
+			//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
+			nPartitions = (2 << uint(nCats-2))
+		} else {
+			//if more then the max just do the max randomly
+			nPartitions = (2 << uint(maxExhaustiveCatagoires-2))
+		}
+		//start at 1 to ingnore the set with all on one side
+		for i := 1; i < nPartitions; i++ {
+			l := make([]int, 0)
+			r := make([]int, 0)
+
+			bits := i
+			if !useExhaustive {
+				//generate random partition
+				bits = rand.Int()
+			}
+
+			//check the value of the j'th bit of i and
+			//send j left or right
+			for j := 0; j < nCats; j++ {
+
+				switch 0 != (bits & (1 << uint(j))) {
+				case true:
+					l = append(l, j)
+				case false:
+					r = append(r, j)
+				}
+
+			}
+			//build a catagorical spliter and check
+			innerSplit := Splitter{f.Name, false, 0.0, make(map[string]bool), make(map[string]bool)}
+			for _, i := range l {
+				innerSplit.Left[f.Back[i]] = true
+			}
+			for _, i := range r {
+				innerSplit.Right[f.Back[i]] = true
+			}
+			left, right := innerSplit.SplitCat(f, cases)
+			innerimp := (target.Impurity(left) + target.Impurity(right)) / 2.0
+			if innerimp < impurity {
+				impurity = innerimp
+				s = &innerSplit
+
+			}
+
+		}
 	}
 	return
 
 }
 
-//BUG(ryan) BestSplitter not done yet...relies on stubs
+//BUG(ryan) BestSplitter not done yet...relies on stubs that only work for numeric features.
 //Find the best splitter
 func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s *Splitter) {
 	//BUG(ryan) generate canidate features randomly or accept list of canidates
 	canidates := make([]int, 0)
-	bestImpurity := 0.0
+	bestImpurity := target.Impurity(cases)
+
 	for index, i := range canidates {
 		splitter, impurity := fm.Data[i].BestSplit(target, cases)
 		if index == 0 || impurity < bestImpurity {
@@ -209,7 +281,7 @@ func (target *Feature) RMS(cases []int, predicted float64) (e float64) {
 
 }
 
-//MEAN returns the mean of the feature for the cases specified 
+//Mean returns the mean of the feature for the cases specified 
 func (target *Feature) Mean(cases []int) (m float64) {
 	m = 0.0
 	n := 0
@@ -232,17 +304,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 	switch f.Numerical {
 	case true:
 		//numerical
-		v := 0.0
-		count := 0
-		for _, i := range cases {
-			if !f.Missing[i] {
-				d := f.NumData[i]
-				v += float64(d)
-				count += 1
-			}
-
-		}
-		pred = fmt.Sprintf("%v", v/float64(count))
+		pred = fmt.Sprintf("%v", f.Mean(cases))
 
 	case false:
 		//catagorical
