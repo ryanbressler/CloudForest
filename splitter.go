@@ -23,26 +23,16 @@ type Splitter struct {
 //everything <= to Value is sent left; for the Catagorical case a look up 
 //table is used.
 func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int) {
+	l = make([]int, 0)
+	r = make([]int, 0)
 
 	f := fm.Data[fm.Map[s.Feature]]
 
 	switch s.Numerical {
 	case true:
-		l = make([]int, 0)
-		r = make([]int, 0)
-		for _, i := range cases {
-			if f.Missing[i] == false {
-				switch {
-				case f.NumData[i] <= s.Value:
-					l = append(l, i)
-				default:
-					r = append(r, i)
-				}
-			}
-
-		}
+		s.SplitNum(&f, &cases, &l, &r)
 	case false:
-		l, r = s.SplitCat(&f, cases)
+		s.SplitCat(&f, &cases, &l, &r)
 	}
 
 	return
@@ -56,16 +46,31 @@ func (s *Splitter) DescribeMap(input map[string]bool) string {
 	return "\"" + strings.Join(keys, ":") + "\""
 }
 
-func (s *Splitter) SplitCat(f *Feature, cases []int) (l []int, r []int) {
-	for _, i := range cases {
+func (s *Splitter) SplitNum(f *Feature, cases *[]int, l *[]int, r *[]int) {
+	for _, i := range *cases {
+		if f.Missing[i] == false {
+			switch {
+			case f.NumData[i] <= s.Value:
+				*l = append(*l, i)
+			default:
+				*r = append(*r, i)
+			}
+		}
+
+	}
+	return
+}
+
+func (s *Splitter) SplitCat(f *Feature, cases *[]int, l *[]int, r *[]int) {
+	for _, i := range *cases {
 		if f.Missing[i] == false {
 
 			v := f.Back[f.CatData[i]]
 			switch {
 			case s.Left[v]:
-				l = append(l, i)
+				*l = append(*l, i)
 			case s.Right[v]:
-				r = append(r, i)
+				*r = append(*r, i)
 			}
 		}
 

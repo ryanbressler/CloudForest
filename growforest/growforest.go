@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"runtime/pprof"
 )
 
 func main() {
@@ -27,7 +28,18 @@ func main() {
 
 	var mTry int
 	flag.IntVar(&mTry, "mTry", 0, "Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.")
+
+	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	datafile, err := os.Open(*fm)
 	if err != nil {

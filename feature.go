@@ -109,18 +109,6 @@ func ParseFeature(record []string, capacity int) Feature {
 
 }
 
-//FilterMissing removes cases for which the feature has no data
-func (f *Feature) FilterMissing(cases []int) (filtered []int) {
-	filtered = make([]int, 0, len(cases))
-
-	for _, i := range cases {
-		if !f.Missing[i] {
-			filtered = append(filtered, i)
-		}
-	}
-	return
-}
-
 /*BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
 the specified target and cases it returns a Splitter and the decrease in impurity
 
@@ -133,20 +121,24 @@ and random splits above that.
 */
 func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurityDecrease float64) {
 	//BUG() Is removing the missing cases in BestSplit the right thing to do?
-	filteredcases := f.FilterMissing(cases)
 	impurityDecrease = 0.0
+	left := make([]int, len(cases))
+	right := make([]int, len(cases))
+
 	switch f.Numerical {
 	case true:
 		//BUG need to loop over unique values not all values or bad things happen
-		sortableCases := SortableFeature{f, filteredcases}
+		sortableCases := SortableFeature{f, cases}
 		sort.Sort(sortableCases)
 		for i := 1; i < len(sortableCases.Cases)-1; i++ {
 			//skip cases where the next sorted case has the same value as these can't be split on
-			if f.NumData[sortableCases.Cases[i]] == f.NumData[sortableCases.Cases[i+1]] {
+			if f.Missing[sortableCases.Cases[i]] == true || f.NumData[sortableCases.Cases[i]] == f.NumData[sortableCases.Cases[i+1]] {
 				continue
 			}
-			left := sortableCases.Cases[:i]
-			right := sortableCases.Cases[i:]
+			innerSplit := &Splitter{f.Name, true, f.NumData[sortableCases.Cases[i]], nil, nil}
+			left = left[0:0]
+			right = right[0:0]
+			innerSplit.SplitNum(f, &cases, &left, &right)
 			innerimp := target.ImpurityDecrease(left, right)
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
@@ -201,8 +193,9 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 			for _, i := range r {
 				innerSplit.Right[f.Back[i]] = true
 			}
-			left, right := innerSplit.SplitCat(f, filteredcases)
-			//skip filteredcases where the split didn't do any splitting
+			right = right[0:0]
+			innerSplit.SplitCat(f, &cases, &left, &right)
+			//skip cases where the split didn't do any splitting
 			if len(left) == 0 || len(right) == 0 {
 				continue
 			}
