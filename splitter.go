@@ -1,6 +1,8 @@
 package CloudForest
 
-import ()
+import (
+	"strings"
+)
 
 //Splitter contains fields that can be used to cases by a single feature. The split
 //can be either numerical in which case it is defined by the Value field or 
@@ -44,6 +46,14 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int) {
 	}
 
 	return
+}
+
+func (s *Splitter) DescribeMap(input map[string]bool) string {
+	keys := make([]string, 0)
+	for k := range input {
+		keys = append(keys, k)
+	}
+	return "\"" + strings.Join(keys, "\",\"") + "\""
 }
 
 func (s *Splitter) SplitCat(f *Feature, cases []int) (l []int, r []int) {

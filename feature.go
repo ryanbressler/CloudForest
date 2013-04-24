@@ -36,7 +36,7 @@ func (cm *CatMap) CatToNum(value string) (numericv int) {
 	return
 }
 
-/*Structure representing a single feature in a feature matrix.
+/*Feature is a structure representing a single feature in a feature matrix.
 It contains:
 An embedded CatMap (may only be instantiated for cat data)
 	NumData   : A slice of floates used for numerical data and nil otherwise
@@ -110,44 +110,38 @@ func ParseFeature(record []string, capacity int) Feature {
 }
 
 /*BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
-the specified target and cases it returns a Splitter and the impurity
-
-Notes:It works by evaluating the impurity instead of decrease in impurity in previous 
-implementations
-
-Splitting on a catagorical feature is not yet supported due to debate over how it 
-should be done.
+the specified target and cases it returns a Splitter and the decrease in impurity
 
 rf-ace finds the "best" catagorical split using a greedy method that starts with the
 single best catagory, and finds the best catagory to add on each iteration.
 
-Brieman's implementation and the R/Matlab implementations based on it use exsaustive 
-search overfor when there are less thatn 25/10 catagories and random splits above that.
+This implementation follows Brieman's implementation and the R/Matlab implementations 
+based on it use exsaustive search overfor when there are less thatn 25/10 catagories 
+and random splits above that.
 
 */
-func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity float64) {
+func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurityDecrease float64) {
 
-	impurity = target.Impurity(cases)
+	impurityDecrease = 0.0
 	switch f.Numerical {
 	case true:
 		s = &Splitter{f.Name, true, 0.0, nil, nil}
 		sortableCases := SortableFeature{f, cases}
 		sort.Sort(sortableCases)
-		for _, i := range sortableCases.Cases {
-			l := sortableCases.Cases[:i]
-			r := sortableCases.Cases[i:]
-			//BUG(ryan) is this the proper way to combine impurities??
-			innerimp := (target.Impurity(l) + target.Impurity(r)) / 2.0
-			if innerimp < impurity {
-				impurity = innerimp
+		for i := 1; i < len(sortableCases.Cases)-1; i++ {
+			left := sortableCases.Cases[:i]
+			right := sortableCases.Cases[i:]
+			innerimp := target.ImpurityDecrease(left, right)
+			if innerimp > impurityDecrease {
+				impurityDecrease = innerimp
 				s.Value = f.NumData[i]
 
 			}
 
 		}
 	case false:
-		//BUG(ryan) double check this is an exahustive search and make work for n > 64 (bigint?)
-		//search for nCats>10
+		/*BUG(ryan) double check this is an exahustive search to find the best combination
+		of catagories and make work for n > 64 (bigint? iterative?) search for nCats>10*/
 		nCats := len(f.Back)
 
 		useExhaustive := nCats <= maxExhaustiveCatagoires
@@ -192,9 +186,13 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 				innerSplit.Right[f.Back[i]] = true
 			}
 			left, right := innerSplit.SplitCat(f, cases)
-			innerimp := (target.Impurity(left) + target.Impurity(right)) / 2.0
-			if innerimp < impurity {
-				impurity = innerimp
+			//skip cases where the split didn't do any splitting
+			if len(left) == 0 || len(right) == 0 {
+				continue
+			}
+			innerimp := target.ImpurityDecrease(left, right)
+			if innerimp > impurityDecrease {
+				impurityDecrease = innerimp
 				s = &innerSplit
 
 			}
@@ -205,17 +203,29 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 
 }
 
-//BUG(ryan) BestSplitter not done yet...relies on stubs that only work for numeric features.
-//Find the best splitter
-func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s *Splitter) {
-	//BUG(ryan) generate canidate features randomly or accept list of canidates
-	canidates := make([]int, 0)
-	bestImpurity := target.Impurity(cases)
+/* Impurity Decrease calculates the decrease in impurity by spliting into the specified left and right
+groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
+and i(tl) i(tR) are the left and right impurites.
+*/
+func (target *Feature) ImpurityDecrease(l []int, r []int) (impurityDecrease float64) {
+	nl := float64(len(l))
+	nr := float64(len(r))
+	impurityDecrease = nl * target.Impurity(l)
+	impurityDecrease += nr * target.Impurity(r)
+	impurityDecrease /= nl + nr
+	return
+}
 
-	for index, i := range canidates {
-		splitter, impurity := fm.Data[i].BestSplit(target, cases)
-		if index == 0 || impurity < bestImpurity {
-			bestImpurity = impurity
+/*
+BestSplitter finds the best splitter from a number of canidate features to 
+slit on by looping over all features and calling BestSplit */
+func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []int) (s *Splitter, impurityDecrease float64) {
+	impurityDecrease = 0.0
+
+	for _, i := range canidates {
+		splitter, inerImp := fm.Data[i].BestSplit(target, cases)
+		if inerImp > impurityDecrease {
+			impurityDecrease = inerImp
 			s = splitter
 		}
 
@@ -228,7 +238,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, mTry int) (s
 func (target *Feature) Impurity(cases []int) (e float64) {
 	switch target.Numerical {
 	case true:
-		//BUG(ryan) is this the right way to calculate impurity for numericals???
+		//BUG(ryan) is RMS vs the Mean the right definition of impurity for numerical groups?
 		m := target.Mean(cases)
 		e = target.RMS(cases, m)
 	case false:

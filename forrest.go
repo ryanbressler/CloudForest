@@ -2,8 +2,10 @@ package CloudForest
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -19,9 +21,18 @@ type Forest struct {
 }
 
 //BUG(ryan) GrowRandomForest is a stub... need to decide what all paramters to expose and then implment using Tree.Grow
-func GrowRandomForest(fm *FeatureMatrix, target *Feature, cases []int, nSamples int, mTry int, nTrees int, leafSize int) (f *Forest) {
+func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int, nTrees int, leafSize int) (f *Forest) {
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
+
 	for i := 0; i < nTrees; i++ {
+		//sample nCases case with replacment
+		//BUG...abstract randdom sampleing and make sure it is good enough
+		cases := make([]int, 0, nSamples)
+		nCases := len(fm.Data[0].Missing)
+		for i := 0; i < nSamples; i++ {
+			cases = append(cases, rand.Intn(nCases))
+		}
+
 		f.Trees = append(f.Trees, &Tree{&Node{nil, nil, "", nil}})
 		f.Trees[i].Grow(fm, target, cases, mTry, leafSize)
 	}
@@ -40,7 +51,12 @@ Start of an example file:
 	NODE=*R,PRED=1
 
 Node should be a path the form *LRL where * indicates the root L and R indicate Left and Right.*/
-func SavePredictor(f *Forest, w io.Writer) {
+func (f *Forest) SavePredictor(w io.Writer) {
+	fmt.Fprintf(w, "FORREST=RF,TARGET=%v,NTREES=%v\n", f.Target, len(f.Trees))
+	for i, t := range f.Trees {
+		fmt.Fprintf(w, "TREE=%v\n", i)
+		t.Root.Write(w, "*")
+	}
 
 }
 

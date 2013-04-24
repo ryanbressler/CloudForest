@@ -1,6 +1,8 @@
 package CloudForest
 
-import ()
+import (
+	"math/rand"
+)
 
 //Tree represents a single decision tree.
 type Tree struct {
@@ -40,19 +42,25 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 
 }
 
-//BUG(ryan) not done yet ... just wires together some stubs like BestSplitte
-//Grow the tree as a random forest tree
+/*BUG(ryan) ... needs to terminate based on paramaters and cutoffs
+Grow grows the reciever as a random forest tree through recursion. It should be called on a tree with
+only a root node.*/
 func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, leafSize int) {
 	t.Root.Recurse(func(n *Node, cases []int) {
+
 		if leafSize < len(cases) {
-			best := target.BestSplitter(fm, cases, mTry)
-			//BUG(ryan): see if split is good enough
-			//not a leaf node so define the spliter and left and right nodes
-			//so recursion will continue
-			n.Splitter = best
-			n.Left = new(Node)
-			n.Right = new(Node)
-			return
+			//BUG Tree.Grow is using a stupid way to sample canidate features
+			canidates := rand.Perm(len(fm.Data))[:mTry]
+			best, impDec := target.BestSplitter(fm, cases, canidates)
+			//BUG(ryan): Verify 0.0 impurity decrease cutoff in Tree.Grow
+			if impDec > 0.0 {
+				//not a leaf node so define the spliter and left and right nodes
+				//so recursion will continue
+				n.Splitter = best
+				n.Left = new(Node)
+				n.Right = new(Node)
+				return
+			}
 		}
 
 		//Leaf node so find the predictive value and set it in n.Pred
