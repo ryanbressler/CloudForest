@@ -119,6 +119,10 @@ This implementation follows Brieman's implementation and the R/Matlab implementa
 based on it use exsaustive search overfor when there are less thatn 25/10 catagories 
 and random splits above that.
 
+Outstanding Issues:
+Not handeling missing values:
+Duplicates in numeric features not handled well.
+
 */
 func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurityDecrease float64) {
 
