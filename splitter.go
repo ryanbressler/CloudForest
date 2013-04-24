@@ -53,7 +53,7 @@ func (s *Splitter) DescribeMap(input map[string]bool) string {
 	for k := range input {
 		keys = append(keys, k)
 	}
-	return "\"" + strings.Join(keys, "\",\"") + "\""
+	return "\"" + strings.Join(keys, ":") + "\""
 }
 
 func (s *Splitter) SplitCat(f *Feature, cases []int) (l []int, r []int) {

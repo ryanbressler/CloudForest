@@ -109,6 +109,18 @@ func ParseFeature(record []string, capacity int) Feature {
 
 }
 
+//FilterMissing removes cases for which the feature has no data
+func (f *Feature) FilterMissing(cases []int) (filtered []int) {
+	filtered = make([]int, 0, len(cases))
+
+	for _, i := range cases {
+		if !f.Missing[i] {
+			filtered = append(filtered, i)
+		}
+	}
+	return
+}
+
 /*BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
 the specified target and cases it returns a Splitter and the decrease in impurity
 
@@ -118,27 +130,27 @@ single best catagory, and finds the best catagory to add on each iteration.
 This implementation follows Brieman's implementation and the R/Matlab implementations 
 based on it use exsaustive search overfor when there are less thatn 25/10 catagories 
 and random splits above that.
-
-Outstanding Issues:
-Not handeling missing values:
-Duplicates in numeric features not handled well.
-
 */
 func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurityDecrease float64) {
-
+	//BUG() Is removing the missing cases in BestSplit the right thing to do?
+	filteredcases := f.FilterMissing(cases)
 	impurityDecrease = 0.0
 	switch f.Numerical {
 	case true:
-		s = &Splitter{f.Name, true, 0.0, nil, nil}
-		sortableCases := SortableFeature{f, cases}
+		//BUG need to loop over unique values not all values or bad things happen
+		sortableCases := SortableFeature{f, filteredcases}
 		sort.Sort(sortableCases)
 		for i := 1; i < len(sortableCases.Cases)-1; i++ {
+			//skip cases where the next sorted case has the same value as these can't be split on
+			if f.NumData[sortableCases.Cases[i]] == f.NumData[sortableCases.Cases[i+1]] {
+				continue
+			}
 			left := sortableCases.Cases[:i]
 			right := sortableCases.Cases[i:]
 			innerimp := target.ImpurityDecrease(left, right)
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
-				s.Value = f.NumData[i]
+				s = &Splitter{f.Name, true, f.NumData[sortableCases.Cases[i]], nil, nil}
 
 			}
 
@@ -189,8 +201,8 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 			for _, i := range r {
 				innerSplit.Right[f.Back[i]] = true
 			}
-			left, right := innerSplit.SplitCat(f, cases)
-			//skip cases where the split didn't do any splitting
+			left, right := innerSplit.SplitCat(f, filteredcases)
+			//skip filteredcases where the split didn't do any splitting
 			if len(left) == 0 || len(right) == 0 {
 				continue
 			}
@@ -297,6 +309,9 @@ func (target *Feature) RMS(cases []int, predicted float64) (e float64) {
 
 //Mean returns the mean of the feature for the cases specified 
 func (target *Feature) Mean(cases []int) (m float64) {
+	if len(cases) == 0 {
+		fmt.Println("Finding mean of zero cases.")
+	}
 	m = 0.0
 	n := 0
 	for _, i := range cases {

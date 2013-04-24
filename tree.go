@@ -42,35 +42,55 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 
 }
 
-/*BUG(ryan) ... needs to terminate based on paramaters and cutoffs
-Grow grows the reciever as a random forest tree through recursion. It should be called on a tree with
-only a root node.*/
-func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, leafSize int) {
-	t.Root.Recurse(func(n *Node, cases []int) {
+/*
+tree.Grow grows the reciever tree through recursion. It uses impurity decrease to selct spliters at
+each node as in Brieman's Random Forest. It should be called on a tree with only a root node defined.
 
-		if leafSize < len(cases) {
+fm is a feature matrix of training data.
+
+target is the feature to predict via regression or classification as determined by feature type. 
+
+cases specifies the cases to calculate impurity decrease over and can contain repeated values
+to allow for sampeling of cases with replacment as in RF.
+
+mTry specifies the number of canidate features to evaluate for each split.
+
+leafSize specifies the minimum number of cases at a leafNode.
+*/
+func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, leafSize int) {
+	t.Root.Recurse(func(n *Node, innercases []int) {
+
+		if leafSize < len(innercases) {
 			//BUG Tree.Grow is using a stupid way to sample canidate features
-			canidates := rand.Perm(len(fm.Data))[:mTry]
-			best, impDec := target.BestSplitter(fm, cases, canidates)
-			//BUG(ryan): Verify 0.0 impurity decrease cutoff in Tree.Grow
-			if impDec > 0.0 {
+			randomFeatures := rand.Perm(len(fm.Data))
+			canidates := make([]int, 0, mTry)
+			targeti := fm.Map[target.Name]
+			for i := 0; len(canidates) < mTry; i++ {
+				if randomFeatures[i] != targeti {
+					canidates = append(canidates, randomFeatures[i])
+				}
+			}
+
+			best, impDec := target.BestSplitter(fm, innercases, canidates)
+			//BUG(ryan): Verify impurity decrease cutoff in Tree.Grow
+			if best != nil && impDec > 0.0000001 {
 				//not a leaf node so define the spliter and left and right nodes
 				//so recursion will continue
 				n.Splitter = best
-				n.Left = new(Node)
-				n.Right = new(Node)
+				n.Left = &Node{nil, nil, "", nil}
+				n.Right = &Node{nil, nil, "", nil}
 				return
 			}
 		}
 
 		//Leaf node so find the predictive value and set it in n.Pred
-		n.Pred = target.FindPredicted(cases)
+		n.Splitter = nil
+		n.Pred = target.FindPredicted(innercases)
 
 	}, fm, cases)
 }
 
-//BUG(Dick): only works for numerical data???
-//Returns the arrays of all spliters of a tree.
+//GetSplits returns the arrays of all Numeric spliters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
 	ncases := len(fm.Data[0].Missing) // grab the number of samples for the first feature

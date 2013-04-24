@@ -27,6 +27,7 @@ func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
 		//BUG...abstract randdom sampleing and make sure it is good enough
+		fmt.Println("Tree ", i)
 		cases := make([]int, 0, nSamples)
 		nCases := len(fm.Data[0].Missing)
 		for i := 0; i < nSamples; i++ {
@@ -52,7 +53,7 @@ Start of an example file:
 
 Node should be a path the form *LRL where * indicates the root L and R indicate Left and Right.*/
 func (f *Forest) SavePredictor(w io.Writer) {
-	fmt.Fprintf(w, "FORREST=RF,TARGET=%v,NTREES=%v\n", f.Target, len(f.Trees))
+	fmt.Fprintf(w, "FOREST=RF,TARGET=%v,NTREES=%v\n", f.Target, len(f.Trees))
 	for i, t := range f.Trees {
 		fmt.Fprintf(w, "TREE=%v\n", i)
 		t.Root.Write(w, "*")
@@ -94,7 +95,10 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 		case strings.HasPrefix(line, "NODE"):
 			var splitter *Splitter
 
-			pred := parsed["PRED"]
+			pred := ""
+			if filepred, ok := parsed["PRED"]; ok {
+				pred = filepred
+			}
 
 			if stype, ok := parsed["SPLITTERTYPE"]; ok {
 				splitter = new(Splitter)
@@ -164,6 +168,9 @@ func ParseRfAcePredictorLine(line string) map[string]string {
 		vs := strings.Split(clause, "=")
 		for i, v := range vs {
 			vs[i] = strings.Trim(strings.TrimSpace(v), "\"")
+		}
+		if len(vs) != 2 {
+			fmt.Println("Parser Choked on : \"", line, "\"")
 		}
 		parsed[vs[0]] = vs[1]
 	}
