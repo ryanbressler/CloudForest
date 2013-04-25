@@ -209,23 +209,36 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 	left := *l
 	right := *r
 	bestSplit := 0.0
+
 	sortableCases := SortableFeature{f, *cases}
 	sort.Sort(sortableCases)
 	for i := 1; i < len(sortableCases.Cases)-1; i++ {
+		c := sortableCases.Cases[i]
 		//skip cases where the next sorted case has the same value as these can't be split on
-		if f.Missing[sortableCases.Cases[i]] == true || f.NumData[sortableCases.Cases[i]] == f.NumData[sortableCases.Cases[i+1]] {
+		if f.Missing[c] == true || f.NumData[c] == f.NumData[sortableCases.Cases[i+1]] {
 			continue
 		}
-		innerSplit := &Splitter{f.Name, true, f.NumData[sortableCases.Cases[i]], nil, nil}
+
+		//innerSplit := &Splitter{f.Name, true, f.NumData[c], nil, nil}
 		left = left[0:0]
 		right = right[0:0]
-		innerSplit.SplitNum(f, cases, &left, &right)
-		//inline the below to avoid realocating counters for gini impurity
+		for _, j := range sortableCases.Cases[:i] {
+			if f.Missing[j] == false {
+				left = append(left, j)
+			}
+		}
+		for _, j := range sortableCases.Cases[i:] {
+			if f.Missing[j] == false {
+				right = append(right, j)
+			}
+		}
+		//innerSplit.SplitNum(f, cases, &left, &right)
+
 		innerimp := target.ImpurityDecrease(&left, &right, counter)
 
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
-			bestSplit = f.NumData[sortableCases.Cases[i]]
+			bestSplit = f.NumData[c]
 
 		}
 

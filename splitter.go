@@ -49,10 +49,9 @@ func (s *Splitter) DescribeMap(input map[string]bool) string {
 func (s *Splitter) SplitNum(f *Feature, cases *[]int, l *[]int, r *[]int) {
 	for _, i := range *cases {
 		if f.Missing[i] == false {
-			switch {
-			case f.NumData[i] <= s.Value:
+			if f.NumData[i] <= s.Value {
 				*l = append(*l, i)
-			default:
+			} else {
 				*r = append(*r, i)
 			}
 		}
@@ -70,10 +69,9 @@ func (s *Splitter) SplitCat(f *Feature, cases *[]int, l *[]int, r *[]int) {
 		if f.Missing[i] == false {
 
 			v := f.Back[f.CatData[i]]
-			switch {
-			case s.Left[v]:
+			if s.Left[v] {
 				*l = append(*l, i)
-			default:
+			} else {
 				*r = append(*r, i)
 			}
 		}
