@@ -124,7 +124,7 @@ Searching is implmented via bitwise oporations vs an incrementing or random inte
 but will currentlly only work when there are less catagories then the number of bits in an
 int.
 */
-func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int) (s *Splitter, impurityDecrease float64) {
+func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (s *Splitter, impurityDecrease float64) {
 	impurityDecrease = 0.0
 	left := *l
 	right := *r
@@ -177,7 +177,7 @@ func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		if len(left) == 0 || len(right) == 0 {
 			continue
 		}
-		innerimp := target.ImpurityDecrease(&left, &right)
+		innerimp := target.ImpurityDecrease(&left, &right, counter)
 		if innerimp > impurityDecrease {
 			bestSplit = bits
 			impurityDecrease = innerimp
@@ -204,7 +204,7 @@ func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 	return
 }
 
-func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int) (s *Splitter, impurityDecrease float64) {
+func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (s *Splitter, impurityDecrease float64) {
 	impurityDecrease = 0.0
 	left := *l
 	right := *r
@@ -220,7 +220,9 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		left = left[0:0]
 		right = right[0:0]
 		innerSplit.SplitNum(f, cases, &left, &right)
-		innerimp := target.ImpurityDecrease(&left, &right)
+		//inline the below to avoid realocating counters for gini impurity
+		innerimp := target.ImpurityDecrease(&left, &right, counter)
+
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
 			bestSplit = f.NumData[sortableCases.Cases[i]]
@@ -238,44 +240,63 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
 the specified target and cases it returns a Splitter and the decrease in impurity
 */
-func (f *Feature) BestSplit(target *Feature, cases *[]int, l *[]int, r *[]int) (s *Splitter, impurityDecrease float64) {
+func (f *Feature) BestSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (s *Splitter, impurityDecrease float64) {
 	//BUG() Is removing the missing cases in BestSplit the right thing to do?
 	switch f.Numerical {
 	case true:
-		s, impurityDecrease = f.BestNumSplit(target, cases, l, r)
+		s, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter)
 	case false:
-		s, impurityDecrease = f.BestCatSplit(target, cases, l, r)
+		s, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
 	}
 	return
 
 }
 
-/* Impurity Decrease calculates the decrease in impurity by spliting into the specified left and right
+/* 
+Impurity Decrease calculates the decrease in impurity by spliting into the specified left and right
 groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
 and i(tl) i(tR) are the left and right impurites.
+
+Counter is only used for catagorical targets and should have length equal to the number of catagoires. It is
+only included to avoid realocation and can be nil for non catagorical targets.
 */
-func (target *Feature) ImpurityDecrease(left *[]int, right *[]int) (impurityDecrease float64) {
+func (target *Feature) ImpurityDecrease(left *[]int, right *[]int, counter *[]int) (impurityDecrease float64) {
 	l := *left
 	r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
-	impurityDecrease = nl * target.Impurity(&l)
-	impurityDecrease += nr * target.Impurity(&r)
+	switch target.Numerical {
+	case true:
+		impurityDecrease = nl * target.NumImp(&l)
+		impurityDecrease += nr * target.NumImp(&r)
+	case false:
+		impurityDecrease = nl * target.giniWithoutAlocate(&l, counter)
+		impurityDecrease += nr * target.giniWithoutAlocate(&r, counter)
+	}
 	impurityDecrease /= nl + nr
 	return
 }
 
 /*
 BestSplitter finds the best splitter from a number of canidate features to 
-slit on by looping over all features and calling BestSplit */
+slit on by looping over all features and calling BestSplit 
+*/
 func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []int) (s *Splitter, impurityDecrease float64) {
 	impurityDecrease = 0.0
+
+	var counter []int
+
+	if target.Numerical == false {
+		counter = make([]int, len(target.Back), len(target.Back))
+	}
+
 	left := make([]int, len(cases))
 	right := make([]int, len(cases))
+
 	for _, i := range canidates {
 		left = left[:]
 		right = right[:]
-		splitter, inerImp := fm.Data[i].BestSplit(target, &cases, &left, &right)
+		splitter, inerImp := fm.Data[i].BestSplit(target, &cases, &left, &right, &counter)
 		if inerImp > impurityDecrease {
 			impurityDecrease = inerImp
 			s = splitter
@@ -300,12 +321,27 @@ func (target *Feature) Impurity(cases *[]int) (e float64) {
 
 }
 
+func (target *Feature) NumImp(cases *[]int) (e float64) {
+	m := target.Mean(cases)
+	e = target.RMS(cases, m)
+	return
+}
+
 //Gini returns the gini impurity for the specified cases in the feature
 //gini impurity is calculated as 1 - Sum(fi^2) where fi is the fraction
 //of cases in the ith catagory.
 func (target *Feature) Gini(cases *[]int) (e float64) {
 	counter := make([]int, len(target.Back))
+	e = target.giniWithoutAlocate(cases, &counter)
+	return
+}
+
+func (target *Feature) giniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
 	total := 0
+	counter := *counts
+	for i, _ := range counter {
+		counter[i] = 0
+	}
 	for _, i := range *cases {
 		if !target.Missing[i] {
 			counter[target.CatData[i]] += 1
