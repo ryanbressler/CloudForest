@@ -24,6 +24,13 @@ type Forest struct {
 func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int, nTrees int, leafSize int) (f *Forest) {
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
 
+	canidates := make([]int, 0, len(fm.Data))
+	targeti := fm.Map[target.Name]
+	for i := 0; i < len(fm.Data); i++ {
+		if i != targeti {
+			canidates = append(canidates, i)
+		}
+	}
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
 		//BUG...abstract randdom sampleing and make sure it is good enough
@@ -35,7 +42,7 @@ func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int
 		}
 
 		f.Trees = append(f.Trees, &Tree{&Node{nil, nil, "", nil}})
-		f.Trees[i].Grow(fm, target, cases, mTry, leafSize)
+		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize)
 	}
 	return
 }

@@ -62,6 +62,10 @@ func (s *Splitter) SplitNum(f *Feature, cases *[]int, l *[]int, r *[]int) {
 }
 
 func (s *Splitter) SplitCat(f *Feature, cases *[]int, l *[]int, r *[]int) {
+	/*BUG SplitCat is much slower then the splitting used in the search
+	because it uses map[string]bool representations of the left and right instead
+	of bits. This is for compatability with diffrent feature matrixes
+	as the int string corospondance is not stable.*/
 	for _, i := range *cases {
 		if f.Missing[i] == false {
 

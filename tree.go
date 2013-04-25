@@ -1,8 +1,6 @@
 package CloudForest
 
-import (
-	"math/rand"
-)
+import ()
 
 //Tree represents a single decision tree.
 type Tree struct {
@@ -57,21 +55,12 @@ mTry specifies the number of canidate features to evaluate for each split.
 
 leafSize specifies the minimum number of cases at a leafNode.
 */
-func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, mTry int, leafSize int) {
+func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, canidates []int, mTry int, leafSize int) {
 	t.Root.Recurse(func(n *Node, innercases []int) {
 
 		if leafSize < len(innercases) {
-			//BUG Tree.Grow is using a stupid way to sample canidate features
-			randomFeatures := rand.Perm(len(fm.Data))
-			canidates := make([]int, 0, mTry)
-			targeti := fm.Map[target.Name]
-			for i := 0; len(canidates) < mTry; i++ {
-				if randomFeatures[i] != targeti {
-					canidates = append(canidates, randomFeatures[i])
-				}
-			}
-
-			best, impDec := target.BestSplitter(fm, innercases, canidates)
+			SampleFirstN(&canidates, mTry)
+			best, impDec := target.BestSplitter(fm, innercases, canidates[:mTry])
 			//BUG(ryan): Verify impurity decrease cutoff in Tree.Grow
 			if best != nil && impDec > 0.0000001 {
 				//not a leaf node so define the spliter and left and right nodes

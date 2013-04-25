@@ -109,8 +109,9 @@ func ParseFeature(record []string, capacity int) Feature {
 
 }
 
-/*BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
-the specified target and cases it returns a Splitter and the decrease in impurity
+/*
+BestCatSplit should be called on a catagorical feature to find the split that minimizes impurity
+in the specified target.
 
 rf-ace finds the "best" catagorical split using a greedy method that starts with the
 single best catagory, and finds the best catagory to add on each iteration.
@@ -118,114 +119,132 @@ single best catagory, and finds the best catagory to add on each iteration.
 This implementation follows Brieman's implementation and the R/Matlab implementations 
 based on it use exsaustive search overfor when there are less thatn 25/10 catagories 
 and random splits above that.
-*/
-func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurityDecrease float64) {
-	//BUG() Is removing the missing cases in BestSplit the right thing to do?
-	impurityDecrease = 0.0
-	left := make([]int, len(cases))
-	right := make([]int, len(cases))
 
+Searching is implmented via bitwise oporations vs an incrementing or random integer for speed
+but will currentlly only work when there are less catagories then the number of bits in an
+int.
+*/
+func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int) (s *Splitter, impurityDecrease float64) {
+	impurityDecrease = 0.0
+	left := *l
+	right := *r
+	/*BUG(ryan) double check this is an exahustive search to find the best combination
+	of catagories and make work for n > 64 (bigint? iterative?) search for nCats>10
+
+	Finding the best catagorical split uses optimized code that proposes splits as
+	integers abd uses bitwise oporations to find the best split
+	*/
+	nCats := len(f.Back)
+
+	useExhaustive := nCats <= maxExhaustiveCatagoires
+	nPartitions := 1
+	if useExhaustive {
+		//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
+		nPartitions = (2 << uint(nCats-2))
+	} else {
+		//if more then the max just do the max randomly
+		nPartitions = (2 << uint(maxExhaustiveCatagoires-2))
+	}
+	var bestSplit = 0
+	//start at 1 to ingnore the set with all on one side
+	for i := 1; i < nPartitions; i++ {
+
+		bits := i
+		if !useExhaustive {
+			//generate random partition
+			bits = rand.Int()
+		}
+
+		//check the value of the j'th bit of i and
+		//send j left or right
+		left = left[0:0]
+		right = right[0:0]
+		j := 0
+		for _, c := range *cases {
+			if f.Missing[c] == false {
+				j = f.CatData[c]
+				switch 0 != (bits & (1 << uint(j))) {
+				case true:
+					left = append(left, c)
+				case false:
+					right = append(right, c)
+				}
+			}
+
+		}
+
+		//skip cases where the split didn't do any splitting
+		if len(left) == 0 || len(right) == 0 {
+			continue
+		}
+		innerimp := target.ImpurityDecrease(&left, &right)
+		if innerimp > impurityDecrease {
+			bestSplit = bits
+			impurityDecrease = innerimp
+
+		}
+
+	}
+	//Decode the best split and build a spliter from it
+	if impurityDecrease > 0.0 {
+		s = &Splitter{f.Name, false, 0.0, make(map[string]bool), make(map[string]bool)}
+
+		for j := 0; j < nCats; j++ {
+
+			switch 0 != (bestSplit & (1 << uint(j))) {
+			case true:
+				s.Left[f.Back[j]] = true
+			case false:
+				s.Right[f.Back[j]] = true
+			}
+
+		}
+
+	}
+	return
+}
+
+func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int) (s *Splitter, impurityDecrease float64) {
+	impurityDecrease = 0.0
+	left := *l
+	right := *r
+	bestSplit := 0.0
+	sortableCases := SortableFeature{f, *cases}
+	sort.Sort(sortableCases)
+	for i := 1; i < len(sortableCases.Cases)-1; i++ {
+		//skip cases where the next sorted case has the same value as these can't be split on
+		if f.Missing[sortableCases.Cases[i]] == true || f.NumData[sortableCases.Cases[i]] == f.NumData[sortableCases.Cases[i+1]] {
+			continue
+		}
+		innerSplit := &Splitter{f.Name, true, f.NumData[sortableCases.Cases[i]], nil, nil}
+		left = left[0:0]
+		right = right[0:0]
+		innerSplit.SplitNum(f, cases, &left, &right)
+		innerimp := target.ImpurityDecrease(&left, &right)
+		if innerimp > impurityDecrease {
+			impurityDecrease = innerimp
+			bestSplit = f.NumData[sortableCases.Cases[i]]
+
+		}
+
+	}
+	if impurityDecrease > 0.0 {
+		s = &Splitter{f.Name, true, bestSplit, nil, nil}
+	}
+	return
+}
+
+/*
+BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
+the specified target and cases it returns a Splitter and the decrease in impurity
+*/
+func (f *Feature) BestSplit(target *Feature, cases *[]int, l *[]int, r *[]int) (s *Splitter, impurityDecrease float64) {
+	//BUG() Is removing the missing cases in BestSplit the right thing to do?
 	switch f.Numerical {
 	case true:
-		//BUG need to loop over unique values not all values or bad things happen
-		bestSplit := 0.0
-		sortableCases := SortableFeature{f, cases}
-		sort.Sort(sortableCases)
-		for i := 1; i < len(sortableCases.Cases)-1; i++ {
-			//skip cases where the next sorted case has the same value as these can't be split on
-			if f.Missing[sortableCases.Cases[i]] == true || f.NumData[sortableCases.Cases[i]] == f.NumData[sortableCases.Cases[i+1]] {
-				continue
-			}
-			innerSplit := &Splitter{f.Name, true, f.NumData[sortableCases.Cases[i]], nil, nil}
-			left = left[0:0]
-			right = right[0:0]
-			innerSplit.SplitNum(f, &cases, &left, &right)
-			innerimp := target.ImpurityDecrease(&left, &right)
-			if innerimp > impurityDecrease {
-				impurityDecrease = innerimp
-				bestSplit = f.NumData[sortableCases.Cases[i]]
-
-			}
-
-		}
-		if impurityDecrease > 0.0 {
-			s = &Splitter{f.Name, true, bestSplit, nil, nil}
-		}
+		s, impurityDecrease = f.BestNumSplit(target, cases, l, r)
 	case false:
-		/*BUG(ryan) double check this is an exahustive search to find the best combination
-		of catagories and make work for n > 64 (bigint? iterative?) search for nCats>10
-
-		Finding the best catagorical split uses optimized code that proposes splits as
-		integers abd uses bitwise oporations to find the best split
-		*/
-		nCats := len(f.Back)
-
-		useExhaustive := nCats <= maxExhaustiveCatagoires
-		nPartitions := 1
-		if useExhaustive {
-
-			//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
-			nPartitions = (2 << uint(nCats-2))
-		} else {
-			//if more then the max just do the max randomly
-			nPartitions = (2 << uint(maxExhaustiveCatagoires-2))
-		}
-		var bestSplit = 0
-		//start at 1 to ingnore the set with all on one side
-		for i := 1; i < nPartitions; i++ {
-
-			bits := i
-			if !useExhaustive {
-				//generate random partition
-				bits = rand.Int()
-			}
-
-			//check the value of the j'th bit of i and
-			//send j left or right
-			left = left[0:0]
-			right = right[0:0]
-			j := 0
-			for _, c := range cases {
-				if f.Missing[c] == false {
-					j = f.CatData[c]
-					switch 0 != (bits & (1 << uint(j))) {
-					case true:
-						left = append(left, c)
-					case false:
-						right = append(right, c)
-					}
-				}
-
-			}
-
-			//skip cases where the split didn't do any splitting
-			if len(left) == 0 || len(right) == 0 {
-				continue
-			}
-			innerimp := target.ImpurityDecrease(&left, &right)
-			if innerimp > impurityDecrease {
-				bestSplit = bits
-				impurityDecrease = innerimp
-
-			}
-
-		}
-		//Decode the best split and build a spliter from it
-		if impurityDecrease > 0.0 {
-			s = &Splitter{f.Name, false, 0.0, make(map[string]bool), make(map[string]bool)}
-
-			for j := 0; j < nCats; j++ {
-
-				switch 0 != (bestSplit & (1 << uint(j))) {
-				case true:
-					s.Left[f.Back[j]] = true
-				case false:
-					s.Right[f.Back[j]] = true
-				}
-
-			}
-
-		}
+		s, impurityDecrease = f.BestCatSplit(target, cases, l, r)
 	}
 	return
 
@@ -251,9 +270,12 @@ BestSplitter finds the best splitter from a number of canidate features to
 slit on by looping over all features and calling BestSplit */
 func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []int) (s *Splitter, impurityDecrease float64) {
 	impurityDecrease = 0.0
-
+	left := make([]int, len(cases))
+	right := make([]int, len(cases))
 	for _, i := range canidates {
-		splitter, inerImp := fm.Data[i].BestSplit(target, cases)
+		left = left[:]
+		right = right[:]
+		splitter, inerImp := fm.Data[i].BestSplit(target, &cases, &left, &right)
 		if inerImp > impurityDecrease {
 			impurityDecrease = inerImp
 			s = splitter

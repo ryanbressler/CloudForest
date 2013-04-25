@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 )
 
 type SparseCounter struct {
@@ -31,5 +32,23 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 				log.Fatal(err)
 			}
 		}
+	}
+}
+
+/*SampleFirstN insures that the first n entries in the supplied 
+"deck" []int are randomly drawn from all entries without replacment. 
+It accepts a pointer to the deck so that it can be used repeatedl on
+the same deck avoiding realocations.*/
+func SampleFirstN(deck *[]int, n int) {
+	cards := *deck
+	length := len(cards)
+	old := 0
+	randi := 0
+	for i := 0; i < n; i++ {
+		old = cards[i]
+		randi = i + rand.Intn(length-i)
+		cards[i] = cards[randi]
+		cards[randi] = old
+
 	}
 }
