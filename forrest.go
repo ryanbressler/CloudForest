@@ -20,7 +20,7 @@ type Forest struct {
 	Trees []*Tree
 }
 
-//BUG(ryan) GrowRandomForest is a stub... need to decide what all paramters to expose and then implment using Tree.Grow
+//GrowRandomForest grows a forest.
 func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int, nTrees int, leafSize int) (f *Forest) {
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
 
