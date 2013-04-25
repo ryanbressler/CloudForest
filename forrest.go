@@ -160,15 +160,23 @@ func ParseRfAcePredictorLine(line string) map[string]string {
 	for _, term := range terms {
 		term = strings.TrimSpace(term)
 		quotes := strings.Count(term, "\"")
+		//if quotes have been opend join terms
 		if quotes == 1 || len(insidequotes) > 0 {
 			insidequotes = append(insidequotes, term)
 		} else {
-			clauses = append(clauses, term)
+			//If the term doesn't have an = in it join it to the last term
+			if strings.Count(term, "=") == 0 {
+				clauses[len(clauses)-1] += "," + term
+			} else {
+				clauses = append(clauses, term)
+			}
 		}
+		//quotes were closed
 		if quotes == 1 && len(insidequotes) > 1 {
 			clauses = append(clauses, strings.Join(insidequotes, ","))
 			insidequotes = make([]string, 0)
 		}
+
 	}
 	parsed := make(map[string]string, 0)
 	for _, clause := range clauses {
