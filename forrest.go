@@ -47,8 +47,7 @@ func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int
 	return
 }
 
-/*BUG(Kalle?) SavePredictor is a stub.
-The forest will be in rf-ace's "stoicastic forest" sf format
+/*SavePredictor save's a fprest in rf-ace's "stoicastic forest" sf format
 It won't include fields that are not use by cloud forest.
 Start of an example file:
 

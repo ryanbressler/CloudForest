@@ -46,6 +46,8 @@ func (s *Splitter) DescribeMap(input map[string]bool) string {
 	return "\"" + strings.Join(keys, ":") + "\""
 }
 
+//SplitNum is a low level fuction that splits the supplied cases into the supplied
+//left and right *[]ints which should be empty when SplitNum is called.
 func (s *Splitter) SplitNum(f *Feature, cases *[]int, l *[]int, r *[]int) {
 	for _, i := range *cases {
 		if f.Missing[i] == false {

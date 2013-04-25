@@ -35,10 +35,12 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 	}
 }
 
-/*SampleFirstN insures that the first n entries in the supplied 
+/*
+SampleFirstN insures that the first n entries in the supplied 
 "deck" []int are randomly drawn from all entries without replacment. 
 It accepts a pointer to the deck so that it can be used repeatedl on
-the same deck avoiding realocations.*/
+the same deck avoiding realocations.
+*/
 func SampleFirstN(deck *[]int, n int) {
 	cards := *deck
 	length := len(cards)
