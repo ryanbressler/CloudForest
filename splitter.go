@@ -69,7 +69,7 @@ func (s *Splitter) SplitCat(f *Feature, cases *[]int, l *[]int, r *[]int) {
 			switch {
 			case s.Left[v]:
 				*l = append(*l, i)
-			case s.Right[v]:
+			default:
 				*r = append(*r, i)
 			}
 		}

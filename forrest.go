@@ -27,7 +27,7 @@ func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
 		//BUG...abstract randdom sampleing and make sure it is good enough
-		fmt.Println("Tree ", i)
+		//fmt.Println("Tree ", i)
 		cases := make([]int, 0, nSamples)
 		nCases := len(fm.Data[0].Missing)
 		for i := 0; i < nSamples; i++ {

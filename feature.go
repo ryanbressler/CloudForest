@@ -128,6 +128,7 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 	switch f.Numerical {
 	case true:
 		//BUG need to loop over unique values not all values or bad things happen
+		bestSplit := 0.0
 		sortableCases := SortableFeature{f, cases}
 		sort.Sort(sortableCases)
 		for i := 1; i < len(sortableCases.Cases)-1; i++ {
@@ -139,17 +140,24 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 			left = left[0:0]
 			right = right[0:0]
 			innerSplit.SplitNum(f, &cases, &left, &right)
-			innerimp := target.ImpurityDecrease(left, right)
+			innerimp := target.ImpurityDecrease(&left, &right)
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
-				s = &Splitter{f.Name, true, f.NumData[sortableCases.Cases[i]], nil, nil}
+				bestSplit = f.NumData[sortableCases.Cases[i]]
 
 			}
 
 		}
+		if impurityDecrease > 0.0 {
+			s = &Splitter{f.Name, true, bestSplit, nil, nil}
+		}
 	case false:
 		/*BUG(ryan) double check this is an exahustive search to find the best combination
-		of catagories and make work for n > 64 (bigint? iterative?) search for nCats>10*/
+		of catagories and make work for n > 64 (bigint? iterative?) search for nCats>10
+
+		Finding the best catagorical split uses optimized code that proposes splits as
+		integers abd uses bitwise oporations to find the best split
+		*/
 		nCats := len(f.Back)
 
 		useExhaustive := nCats <= maxExhaustiveCatagoires
@@ -162,10 +170,9 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 			//if more then the max just do the max randomly
 			nPartitions = (2 << uint(maxExhaustiveCatagoires-2))
 		}
+		var bestSplit = 0
 		//start at 1 to ingnore the set with all on one side
 		for i := 1; i < nPartitions; i++ {
-			l := make([]int, 0)
-			r := make([]int, 0)
 
 			bits := i
 			if !useExhaustive {
@@ -175,34 +182,46 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 
 			//check the value of the j'th bit of i and
 			//send j left or right
-			for j := 0; j < nCats; j++ {
-
-				switch 0 != (bits & (1 << uint(j))) {
-				case true:
-					l = append(l, j)
-				case false:
-					r = append(r, j)
+			left = left[0:0]
+			right = right[0:0]
+			j := 0
+			for _, c := range cases {
+				if f.Missing[c] == false {
+					j = f.CatData[c]
+					switch 0 != (bits & (1 << uint(j))) {
+					case true:
+						left = append(left, c)
+					case false:
+						right = append(right, c)
+					}
 				}
 
 			}
-			//build a catagorical spliter and check
-			innerSplit := Splitter{f.Name, false, 0.0, make(map[string]bool), make(map[string]bool)}
-			for _, i := range l {
-				innerSplit.Left[f.Back[i]] = true
-			}
-			for _, i := range r {
-				innerSplit.Right[f.Back[i]] = true
-			}
-			right = right[0:0]
-			innerSplit.SplitCat(f, &cases, &left, &right)
+
 			//skip cases where the split didn't do any splitting
 			if len(left) == 0 || len(right) == 0 {
 				continue
 			}
-			innerimp := target.ImpurityDecrease(left, right)
+			innerimp := target.ImpurityDecrease(&left, &right)
 			if innerimp > impurityDecrease {
+				bestSplit = bits
 				impurityDecrease = innerimp
-				s = &innerSplit
+
+			}
+
+		}
+		//Decode the best split and build a spliter from it
+		if impurityDecrease > 0.0 {
+			s = &Splitter{f.Name, false, 0.0, make(map[string]bool), make(map[string]bool)}
+
+			for j := 0; j < nCats; j++ {
+
+				switch 0 != (bestSplit & (1 << uint(j))) {
+				case true:
+					s.Left[f.Back[j]] = true
+				case false:
+					s.Right[f.Back[j]] = true
+				}
 
 			}
 
@@ -216,11 +235,13 @@ func (f *Feature) BestSplit(target *Feature, cases []int) (s *Splitter, impurity
 groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
 and i(tl) i(tR) are the left and right impurites.
 */
-func (target *Feature) ImpurityDecrease(l []int, r []int) (impurityDecrease float64) {
+func (target *Feature) ImpurityDecrease(left *[]int, right *[]int) (impurityDecrease float64) {
+	l := *left
+	r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
-	impurityDecrease = nl * target.Impurity(l)
-	impurityDecrease += nr * target.Impurity(r)
+	impurityDecrease = nl * target.Impurity(&l)
+	impurityDecrease += nr * target.Impurity(&r)
 	impurityDecrease /= nl + nr
 	return
 }
@@ -244,7 +265,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []
 
 //Impurity returns Gini impurity or RMS vs the mean for a set of cases
 //depending on weather the feature is catagorical or numerical
-func (target *Feature) Impurity(cases []int) (e float64) {
+func (target *Feature) Impurity(cases *[]int) (e float64) {
 	switch target.Numerical {
 	case true:
 		//BUG(ryan) is RMS vs the Mean the right definition of impurity for numerical groups?
@@ -260,17 +281,12 @@ func (target *Feature) Impurity(cases []int) (e float64) {
 //Gini returns the gini impurity for the specified cases in the feature
 //gini impurity is calculated as 1 - Sum(fi^2) where fi is the fraction
 //of cases in the ith catagory.
-func (target *Feature) Gini(cases []int) (e float64) {
-	counter := make(map[int]int)
+func (target *Feature) Gini(cases *[]int) (e float64) {
+	counter := make([]int, len(target.Back))
 	total := 0
-	for _, i := range cases {
+	for _, i := range *cases {
 		if !target.Missing[i] {
-			v := target.CatData[i]
-			if _, ok := counter[v]; !ok {
-				counter[v] = 0
-
-			}
-			counter[v] = counter[v] + 1
+			counter[target.CatData[i]] += 1
 			total += 1
 		}
 	}
@@ -284,10 +300,10 @@ func (target *Feature) Gini(cases []int) (e float64) {
 
 //RMS returns the Root Mean Square error of the cases specifed vs the predicted
 //value
-func (target *Feature) RMS(cases []int, predicted float64) (e float64) {
+func (target *Feature) RMS(cases *[]int, predicted float64) (e float64) {
 	e = 0.0
 	n := 0
-	for _, i := range cases {
+	for _, i := range *cases {
 		if !target.Missing[i] {
 			d := predicted - target.NumData[i]
 			e += d * d
@@ -301,13 +317,10 @@ func (target *Feature) RMS(cases []int, predicted float64) (e float64) {
 }
 
 //Mean returns the mean of the feature for the cases specified 
-func (target *Feature) Mean(cases []int) (m float64) {
-	if len(cases) == 0 {
-		fmt.Println("Finding mean of zero cases.")
-	}
+func (target *Feature) Mean(cases *[]int) (m float64) {
 	m = 0.0
 	n := 0
-	for _, i := range cases {
+	for _, i := range *cases {
 		if !target.Missing[i] {
 			m += target.NumData[i]
 			n += 1
@@ -326,25 +339,21 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 	switch f.Numerical {
 	case true:
 		//numerical
-		pred = fmt.Sprintf("%v", f.Mean(cases))
+		pred = fmt.Sprintf("%v", f.Mean(&cases))
 
 	case false:
 		//catagorical
-		m := make(map[string]int)
+		m := make([]int, len(f.Back))
 		for _, i := range cases {
 			if !f.Missing[i] {
-				v := f.Back[f.CatData[i]]
-				if _, ok := m[v]; !ok {
-					m[v] = 0
-				}
-				m[v] += 1
+				m[f.CatData[i]] += 1
 			}
 
 		}
 		max := 0
 		for k, v := range m {
 			if v > max {
-				pred = k
+				pred = f.Back[k]
 				max = v
 			}
 		}
