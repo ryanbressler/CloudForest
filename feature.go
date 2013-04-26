@@ -186,14 +186,14 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[
 
 				}
 			}
-			if innerImp > impurityDecrease {
-				bestSplit = innerSplit
-				impurityDecrease = innerImp
 
-			} else {
-				break
-			}
+		}
+		if innerImp > impurityDecrease {
+			bestSplit = innerSplit
+			impurityDecrease = innerImp
 
+		} else {
+			break
 		}
 
 	}
