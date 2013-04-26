@@ -2,9 +2,11 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/ryanbressler/CloudForest"
 	"log"
 	"math"
+	"math/rand"
 	"os"
 	"runtime/pprof"
 )
@@ -30,6 +32,10 @@ func main() {
 	flag.IntVar(&mTry, "mTry", 0, "Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.")
 
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
+	var itter bool
+	flag.BoolVar(&itter, "itterative", false, "Use an iterative instead of exahustive search for splitting catagorical variables.")
+
 	flag.Parse()
 
 	if *cpuprofile != "" {
@@ -66,14 +72,38 @@ func main() {
 			leafSize = 1
 		}
 	}
-	//create output file now to make sure it is writeable before doing long computations. 
+	//create output file now to make sure it is writeable before doing long computations.
 	forestfile, err := os.Create(*rf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer forestfile.Close()
+	fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
 
-	forrest := CloudForest.GrowRandomForest(data, target, nSamples, mTry, nTrees, leafSize)
-	forrest.SavePredictor(forestfile)
+	canidates := make([]int, 0, len(data.Data))
+	targeti := data.Map[target.Name]
+	for i := 0; i < len(data.Data); i++ {
+		if i != targeti {
+			canidates = append(canidates, i)
+		}
+	}
+	tree := &CloudForest.Tree{&CloudForest.Node{nil, nil, "", nil}}
+	cases := make([]int, 0, nSamples)
+	for i := 0; i < nTrees; i++ {
+		//sample nCases case with replacment
+		//BUG...abstract randdom sampleing and make sure it is good enough
+		//fmt.Println("Tree ", i)
+		cases = cases[0:0]
+		nCases := len(data.Data[0].Missing)
+		for i := 0; i < nSamples; i++ {
+			cases = append(cases, rand.Intn(nCases))
+		}
+
+		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter)
+		fmt.Fprintf(forestfile, "TREE=%v\n", i)
+		tree.Root.Write(forestfile, "*")
+	}
+	/*forrest := CloudForest.GrowRandomForest(data, target, nSamples, mTry, nTrees, leafSize, itter)
+	forrest.SavePredictor(forestfile)*/
 }

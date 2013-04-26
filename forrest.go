@@ -21,7 +21,14 @@ type Forest struct {
 }
 
 //GrowRandomForest grows a forest.
-func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int, nTrees int, leafSize int) (f *Forest) {
+func GrowRandomForest(fm *FeatureMatrix,
+	target *Feature,
+	nSamples int,
+	mTry int,
+	nTrees int,
+	leafSize int,
+	itter bool) (f *Forest) {
+
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
 
 	canidates := make([]int, 0, len(fm.Data))
@@ -42,7 +49,7 @@ func GrowRandomForest(fm *FeatureMatrix, target *Feature, nSamples int, mTry int
 		}
 
 		f.Trees = append(f.Trees, &Tree{&Node{nil, nil, "", nil}})
-		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize)
+		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter)
 	}
 	return
 }

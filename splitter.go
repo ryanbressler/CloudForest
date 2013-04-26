@@ -5,7 +5,7 @@ import (
 )
 
 //Splitter contains fields that can be used to cases by a single feature. The split
-//can be either numerical in which case it is defined by the Value field or 
+//can be either numerical in which case it is defined by the Value field or
 //catagorical in which case it is defined by the Left and Right fields.
 type Splitter struct {
 	Feature   string
@@ -19,7 +19,7 @@ type Splitter struct {
 //Splitter.Split seperates cases []int using the data in fm *FeatureMatrix
 //and returns left and right []ints.
 //It applies either a Numerical or Catagorical split. In the Numerical case
-//everything <= to Value is sent left; for the Catagorical case a look up 
+//everything <= to Value is sent left; for the Catagorical case a look up
 //table is used.
 func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int) {
 	l = make([]int, 0)
@@ -66,10 +66,11 @@ func (s *Splitter) SplitCat(f *Feature, cases *[]int, l *[]int, r *[]int) {
 	because it uses map[string]bool representations of the left and right instead
 	of bits. This is for compatability with diffrent feature matrixes
 	as the int string corospondance is not stable.*/
+	v := ""
 	for _, i := range *cases {
-		if f.Missing[i] == false {
 
-			v := f.Back[f.CatData[i]]
+		if f.Missing[i] == false {
+			v = f.Back[f.CatData[i]]
 			if s.Left[v] {
 				*l = append(*l, i)
 			} else {

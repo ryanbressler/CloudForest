@@ -55,12 +55,18 @@ mTry specifies the number of canidate features to evaluate for each split.
 
 leafSize specifies the minimum number of cases at a leafNode.
 */
-func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, canidates []int, mTry int, leafSize int) {
+func (t *Tree) Grow(fm *FeatureMatrix,
+	target *Feature,
+	cases []int,
+	canidates []int,
+	mTry int,
+	leafSize int,
+	itter bool) {
 	t.Root.Recurse(func(n *Node, innercases []int) {
 
 		if leafSize < len(innercases) {
 			SampleFirstN(&canidates, mTry)
-			best, impDec := target.BestSplitter(fm, innercases, canidates[:mTry])
+			best, impDec := target.BestSplitter(fm, innercases, canidates[:mTry], itter)
 			//BUG(ryan): Verify impurity decrease cutoff in Tree.Grow
 			if best != nil && impDec > minImp {
 				//not a leaf node so define the spliter and left and right nodes
@@ -92,7 +98,10 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 		//if we're on a splitting node
 		if fbycase != nil && n.Splitter != nil && n.Splitter.Numerical == true {
 			//add this splitter to the list
-			splitters = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left})
+			splitters = append(splitters, Splitter{n.Splitter.Feature,
+				n.Splitter.Numerical,
+				n.Splitter.Value,
+				n.Splitter.Left})
 			f_id := n.Splitter.Feature               //get the feature at this splitter
 			f := fm.Data[fm.Map[n.Splitter.Feature]] //get the feature at this splitter
 			for _, c := range cases {                //for each case
