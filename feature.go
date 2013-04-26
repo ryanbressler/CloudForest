@@ -10,6 +10,7 @@ import (
 )
 
 const maxExhaustiveCatagoires = 10
+const minImp = 1e-18
 
 /*CatMap is for mapping catagorical values to integers.
 It contains:
@@ -23,7 +24,7 @@ type CatMap struct {
 }
 
 //CatToNum provides the Num equivelent of the provided catagorical value
-//if it allready exists or adds it to the map and returns the new value if 
+//if it allready exists or adds it to the map and returns the new value if
 //it doesn't.
 func (cm *CatMap) CatToNum(value string) (numericv int) {
 	numericv, exsists := cm.Map[value]
@@ -53,10 +54,10 @@ type Feature struct {
 	Name      string
 }
 
-//ParseFeature parses a Feature from an array of strings and a capacity 
+//ParseFeature parses a Feature from an array of strings and a capacity
 //capacity is the number of cases and will usually be len(record)-1 but
 //but doesn't need to be calculated for every row of a large file.
-//The type of the feature us infered from the start ofthe first (header) field 
+//The type of the feature us infered from the start ofthe first (header) field
 //in record:
 //"N:"" indicating numerical, anything else (usually "C:" and "B:") for catagorical
 func ParseFeature(record []string, capacity int) Feature {
@@ -116,8 +117,8 @@ in the specified target.
 rf-ace finds the "best" catagorical split using a greedy method that starts with the
 single best catagory, and finds the best catagory to add on each iteration.
 
-This implementation follows Brieman's implementation and the R/Matlab implementations 
-based on it use exsaustive search overfor when there are less thatn 25/10 catagories 
+This implementation follows Brieman's implementation and the R/Matlab implementations
+based on it use exsaustive search overfor when there are less thatn 25/10 catagories
 and random splits above that.
 
 Searching is implmented via bitwise oporations vs an incrementing or random integer for speed
@@ -131,7 +132,7 @@ l and r should have the same capacity as cases . counter is only used for catago
 should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
-	impurityDecrease = 0.0
+	impurityDecrease = minImp
 	left := *l
 	right := *r
 	/*BUG(ryan) this won't work for n > 32. Should use bigint? or iterative search for nCats>10
@@ -231,7 +232,7 @@ l and r should have the same capacity as cases . counter is only used for catago
 should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit float64, impurityDecrease float64) {
-	impurityDecrease = 0.0
+	impurityDecrease = minImp
 	left := *l
 	right := *r
 	bestSplit = 0.0
@@ -279,7 +280,7 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 }
 
 /*
-BUG(ryan) BestSplit finds the best split of the features that can be achieved using 
+BUG(ryan) BestSplit finds the best split of the features that can be achieved using
 the specified target and cases it returns a Splitter and the decrease in impurity.
 
 Pointers to slices for l and r and counter are used to reduce realocations during search
@@ -300,7 +301,7 @@ func (f *Feature) BestSplit(target *Feature, cases *[]int, l *[]int, r *[]int, c
 
 }
 
-/* 
+/*
 Impurity Decrease calculates the decrease in impurity by spliting into the specified left and right
 groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
 and i(tl) i(tR) are the left and right impurites.
@@ -329,11 +330,11 @@ func (target *Feature) ImpurityDecrease(left *[]int, right *[]int, counter *[]in
 }
 
 /*
-BestSplitter finds the best splitter from a number of canidate features to 
-slit on by looping over all features and calling BestSplit 
+BestSplitter finds the best splitter from a number of canidate features to
+slit on by looping over all features and calling BestSplit
 */
 func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []int) (s *Splitter, impurityDecrease float64) {
-	impurityDecrease = 0.0
+	impurityDecrease = minImp
 
 	var f, bestF *Feature
 	var num, bestNum, inerImp float64
@@ -361,7 +362,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []
 		}
 
 	}
-	if impurityDecrease > 0.0 {
+	if impurityDecrease > minImp {
 		s = bestF.DecodeSplit(bestNum, bestCat)
 	}
 	return
@@ -440,7 +441,7 @@ func (target *Feature) RMS(cases *[]int, predicted float64) (e float64) {
 
 }
 
-//Mean returns the mean of the feature for the cases specified 
+//Mean returns the mean of the feature for the cases specified
 func (target *Feature) Mean(cases *[]int) (m float64) {
 	m = 0.0
 	n := 0
@@ -456,7 +457,7 @@ func (target *Feature) Mean(cases *[]int) (m float64) {
 
 }
 
-//Find predicted takes the indexes of a set of cases and returns the 
+//Find predicted takes the indexes of a set of cases and returns the
 //predicted value. For catagorical features this is a string containing the
 //most common catagory and for numerical it is the mean of the values.
 func (f *Feature) FindPredicted(cases []int) (pred string) {

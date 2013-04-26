@@ -9,9 +9,9 @@ type Tree struct {
 }
 
 //AddNode adds a node a the specified path with the specivied pred value and/or
-//Splitter. Paths are specified in the same format as in rf-aces sf files, as a 
-//string of 'L' and 'R'. Nodes must be added from the root up as the case where 
-//the path specifies a node whose parent does not allready exist in the tree is 
+//Splitter. Paths are specified in the same format as in rf-aces sf files, as a
+//string of 'L' and 'R'. Nodes must be added from the root up as the case where
+//the path specifies a node whose parent does not allready exist in the tree is
 //not handled well.
 func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 	n := new(Node)
@@ -46,7 +46,7 @@ each node as in Brieman's Random Forest. It should be called on a tree with only
 
 fm is a feature matrix of training data.
 
-target is the feature to predict via regression or classification as determined by feature type. 
+target is the feature to predict via regression or classification as determined by feature type.
 
 cases specifies the cases to calculate impurity decrease over and can contain repeated values
 to allow for sampeling of cases with replacment as in RF.
@@ -62,7 +62,7 @@ func (t *Tree) Grow(fm *FeatureMatrix, target *Feature, cases []int, canidates [
 			SampleFirstN(&canidates, mTry)
 			best, impDec := target.BestSplitter(fm, innercases, canidates[:mTry])
 			//BUG(ryan): Verify impurity decrease cutoff in Tree.Grow
-			if best != nil && impDec > 0.0000001 {
+			if best != nil && impDec > minImp {
 				//not a leaf node so define the spliter and left and right nodes
 				//so recursion will continue
 				n.Splitter = best
@@ -150,7 +150,7 @@ type Leaf struct {
 
 //Tree.Vote casts a vote for the predicted value of each case in fm *FeatureMatrix.
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
-//into the same BallotBox in parralel. 
+//into the same BallotBox in parralel.
 func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
 	ncases := len(fm.Data[0].Missing)
 	cases := make([]int, 0, ncases)
