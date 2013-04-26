@@ -445,7 +445,9 @@ slit on by looping over all features and calling BestSplit
 func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	cases []int,
 	canidates []int,
-	itter bool) (s *Splitter, impurityDecrease float64) {
+	itter bool,
+	l *[]int,
+	r *[]int) (s *Splitter, impurityDecrease float64) {
 	impurityDecrease = minImp
 
 	var f, bestF *Feature
@@ -457,8 +459,8 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		counter = make([]int, len(target.Back), len(target.Back))
 	}
 
-	left := make([]int, len(cases))
-	right := make([]int, len(cases))
+	left := *l
+	right := *r
 
 	for _, i := range canidates {
 		left = left[:]

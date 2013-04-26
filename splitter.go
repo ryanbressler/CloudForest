@@ -22,8 +22,9 @@ type Splitter struct {
 //everything <= to Value is sent left; for the Catagorical case a look up
 //table is used.
 func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int) {
-	l = make([]int, 0)
-	r = make([]int, 0)
+	length := len(cases)
+	l = make([]int, 0, length)
+	r = make([]int, 0, length)
 
 	f := fm.Data[fm.Map[s.Feature]]
 
