@@ -54,8 +54,7 @@ func (n *Node) Write(w io.Writer, path string) {
 			node += fmt.Sprintf(",SPLITTERTYPE=NUMERICAL,LVALUES=%v,RVALUES=%v", n.Splitter.Value, n.Splitter.Value)
 		case false:
 			left := n.Splitter.DescribeMap(n.Splitter.Left)
-			right := n.Splitter.DescribeMap(n.Splitter.Right)
-			node += fmt.Sprintf(",SPLITTERTYPE=CATEGORICAL,LVALUES=%v,RVALUES=%v", left, right)
+			node += fmt.Sprintf(",SPLITTERTYPE=CATEGORICAL,LVALUES=%v", left)
 		}
 	}
 	fmt.Fprintln(w, node)

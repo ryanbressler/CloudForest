@@ -118,11 +118,6 @@ func ParseRfAcePredictor(input io.Reader) *Forest {
 						splitter.Left[f] = true
 					}
 
-					splitter.Right = make(map[string]bool)
-					for _, f := range strings.Split(parsed["RVALUES"], ":") {
-						splitter.Right[f] = true
-					}
-
 				case "NUMERICAL":
 					splitter.Numerical = true
 					lvalue, err := strconv.ParseFloat(parsed["LVALUES"], 64)

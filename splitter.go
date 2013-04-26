@@ -12,7 +12,6 @@ type Splitter struct {
 	Numerical bool
 	Value     float64
 	Left      map[string]bool
-	Right     map[string]bool
 }
 
 //func

@@ -130,7 +130,7 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (s *Splitter, impurityDecrease float64) {
+func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
 	impurityDecrease = 0.0
 	left := *l
 	right := *r
@@ -151,7 +151,7 @@ func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		//if more then the max we will loop max times and generate random combinations
 		nPartitions = (2 << uint(maxExhaustiveCatagoires-2))
 	}
-	var bestSplit = 0
+	bestSplit = 0
 	//start at 1 to ingnore the set with all on one side
 	for i := 1; i < nPartitions; i++ {
 
@@ -193,21 +193,26 @@ func (f *Feature) BestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		}
 
 	}
-	//Decode the best split and build a spliter from it
-	if impurityDecrease > 0.0 {
-		s = &Splitter{f.Name, false, 0.0, make(map[string]bool), make(map[string]bool)}
+
+	return
+}
+
+//Decode split builds a sliter from the numeric values returned by BestNumSplit or
+//BestCatSplit.
+func (f *Feature) DecodeSplit(num float64, cat int) (s *Splitter) {
+	if f.Numerical {
+		s = &Splitter{f.Name, true, num, nil}
+	} else {
+		nCats := len(f.Back)
+		s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
 
 		for j := 0; j < nCats; j++ {
 
-			switch 0 != (bestSplit & (1 << uint(j))) {
-			case true:
+			if 0 != (cat & (1 << uint(j))) {
 				s.Left[f.Back[j]] = true
-			case false:
-				s.Right[f.Back[j]] = true
 			}
 
 		}
-
 	}
 	return
 }
@@ -225,11 +230,11 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (s *Splitter, impurityDecrease float64) {
+func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit float64, impurityDecrease float64) {
 	impurityDecrease = 0.0
 	left := *l
 	right := *r
-	bestSplit := 0.0
+	bestSplit = 0.0
 
 	sortableCases := SortableFeature{f, *cases}
 	sort.Sort(sortableCases)
@@ -270,9 +275,6 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		}
 
 	}
-	if impurityDecrease > 0.0 {
-		s = &Splitter{f.Name, true, bestSplit, nil, nil}
-	}
 	return
 }
 
@@ -286,13 +288,13 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (s *Splitter, impurityDecrease float64) {
+func (f *Feature) BestSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestNum float64, bestCat int, impurityDecrease float64) {
 	//BUG() Is removing the missing cases in BestSplit the right thing to do?
 	switch f.Numerical {
 	case true:
-		s, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter)
 	case false:
-		s, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
+		bestCat, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
 	}
 	return
 
@@ -333,8 +335,11 @@ slit on by looping over all features and calling BestSplit
 func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []int) (s *Splitter, impurityDecrease float64) {
 	impurityDecrease = 0.0
 
-	var counter []int
+	var f, bestF *Feature
+	var num, bestNum, inerImp float64
+	var cat, bestCat int
 
+	var counter []int
 	if target.Numerical == false {
 		counter = make([]int, len(target.Back), len(target.Back))
 	}
@@ -345,12 +350,19 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix, cases []int, canidates []
 	for _, i := range canidates {
 		left = left[:]
 		right = right[:]
-		splitter, inerImp := fm.Data[i].BestSplit(target, &cases, &left, &right, &counter)
-		if inerImp > impurityDecrease {
+		f = &fm.Data[i]
+		num, cat, inerImp = f.BestSplit(target, &cases, &left, &right, &counter)
+		//BUG more stringent cutoff in BestSplitter?
+		if inerImp > 0.0 && inerImp > impurityDecrease {
+			bestF = f
 			impurityDecrease = inerImp
-			s = splitter
+			bestNum = num
+			bestCat = cat
 		}
 
+	}
+	if impurityDecrease > 0.0 {
+		s = bestF.DecodeSplit(bestNum, bestCat)
 	}
 	return
 }

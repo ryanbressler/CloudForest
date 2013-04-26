@@ -92,7 +92,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 		//if we're on a splitting node
 		if fbycase != nil && n.Splitter != nil && n.Splitter.Numerical == true {
 			//add this splitter to the list
-			splitters = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left, n.Splitter.Right})
+			splitters = append(splitters, Splitter{n.Splitter.Feature, n.Splitter.Numerical, n.Splitter.Value, n.Splitter.Left})
 			f_id := n.Splitter.Feature               //get the feature at this splitter
 			f := fm.Data[fm.Map[n.Splitter.Feature]] //get the feature at this splitter
 			for _, c := range cases {                //for each case
