@@ -67,14 +67,14 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 	t.Root.Recurse(func(n *Node, innercases []int) {
 
-		if leafSize < len(innercases) {
+		if 2*leafSize <= len(innercases) {
 			SampleFirstN(&canidates, mTry)
 			best, impDec := target.BestSplitter(fm, innercases, canidates[:mTry], itter, l, r)
-			//BUG(ryan): Verify impurity decrease cutoff in Tree.Grow
 			if best != nil && impDec > minImp {
 				//not a leaf node so define the spliter and left and right nodes
 				//so recursion will continue
 				n.Splitter = best
+				n.Pred = ""
 				n.Left = &Node{nil, nil, "", nil}
 				n.Right = &Node{nil, nil, "", nil}
 				return

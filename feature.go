@@ -10,7 +10,7 @@ import (
 )
 
 const maxExhaustiveCatagoires = 10
-const minImp = 1e-18
+const minImp = 1e-12
 
 /*CatMap is for mapping catagorical values to integers.
 It contains:
