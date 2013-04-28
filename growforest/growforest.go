@@ -90,6 +90,8 @@ func main() {
 	}
 	tree := &CloudForest.Tree{&CloudForest.Node{nil, nil, "", nil}}
 	cases := make([]int, 0, nSamples)
+	l := make([]int, 0, nSamples)
+	r := make([]int, 0, nSamples)
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
 		//BUG...abstract randdom sampleing and make sure it is good enough
@@ -100,7 +102,7 @@ func main() {
 			cases = append(cases, rand.Intn(nCases))
 		}
 
-		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter)
+		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, &l, &r)
 		fmt.Fprintf(forestfile, "TREE=%v\n", i)
 		tree.Root.Write(forestfile, "*")
 	}

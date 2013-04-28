@@ -38,6 +38,8 @@ func GrowRandomForest(fm *FeatureMatrix,
 			canidates = append(canidates, i)
 		}
 	}
+	l := make([]int, 0, nSamples)
+	r := make([]int, 0, nSamples)
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
 		//BUG...abstract randdom sampleing and make sure it is good enough
@@ -49,7 +51,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 		}
 
 		f.Trees = append(f.Trees, &Tree{&Node{nil, nil, "", nil}})
-		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter)
+		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, &l, &r)
 	}
 	return
 }
