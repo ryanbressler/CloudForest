@@ -8,7 +8,7 @@ sort.Interface interface so that the case indexes in Cases can be sorted using
 sort.Sort
 */
 type SortableFeature struct {
-	feature *Feature
+	Feature *Feature
 	Cases   []int
 }
 
@@ -19,7 +19,7 @@ func (sf SortableFeature) Len() int {
 
 //Less determines if the ith case is less then the jth case.
 func (sf SortableFeature) Less(i int, j int) bool {
-	return sf.feature.NumData[sf.Cases[i]] < sf.feature.NumData[sf.Cases[j]]
+	return sf.Feature.NumData[sf.Cases[i]] < sf.Feature.NumData[sf.Cases[j]]
 
 }
 

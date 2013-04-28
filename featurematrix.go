@@ -29,7 +29,6 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 		log.Print("Error:", err)
 		return &FeatureMatrix{data, lookup}
 	}
-	capacity := tsv.FieldsPerRecord
 
 	count := 0
 	for {
@@ -40,7 +39,7 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 			log.Print("Error:", err)
 			break
 		}
-		data = append(data, ParseFeature(record, capacity))
+		data = append(data, ParseFeature(record))
 		lookup[record[0]] = count
 		count++
 	}

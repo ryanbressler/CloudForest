@@ -60,7 +60,8 @@ type Feature struct {
 //The type of the feature us infered from the start ofthe first (header) field
 //in record:
 //"N:"" indicating numerical, anything else (usually "C:" and "B:") for catagorical
-func ParseFeature(record []string, capacity int) Feature {
+func ParseFeature(record []string) Feature {
+	capacity := len(record)
 	f := Feature{
 		&CatMap{make(map[string]int, 0),
 			make([]string, 0, 0)},
@@ -329,18 +330,20 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit float64, impurityDecrease float64) {
+func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
 	impurityDecrease = minImp
 	left := *l
 	right := *r
 	bestSplit = 0.0
 
-	sortableCases := SortableFeature{f, *cases}
-	sort.Sort(sortableCases)
-	for i := 1; i < len(sortableCases.Cases)-1; i++ {
-		c := sortableCases.Cases[i]
+	//sortableCases := SortableFeature{f, *cases}
+	sorter.Feature = f
+	sorter.Cases = *cases
+	sort.Sort(sorter)
+	for i := 1; i < len(sorter.Cases)-1; i++ {
+		c := sorter.Cases[i]
 		//skip cases where the next sorted case has the same value as these can't be split on
-		if f.Missing[c] == true || f.NumData[c] == f.NumData[sortableCases.Cases[i+1]] {
+		if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
 			continue
 		}
 
@@ -354,12 +357,12 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		*/
 		left = left[0:0]
 		right = right[0:0]
-		for _, j := range sortableCases.Cases[:i] {
+		for _, j := range sorter.Cases[:i] {
 			if f.Missing[j] == false {
 				left = append(left, j)
 			}
 		}
-		for _, j := range sortableCases.Cases[i:] {
+		for _, j := range sorter.Cases[i:] {
 			if f.Missing[j] == false {
 				right = append(right, j)
 			}
@@ -392,14 +395,15 @@ func (f *Feature) BestSplit(target *Feature,
 	itter bool,
 	l *[]int,
 	r *[]int,
-	counter *[]int) (bestNum float64, bestCat int, impurityDecrease float64) {
+	counter *[]int,
+	sorter *SortableFeature) (bestNum float64, bestCat int, impurityDecrease float64) {
 
 	//BUG() Is removing the missing cases in BestSplit the right thing to do?
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter, sorter)
 	case false:
-		if itter {
+		if itter || len(f.Back) > 4 {
 			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, l, r, counter)
 		} else {
 			bestCat, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
@@ -455,6 +459,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	var cat, bestCat int
 
 	var counter []int
+	sorter := SortableFeature{nil, nil}
 	if target.Numerical == false {
 		counter = make([]int, len(target.Back), len(target.Back))
 	}
@@ -466,7 +471,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter)
+		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, &sorter)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > 0.0 && inerImp > impurityDecrease {
 			bestF = f
