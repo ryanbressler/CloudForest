@@ -35,7 +35,7 @@ type Node struct {
 func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
 	r(n, cases)
 	if n.Splitter != nil {
-		ls, rs := n.Splitter.Split(fm, cases)
+		ls, rs := n.Splitter.SplitInPlace(fm, cases)
 		n.Left.Recurse(r, fm, ls)
 		n.Right.Recurse(r, fm, rs)
 	}

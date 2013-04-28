@@ -38,6 +38,54 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int) {
 	return
 }
 
+/*
+SplitInPlace splits a slice of cases into left and right slices without allocating
+a new underlying array by sorting cases into left,missing,right order and returning
+slices that point to the left and right cases.
+*/
+func (s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []int) {
+	length := len(cases)
+
+	lastleft := -1
+	lastright := length
+	swaper := 0
+
+	f := fm.Data[fm.Map[s.Feature]]
+
+	for i := 0; i < lastright; i++ {
+		if f.Missing[cases[i]] {
+			continue
+		}
+		if (s.Numerical && f.NumData[cases[i]] <= s.Value) ||
+			(!s.Numerical && s.Left[f.Back[f.CatData[cases[i]]]]) {
+			//Left
+			if i != lastleft+1 {
+				lastleft += 1
+				swaper = cases[i]
+				cases[i] = cases[lastleft]
+				cases[lastleft] = swaper
+				i--
+
+			}
+
+		} else {
+			//Right
+			lastright -= 1
+			swaper = cases[i]
+			cases[i] = cases[lastright]
+			cases[lastright] = swaper
+			i -= 1
+
+		}
+
+	}
+
+	l = cases[:lastleft+1]
+	r = cases[lastright:]
+
+	return
+}
+
 func (s *Splitter) DescribeMap(input map[string]bool) string {
 	keys := make([]string, 0)
 	for k := range input {

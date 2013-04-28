@@ -233,7 +233,7 @@ func (f *Feature) BestCatSplit(target *Feature,
 	impurityDecrease = minImp
 	left := *l
 	right := *r
-	/*BUG(ryan) this won't work for n > 32. Should use bigint? or iterative search for nCats>10
+	/*BUG(ryan) this won't work for n > 32. Should use bigint random or iterative search for nCats>10
 
 	Eahustive search of combinations of catagories is carried out by iterating an Int and using
 	the bits to define which catagories go to the left of the split.
