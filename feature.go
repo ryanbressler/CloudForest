@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"fmt"
+	//"github.com/psilva261/timsort"
 	"math"
 	"math/rand"
 	"sort"
@@ -126,7 +127,7 @@ and will not contain meaningfull results.
 
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.*/
-func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
+func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, leafSize int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
 
 	left := *l
 	right := *r
@@ -180,6 +181,11 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[
 
 			}
 
+			if i == 1 && ((len(left) + len(right)) < 2*leafSize) {
+				impurityDecrease = 0.0
+				return
+			}
+
 			//skip cases where the split didn't do any splitting
 			if len(left) == 0 || len(right) == 0 {
 				continue
@@ -227,6 +233,7 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestCatSplit(target *Feature,
 	cases *[]int,
+	leafSize int,
 	l *[]int,
 	r *[]int,
 	counter *[]int) (bestSplit int, impurityDecrease float64) {
@@ -277,6 +284,11 @@ func (f *Feature) BestCatSplit(target *Feature,
 				}
 			}
 
+		}
+
+		if i == 1 && ((len(left) + len(right)) < 2*leafSize) {
+			impurityDecrease = 0.0
+			return
 		}
 
 		//skip cases where the split didn't do any splitting
@@ -330,20 +342,26 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
+func (f *Feature) BestNumSplit(target *Feature, cases *[]int, leafSize int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
 	impurityDecrease = minImp
 	left := *l
 	right := *r
 	bestSplit = 0.0
 
-	//sortableCases := SortableFeature{f, *cases}
 	sorter.Feature = f
 	sorter.Cases = *cases
 	sort.Sort(sorter)
-	for i := 1; i < len(sorter.Cases)-1; i++ {
-		c := sorter.Cases[i]
+	sortedcases := sorter.Cases
+	// timsort is slower for by test cases but could potentially be made faster by eliminating
+	// repeated alocations
+	// sortedcases := *cases
+	// timsort.Ints(sortedcases, func(a, b int) bool {
+	// 	return f.NumData[a] < f.NumData[b]
+	// })
+	for i := 1; i < len(sortedcases)-1; i++ {
+		c := sortedcases[i]
 		//skip cases where the next sorted case has the same value as these can't be split on
-		if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
+		if f.Missing[c] == true || f.NumData[c] == f.NumData[sortedcases[i+1]] {
 			continue
 		}
 
@@ -357,15 +375,20 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		*/
 		left = left[0:0]
 		right = right[0:0]
-		for _, j := range sorter.Cases[:i] {
+		for _, j := range sortedcases[:i] {
 			if f.Missing[j] == false {
 				left = append(left, j)
 			}
 		}
-		for _, j := range sorter.Cases[i:] {
+		for _, j := range sortedcases[i:] {
 			if f.Missing[j] == false {
 				right = append(right, j)
 			}
+		}
+
+		if i == 1 && ((len(left) + len(right)) < 2*leafSize) {
+			impurityDecrease = 0.0
+			return
 		}
 
 		innerimp := target.ImpurityDecrease(&left, &right, counter)
@@ -381,7 +404,7 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 }
 
 /*
-BUG(ryan) BestSplit finds the best split of the features that can be achieved using
+BestSplit finds the best split of the features that can be achieved using
 the specified target and cases it returns a Splitter and the decrease in impurity.
 
 Pointers to slices for l and r and counter are used to reduce realocations during search
@@ -392,25 +415,42 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestSplit(target *Feature,
 	cases *[]int,
+	leafSize int,
 	itter bool,
 	l *[]int,
 	r *[]int,
 	counter *[]int,
 	sorter *SortableFeature) (bestNum float64, bestCat int, impurityDecrease float64) {
 
-	//BUG() Is removing the missing cases in BestSplit the right thing to do?
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter, sorter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, leafSize, l, r, counter, sorter)
 	case false:
 		if itter || len(f.Back) > 4 {
-			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, l, r, counter)
+			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, leafSize, l, r, counter)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplit(target, cases, leafSize, l, r, counter)
 		}
 
 	}
 	return
+
+}
+
+func (f *Feature) FilterMissing(cases []int) []int {
+	firstMissing := len(cases)
+	swaper := 0
+	for i := 0; i < firstMissing; i++ {
+		if f.Missing[i] {
+			firstMissing -= 1
+			swaper = cases[firstMissing]
+			cases[firstMissing] = cases[i]
+			cases[i] = swaper
+			i -= 1
+
+		}
+	}
+	return cases[:firstMissing]
 
 }
 
@@ -449,6 +489,7 @@ slit on by looping over all features and calling BestSplit
 func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	cases []int,
 	canidates []int,
+	leafSize int,
 	itter bool,
 	l *[]int,
 	r *[]int) (s *Splitter, impurityDecrease float64) {
@@ -471,7 +512,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, &sorter)
+		num, cat, inerImp = f.BestSplit(target, &cases, leafSize, itter, &left, &right, &counter, &sorter)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > 0.0 && inerImp > impurityDecrease {
 			bestF = f
