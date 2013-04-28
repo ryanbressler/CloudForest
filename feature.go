@@ -181,7 +181,7 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, leafSize int, 
 
 			}
 
-			if i == 1 && ((len(left) + len(right)) < 2*leafSize) {
+			if j == 0 && i == 0 && ((len(left) + len(right)) < 2*leafSize) {
 				impurityDecrease = 0.0
 				return
 			}
