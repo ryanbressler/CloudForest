@@ -58,10 +58,11 @@ func (n *Node) Write(w io.Writer, path string) {
 		}
 	}
 	fmt.Fprintln(w, node)
-	if n.Left != nil {
+
+	if n.Splitter != nil && n.Left != nil {
 		n.Left.Write(w, path+"L")
 	}
-	if n.Right != nil {
+	if n.Splitter != nil && n.Right != nil {
 		n.Right.Write(w, path+"R")
 	}
 
