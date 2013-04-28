@@ -127,7 +127,7 @@ and will not contain meaningfull results.
 
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.*/
-func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, leafSize int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
+func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
 
 	left := *l
 	right := *r
@@ -181,11 +181,6 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, leafSize int, 
 
 			}
 
-			if j == 0 && i == 0 && ((len(left) + len(right)) < 2*leafSize) {
-				impurityDecrease = 0.0
-				return
-			}
-
 			//skip cases where the split didn't do any splitting
 			if len(left) == 0 || len(right) == 0 {
 				continue
@@ -233,7 +228,6 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestCatSplit(target *Feature,
 	cases *[]int,
-	leafSize int,
 	l *[]int,
 	r *[]int,
 	counter *[]int) (bestSplit int, impurityDecrease float64) {
@@ -284,11 +278,6 @@ func (f *Feature) BestCatSplit(target *Feature,
 				}
 			}
 
-		}
-
-		if i == 1 && ((len(left) + len(right)) < 2*leafSize) {
-			impurityDecrease = 0.0
-			return
 		}
 
 		//skip cases where the split didn't do any splitting
@@ -342,7 +331,7 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestNumSplit(target *Feature, cases *[]int, leafSize int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
+func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
 	impurityDecrease = minImp
 	left := *l
 	right := *r
@@ -386,11 +375,6 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, leafSize int, l *[
 			}
 		}
 
-		if i == 1 && ((len(left) + len(right)) < 2*leafSize) {
-			impurityDecrease = 0.0
-			return
-		}
-
 		innerimp := target.ImpurityDecrease(&left, &right, counter)
 
 		if innerimp > impurityDecrease {
@@ -415,7 +399,6 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestSplit(target *Feature,
 	cases *[]int,
-	leafSize int,
 	itter bool,
 	l *[]int,
 	r *[]int,
@@ -424,12 +407,12 @@ func (f *Feature) BestSplit(target *Feature,
 
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, leafSize, l, r, counter, sorter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter, sorter)
 	case false:
 		if itter || len(f.Back) > 4 {
-			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, leafSize, l, r, counter)
+			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, l, r, counter)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, leafSize, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
 		}
 
 	}
@@ -489,7 +472,6 @@ slit on by looping over all features and calling BestSplit
 func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	cases []int,
 	canidates []int,
-	leafSize int,
 	itter bool,
 	l *[]int,
 	r *[]int) (s *Splitter, impurityDecrease float64) {
@@ -512,7 +494,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, inerImp = f.BestSplit(target, &cases, leafSize, itter, &left, &right, &counter, &sorter)
+		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, &sorter)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > 0.0 && inerImp > impurityDecrease {
 			bestF = f
