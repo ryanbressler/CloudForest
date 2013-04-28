@@ -340,17 +340,17 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 	sorter.Feature = f
 	sorter.Cases = *cases
 	sort.Sort(sorter)
-	sortedcases := sorter.Cases
+	// sortedcases := sorter.Cases
 	// timsort is slower for by test cases but could potentially be made faster by eliminating
 	// repeated alocations
 	// sortedcases := *cases
 	// timsort.Ints(sortedcases, func(a, b int) bool {
 	// 	return f.NumData[a] < f.NumData[b]
 	// })
-	for i := 1; i < len(sortedcases)-1; i++ {
-		c := sortedcases[i]
+	for i := 1; i < len(sorter.Cases)-1; i++ {
+		c := sorter.Cases[i]
 		//skip cases where the next sorted case has the same value as these can't be split on
-		if f.Missing[c] == true || f.NumData[c] == f.NumData[sortedcases[i+1]] {
+		if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
 			continue
 		}
 
@@ -364,12 +364,12 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 		*/
 		left = left[0:0]
 		right = right[0:0]
-		for _, j := range sortedcases[:i] {
+		for _, j := range sorter.Cases[:i] {
 			if f.Missing[j] == false {
 				left = append(left, j)
 			}
 		}
-		for _, j := range sortedcases[i:] {
+		for _, j := range sorter.Cases[i:] {
 			if f.Missing[j] == false {
 				right = append(right, j)
 			}
