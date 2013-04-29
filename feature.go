@@ -186,7 +186,7 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[
 				continue
 			}
 
-			nextImp = target.ImpurityDecrease(&left, &right, counter)
+			nextImp = target.ImpurityDecrease(left, right, counter)
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -285,7 +285,7 @@ func (f *Feature) BestCatSplit(target *Feature,
 			continue
 		}
 
-		innerimp := target.ImpurityDecrease(&left, &right, counter)
+		innerimp := target.ImpurityDecrease(left, right, counter)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -333,12 +333,15 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
 	impurityDecrease = minImp
-	left := *l
-	right := *r
+
+	left := *r
 	bestSplit = 0.0
 
+	left = left[0:0]
+
+	f.FilterMissing(cases, &left)
 	sorter.Feature = f
-	sorter.Cases = *cases
+	sorter.Cases = left
 	sort.Sort(sorter)
 	// sortedcases := sorter.Cases
 	// timsort is slower for by test cases but could potentially be made faster by eliminating
@@ -362,20 +365,8 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 			right = right[0:0]
 			innerSplit.SplitNum(f, cases, &left, &right)
 		*/
-		left = left[0:0]
-		right = right[0:0]
-		for _, j := range sorter.Cases[:i] {
-			if f.Missing[j] == false {
-				left = append(left, j)
-			}
-		}
-		for _, j := range sorter.Cases[i:] {
-			if f.Missing[j] == false {
-				right = append(right, j)
-			}
-		}
 
-		innerimp := target.ImpurityDecrease(&left, &right, counter)
+		innerimp := target.ImpurityDecrease(left[:i], left[i:], counter)
 
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
@@ -420,20 +411,12 @@ func (f *Feature) BestSplit(target *Feature,
 
 }
 
-func (f *Feature) FilterMissing(cases []int) []int {
-	firstMissing := len(cases)
-	swaper := 0
-	for i := 0; i < firstMissing; i++ {
-		if f.Missing[i] {
-			firstMissing -= 1
-			swaper = cases[firstMissing]
-			cases[firstMissing] = cases[i]
-			cases[i] = swaper
-			i -= 1
-
+func (f *Feature) FilterMissing(cases *[]int, filtered *[]int) {
+	for _, c := range *cases {
+		if f.Missing[c] != true {
+			*filtered = append(*filtered, c)
 		}
 	}
-	return cases[:firstMissing]
 
 }
 
@@ -448,9 +431,9 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (target *Feature) ImpurityDecrease(left *[]int, right *[]int, counter *[]int) (impurityDecrease float64) {
-	l := *left
-	r := *right
+func (target *Feature) ImpurityDecrease(l []int, r []int, counter *[]int) (impurityDecrease float64) {
+	// l := *left
+	// r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
 	switch target.Numerical {
