@@ -332,24 +332,27 @@ l and r should have the same capacity as cases . counter is only used for catago
 should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
-	impurityDecrease = minImp
 
-	left := *r
+	impurityDecrease = minImp
 	bestSplit = 0.0
 
+	//Only need l  because slicing it is faster then moving data
+	//l to r though there may be a way to fix this in the future
+	left := *l
 	left = left[0:0]
 
 	f.FilterMissing(cases, &left)
 	sorter.Feature = f
 	sorter.Cases = left
 	sort.Sort(sorter)
-	// sortedcases := sorter.Cases
+
 	// timsort is slower for by test cases but could potentially be made faster by eliminating
 	// repeated alocations
 	// sortedcases := *cases
 	// timsort.Ints(sortedcases, func(a, b int) bool {
 	// 	return f.NumData[a] < f.NumData[b]
 	// })
+
 	for i := 1; i < len(sorter.Cases)-1; i++ {
 		c := sorter.Cases[i]
 		//skip cases where the next sorted case has the same value as these can't be split on
@@ -357,15 +360,9 @@ func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int
 			continue
 		}
 
-		/*
-			The two loops below filter missing values from the left and right side.
-			A slower but simpler version of the two for loops bellow would be:
-			innerSplit := &Splitter{f.Name, true, f.NumData[c], nil, nil}
-			left = left[0:0]
-			right = right[0:0]
-			innerSplit.SplitNum(f, cases, &left, &right)
-		*/
-
+		/*		BUG there is a realocation of a slice (not the underlying array) happening here in
+				BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
+				but it was slower.  */
 		innerimp := target.ImpurityDecrease(left[:i], left[i:], counter)
 
 		if innerimp > impurityDecrease {
@@ -411,6 +408,7 @@ func (f *Feature) BestSplit(target *Feature,
 
 }
 
+/*FilterMissing loops over the cases and appends them into filtered.*/
 func (f *Feature) FilterMissing(cases *[]int, filtered *[]int) {
 	for _, c := range *cases {
 		if f.Missing[c] != true {
@@ -425,11 +423,7 @@ Impurity Decrease calculates the decrease in impurity by spliting into the speci
 groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
 and i(tl) i(tR) are the left and right impurites.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
-
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.
+Counter is only used for catagorical targets and should have the same length as the number of catagories in the target.
 */
 func (target *Feature) ImpurityDecrease(l []int, r []int, counter *[]int) (impurityDecrease float64) {
 	// l := *left
@@ -449,8 +443,13 @@ func (target *Feature) ImpurityDecrease(l []int, r []int, counter *[]int) (impur
 }
 
 /*
-BestSplitter finds the best splitter from a number of canidate features to
-slit on by looping over all features and calling BestSplit
+BestSplitter finds the best splitter from a number of canidate features to slit on by looping over
+all features and calling BestSplit.
+
+Pointers to slices for l and r are used to reduce realocations during repeated calls
+and will not contain meaningfull results.
+
+l and r should have capacity >=  cap(cases) to avoid resizing.
 */
 func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	cases []int,
