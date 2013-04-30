@@ -12,11 +12,11 @@ Code and the Bug tracker can be found at https://github.com/ryanbressler/CloudFo
 Caveats
 
 When compiled with the default go 1.1 tool chain CloudForest achieves running times similar or
-better then implementations in other languages. Using gccgo 4.8.0 results in longer runnign times and
-is not recomended.
+better then implementations in other languages. Using gccgo (4.8.0 at least) results in longer
+running times and is not recomended at this time.
 
 CloudForest is especially fast with data that includes lots of binary or low n catagorical data (ie
-genomic variants). Catagorical features with n>31 are not currently supported but will be soon.
+genomic variants) as it includeds optimized code to find the best spliter in these cases.
 
 
 Goals and Quirks
