@@ -135,7 +135,7 @@ and will not contain meaningfull results.
 
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.*/
-func (f *Feature) BigIterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64) {
+func (f *Feature) BigIterBestCatSplit(target *Feature, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64) {
 
 	left := *l
 	right := *r
@@ -194,7 +194,7 @@ func (f *Feature) BigIterBestCatSplit(target *Feature, cases *[]int, l *[]int, r
 				continue
 			}
 
-			nextImp = target.ImpurityDecrease(left, right, counter)
+			nextImp = parentImp - target.ImpurityDecrease(left, right, counter)
 
 			if nextImp > innerImp {
 				innerSplit.Set(nextSplit)
@@ -236,7 +236,7 @@ and will not contain meaningfull results.
 
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.*/
-func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
+func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
 
 	left := *l
 	right := *r
@@ -295,7 +295,7 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[
 				continue
 			}
 
-			nextImp = target.ImpurityDecrease(left, right, counter)
+			nextImp = parentImp - target.ImpurityDecrease(left, right, counter)
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -342,6 +342,7 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestCatSplit(target *Feature,
 	cases *[]int,
+	parentImp float64,
 	l *[]int,
 	r *[]int,
 	counter *[]int) (bestSplit int, impurityDecrease float64) {
@@ -399,7 +400,7 @@ func (f *Feature) BestCatSplit(target *Feature,
 			continue
 		}
 
-		innerimp := target.ImpurityDecrease(left, right, counter)
+		innerimp := parentImp - target.ImpurityDecrease(left, right, counter)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -458,6 +459,7 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestNumSplit(target *Feature,
 	cases *[]int,
+	parentImp float64,
 	l *[]int,
 	r *[]int,
 	counter *[]int,
@@ -493,7 +495,7 @@ func (f *Feature) BestNumSplit(target *Feature,
 		/*		BUG there is a realocation of a slice (not the underlying array) happening here in
 				BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 				but it was slower.  */
-		innerimp := target.ImpurityDecrease(left[:i], left[i:], counter)
+		innerimp := parentImp - target.ImpurityDecrease(left[:i], left[i:], counter)
 
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
@@ -517,6 +519,7 @@ should have the same length as the number of catagories in the target.
 */
 func (f *Feature) BestSplit(target *Feature,
 	cases *[]int,
+	parentImp float64,
 	itter bool,
 	l *[]int,
 	r *[]int,
@@ -525,18 +528,18 @@ func (f *Feature) BestSplit(target *Feature,
 
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter, sorter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
 	case false:
 		nCats := len(f.Back)
 		if itter || nCats > maxExhaustiveCats {
 
 			if nCats > maxNonBigCats {
 				fmt.Println("Using Big Code")
-				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, l, r, counter)
+				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
 			}
-			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, l, r, counter)
+			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, parentImp, l, r, counter)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, l, r, counter)
 		}
 
 	}
@@ -597,6 +600,8 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	itter bool,
 	l *[]int,
 	r *[]int) (s *Splitter, impurityDecrease float64) {
+
+	parentImp := target.Impurity(&cases)
 	impurityDecrease = minImp
 
 	var f, bestF *Feature
@@ -617,7 +622,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, sorter)
+		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, itter, &left, &right, &counter, sorter)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f
