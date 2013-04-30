@@ -534,7 +534,6 @@ func (f *Feature) BestSplit(target *Feature,
 		if itter || nCats > maxExhaustiveCats {
 
 			if nCats > maxNonBigCats {
-				fmt.Println("Using Big Code")
 				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
 			}
 			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, parentImp, l, r, counter)
