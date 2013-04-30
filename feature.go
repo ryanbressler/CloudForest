@@ -3,7 +3,6 @@ package CloudForest
 import (
 	"fmt"
 	//"github.com/psilva261/timsort"
-	"math"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -18,6 +17,8 @@ It contains:
 
 	Map  : a map of ints by the string used fot the catagory
 	Back : a slice of strings by the int that represents them
+
+And is embeded by Feature and CatBallotBox.
 */
 type CatMap struct {
 	Map  map[string]int //map categories from string to Num
@@ -122,6 +123,11 @@ single best catagory, and finds the best catagory to add on each iteration.
 Searching is implmented via bitwise on intergers for speed but will currentlly only work
 when there are less catagories then the number of bits in an int.
 
+The best split is returned as an int for which the bits coresponding to catagories that should
+be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
+trainig feature and should not be applied to testing data without doing so as the order of
+catagories may have changed.
+
 Pointers to slices for l and r and counter are used to reduce realocations during search
 and will not contain meaningfull results.
 
@@ -220,6 +226,11 @@ Searching is implmented via bitwise oporations vs an incrementing or random inte
 but will currentlly only work when there are less catagories then the number of bits in an
 int.
 
+The best split is returned as an int for which the bits coresponding to catagories that should
+be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
+trainig feature and should not be applied to testing data without doing so as the order of
+catagories may have changed.
+
 Pointers to slices for l and r and counter are used to reduce realocations during search
 and will not contain meaningfull results.
 
@@ -299,7 +310,8 @@ func (f *Feature) BestCatSplit(target *Feature,
 }
 
 //Decode split builds a sliter from the numeric values returned by BestNumSplit or
-//BestCatSplit.
+//BestCatSplit. Numeric splitters are decoded to send values <= num left. Catagorical
+//splitters are decoded to send catgorical values for which the bit in cat is 1 left.
 func (f *Feature) DecodeSplit(num float64, cat int) (s *Splitter) {
 	if f.Numerical {
 		s = &Splitter{f.Name, true, num, nil}
@@ -331,7 +343,12 @@ and will not contain meaningfull results.
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
 should have the same length as the number of catagories in the target.
 */
-func (f *Feature) BestNumSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int, sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
+func (f *Feature) BestNumSplit(target *Feature,
+	cases *[]int,
+	l *[]int,
+	r *[]int,
+	counter *[]int,
+	sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
 
 	impurityDecrease = minImp
 	bestSplit = 0.0
@@ -408,7 +425,11 @@ func (f *Feature) BestSplit(target *Feature,
 
 }
 
-/*FilterMissing loops over the cases and appends them into filtered.*/
+/*
+FilterMissing loops over the cases and appends them into filtered.
+For most use cases filtered should have zero length before you begin as it is not reset
+internally
+*/
 func (f *Feature) FilterMissing(cases *[]int, filtered *[]int) {
 	for _, c := range *cases {
 		if f.Missing[c] != true {
@@ -435,8 +456,8 @@ func (target *Feature) ImpurityDecrease(l []int, r []int, counter *[]int) (impur
 		impurityDecrease = nl * target.NumImp(&l)
 		impurityDecrease += nr * target.NumImp(&r)
 	case false:
-		impurityDecrease = nl * target.giniWithoutAlocate(&l, counter)
-		impurityDecrease += nr * target.giniWithoutAlocate(&r, counter)
+		impurityDecrease = nl * target.GiniWithoutAlocate(&l, counter)
+		impurityDecrease += nr * target.GiniWithoutAlocate(&r, counter)
 	}
 	impurityDecrease /= nl + nr
 	return
@@ -464,7 +485,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	var cat, bestCat int
 
 	var counter []int
-	sorter := SortableFeature{nil, nil}
+	sorter := new(SortableFeature)
 	if target.Numerical == false {
 		counter = make([]int, len(target.Back), len(target.Back))
 	}
@@ -476,7 +497,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, &sorter)
+		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, sorter)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > 0.0 && inerImp > impurityDecrease {
 			bestF = f
@@ -492,24 +513,22 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	return
 }
 
-//Impurity returns Gini impurity or RMS vs the mean for a set of cases
+//Impurity returns Gini impurity or mean squared error vs the mean for a set of cases
 //depending on weather the feature is catagorical or numerical
 func (target *Feature) Impurity(cases *[]int) (e float64) {
-	switch target.Numerical {
-	case true:
-		//BUG(ryan) is RMS vs the Mean the right definition of impurity for numerical groups?
-		m := target.Mean(cases)
-		e = target.RMS(cases, m)
-	case false:
+	if target.Numerical {
+		e = target.NumImp(cases)
+	} else {
 		e = target.Gini(cases)
 	}
 	return
 
 }
 
+//Numerical Impurity returns the mean squared error vs the mean
 func (target *Feature) NumImp(cases *[]int) (e float64) {
 	m := target.Mean(cases)
-	e = target.RMS(cases, m)
+	e = target.MeanSquaredError(cases, m)
 	return
 }
 
@@ -518,7 +537,7 @@ func (target *Feature) NumImp(cases *[]int) (e float64) {
 //of cases in the ith catagory.
 func (target *Feature) Gini(cases *[]int) (e float64) {
 	counter := make([]int, len(target.Back))
-	e = target.giniWithoutAlocate(cases, &counter)
+	e = target.GiniWithoutAlocate(cases, &counter)
 	return
 }
 
@@ -527,7 +546,7 @@ giniWithoutAlocate calculates gini impurity using the spupplied counter which mu
 be a slcie with length equal to the number of cases. This allows you to reduce allocations
 but the counter will also contain per catagory counts.
 */
-func (target *Feature) giniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
+func (target *Feature) GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
 	total := 0
 	counter := *counts
 	for i, _ := range counter {
@@ -547,9 +566,9 @@ func (target *Feature) giniWithoutAlocate(cases *[]int, counts *[]int) (e float6
 	return
 }
 
-//RMS returns the Root Mean Square error of the cases specifed vs the predicted
-//value
-func (target *Feature) RMS(cases *[]int, predicted float64) (e float64) {
+//MeanSquaredError returns the  Mean Squared error of the cases specifed vs the predicted
+//value. Only non missing casses are considered.
+func (target *Feature) MeanSquaredError(cases *[]int, predicted float64) (e float64) {
 	e = 0.0
 	n := 0
 	for _, i := range *cases {
@@ -560,7 +579,7 @@ func (target *Feature) RMS(cases *[]int, predicted float64) (e float64) {
 		}
 
 	}
-	e = math.Sqrt(e / float64(n))
+	e = e / float64(n)
 	return
 
 }
@@ -591,7 +610,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 		pred = fmt.Sprintf("%v", f.Mean(&cases))
 
 	case false:
-		//catagorical
+		//catagorical...abstract to mode function?
 		m := make([]int, len(f.Back))
 		for _, i := range cases {
 			if !f.Missing[i] {

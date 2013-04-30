@@ -6,7 +6,7 @@ import (
 )
 
 //Keeps track of votes by trees.
-//Not thread safe....could be made so or abstracted to an 
+//Not thread safe....could be made so or abstracted to an
 //interface to support diffrent implementations.
 type NumBallotBox struct {
 	box []map[float64]int
@@ -23,8 +23,8 @@ func NewNumBallotBox(size int) *NumBallotBox {
 }
 
 //Vote parses the float in the string and votes for it
-func (bb *NumBallotBox) Vote(casei int, vote string) {
-	v, err := strconv.ParseFloat(vote, 64)
+func (bb *NumBallotBox) Vote(casei int, pred string) {
+	v, err := strconv.ParseFloat(pred, 64)
 	if err == nil {
 		bb.VoteNum(casei, v)
 	}
@@ -33,12 +33,12 @@ func (bb *NumBallotBox) Vote(casei int, vote string) {
 
 //VoteNum registers a vote that case "casei" should be predicted to have the
 //numerical value "vote."
-func (bb *NumBallotBox) VoteNum(casei int, vote float64) {
+func (bb *NumBallotBox) VoteNum(casei int, pred float64) {
 
-	if _, ok := bb.box[casei][vote]; !ok {
-		bb.box[casei][vote] = 0
+	if _, ok := bb.box[casei][pred]; !ok {
+		bb.box[casei][pred] = 0
 	}
-	bb.box[casei][vote] = bb.box[casei][vote] + 1
+	bb.box[casei][pred] = bb.box[casei][pred] + 1
 }
 
 //TallyNumerical tallies the votes for the case specified by i as
@@ -57,15 +57,15 @@ func (bb *NumBallotBox) Tally(i int) (predicted float64) {
 
 //Tally error returns the error of the votes vs the provided feature.
 //For catagorical features it returns the error rate
-//For numerical features it returns root mean squared error.
-//The provided feature must use the same index as the feature matrix 
+//For numerical features it returns mean squared error.
+//The provided feature must use the same index as the feature matrix
 //the ballot box was constructed with.
 //Missing values are ignored.
 //Gini imurity is not used so this is not for use in rf implementations.
 func (bb *NumBallotBox) TallyError(feature *Feature) (e float64) {
 	e = 0.0
 
-	// Numerical feature. Calculate root mean squared
+	// Numerical feature. Calculate mean squared
 	d := 0.0
 	c := 0
 	for i, value := range feature.NumData {
@@ -76,7 +76,7 @@ func (bb *NumBallotBox) TallyError(feature *Feature) (e float64) {
 			c += 1
 		}
 	}
-	e = math.Sqrt(e / float64(c))
+	e = e / float64(c)
 
 	return
 

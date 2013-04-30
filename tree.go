@@ -8,6 +8,10 @@ type Tree struct {
 	Root *Node
 }
 
+func NewTree() *Tree {
+	return &Tree{new(Node)}
+}
+
 //AddNode adds a node a the specified path with the specivied pred value and/or
 //Splitter. Paths are specified in the same format as in rf-aces sf files, as a
 //string of 'L' and 'R'. Nodes must be added from the root up as the case where
@@ -75,8 +79,8 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				//so recursion will continue
 				n.Splitter = best
 				n.Pred = ""
-				n.Left = &Node{nil, nil, "", nil}
-				n.Right = &Node{nil, nil, "", nil}
+				n.Left = new(Node)
+				n.Right = new(Node)
 				return
 			}
 		}

@@ -7,10 +7,13 @@ import (
 	"math/rand"
 )
 
+//Sparse counter uses maps to track sparse integer counts in large matrix.
+//The matrix is assumed to contain zero values where nothing has been edded.
 type SparseCounter struct {
 	Map map[int]map[int]int
 }
 
+//Add increases the count in i,j by val.
 func (sc *SparseCounter) Add(i int, j int, val int) {
 	if sc.Map == nil {
 		sc.Map = make(map[int]map[int]int, 0)
@@ -25,6 +28,8 @@ func (sc *SparseCounter) Add(i int, j int, val int) {
 	sc.Map[i][j] = sc.Map[i][j] + val
 }
 
+//Write tsv writes the non zero counts out into a three colum tsv containg i, j, and
+//count in the columns.
 func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 	for i := range sc.Map {
 		for j, val := range sc.Map[i] {
@@ -36,9 +41,9 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 }
 
 /*
-SampleFirstN insures that the first n entries in the supplied 
-"deck" []int are randomly drawn from all entries without replacment. 
-It accepts a pointer to the deck so that it can be used repeatedl on
+SampleFirstN ensures that the first n entries in the supplied
+deck are randomly drawn from all entries without replacment for use in selecting canidate
+features to split on. It accepts a pointer to the deck so that it can be used repeatedl on
 the same deck avoiding realocations.
 */
 func SampleFirstN(deck *[]int, n int) {
@@ -53,4 +58,16 @@ func SampleFirstN(deck *[]int, n int) {
 		cards[randi] = old
 
 	}
+}
+
+/*
+SampleWithReplacment samples nSamples random draws from [0,totalCases) with replacment
+for use in selecting cases to grow a tree from.
+*/
+func SampleWithReplacment(nSamples int, totalCases int) (cases []int) {
+	cases = make([]int, 0, nSamples)
+	for i := 0; i < nSamples; i++ {
+		cases = append(cases, rand.Intn(totalCases))
+	}
+	return
 }

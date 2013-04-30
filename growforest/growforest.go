@@ -88,14 +88,12 @@ func main() {
 			canidates = append(canidates, i)
 		}
 	}
-	tree := &CloudForest.Tree{&CloudForest.Node{nil, nil, "", nil}}
+	tree := CloudForest.NewTree()
 	cases := make([]int, 0, nSamples)
 	l := make([]int, 0, nSamples)
 	r := make([]int, 0, nSamples)
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
-		//BUG...abstract randdom sampleing and make sure it is good enough
-		//fmt.Println("Tree ", i)
 		cases = cases[0:0]
 		nCases := len(data.Data[0].Missing)
 		for i := 0; i < nSamples; i++ {

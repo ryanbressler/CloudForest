@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -14,13 +13,28 @@ import (
 type Forest struct {
 	//Forest string
 	Target string
-	//Ntrees int
-	//Categories string
-	//Shrinkage int*/
-	Trees []*Tree
+	Trees  []*Tree
 }
 
-//GrowRandomForest grows a forest.
+/*
+GrowRandomForest grows a forest using Brieman and Cutler's method. For many cases it
+it will be quicker to reimplment this method to write trees directelly to disk or grow
+trees in parralel. See the growforest comand line utility for an example of this.
+
+target is the feature to predict.
+
+nSamples is the number of cases to sample (with replacment) for each tree.
+
+mTry is the number of canidate features to evaluate at each node.
+
+nTrees is the number of trees to grow.
+
+leafSize is the minimum number of cases that should end up on a leaf.
+
+itter indicates weather to use iterative spliting for all catagorical features or only those
+with more then 6 catagories.
+
+*/
 func GrowRandomForest(fm *FeatureMatrix,
 	target *Feature,
 	nSamples int,
@@ -31,6 +45,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
 
+	//start with all features but the target as canidates
 	canidates := make([]int, 0, len(fm.Data))
 	targeti := fm.Map[target.Name]
 	for i := 0; i < len(fm.Data); i++ {
@@ -38,19 +53,16 @@ func GrowRandomForest(fm *FeatureMatrix,
 			canidates = append(canidates, i)
 		}
 	}
+
+	//Slices for reuse during search for best spliter.
 	l := make([]int, 0, nSamples)
 	r := make([]int, 0, nSamples)
-	for i := 0; i < nTrees; i++ {
-		//sample nCases case with replacment
-		//BUG...abstract randdom sampleing and make sure it is good enough
-		//fmt.Println("Tree ", i)
-		cases := make([]int, 0, nSamples)
-		nCases := len(fm.Data[0].Missing)
-		for i := 0; i < nSamples; i++ {
-			cases = append(cases, rand.Intn(nCases))
-		}
 
-		f.Trees = append(f.Trees, &Tree{&Node{nil, nil, "", nil}})
+	for i := 0; i < nTrees; i++ {
+		nCases := len(fm.Data[0].Missing)
+		cases := SampleWithReplacment(nSamples, nCases)
+
+		f.Trees = append(f.Trees, NewTree())
 		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, &l, &r)
 	}
 	return

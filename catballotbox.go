@@ -3,7 +3,7 @@ package CloudForest
 import ()
 
 //Keeps track of votes by trees.
-//Not thread safe....could be made so or abstracted to an 
+//Not thread safe....could be made so or abstracted to an
 //interface to support diffrent implementations.
 type CatBallotBox struct {
 	*CatMap
@@ -22,17 +22,17 @@ func NewCatBallotBox(size int) *CatBallotBox {
 	return &bb
 }
 
-//Vote registers a vote that case "casei" should be predicted to have the
-//catagorical "vote". 
-func (bb *CatBallotBox) Vote(casei int, vote string) {
-	voten := bb.CatToNum(vote)
-	if _, ok := bb.box[casei][voten]; !ok {
-		bb.box[casei][voten] = 0
+//Vote registers a vote that case "casei" should be predicted to be the
+//catagory "pred".
+func (bb *CatBallotBox) Vote(casei int, pred string) {
+	predn := bb.CatToNum(pred)
+	if _, ok := bb.box[casei][predn]; !ok {
+		bb.box[casei][predn] = 0
 	}
-	bb.box[casei][voten] = bb.box[casei][voten] + 1
+	bb.box[casei][predn] = bb.box[casei][predn] + 1
 }
 
-//TallyCatagorical tallies the votes for the case specified by i as 
+//TallyCatagorical tallies the votes for the case specified by i as
 //if it is a Catagorical or boolean feature. Ie it returns the mode
 //(the most frequent value) of all votes.
 func (bb *CatBallotBox) Tally(i int) (predicted string) {
@@ -54,7 +54,7 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 //Tally error returns the error of the votes vs the provided feature.
 //For catagorical features it returns the error rate
 //For numerical features it returns root mean squared error.
-//The provided feature must use the same index as the feature matrix 
+//The provided feature must use the same index as the feature matrix
 //the ballot box was constructed with.
 //Missing values are ignored.
 //Gini imurity is not used so this is not for use in rf implementations.
