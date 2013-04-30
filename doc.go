@@ -8,7 +8,8 @@ for Systems Biology and is released under a modified BSD style license.
 
 Code and the Bug tracker can be found at https://github.com/ryanbressler/CloudForest
 
-Caveats/Speed
+
+Caveats
 
 When compiled with the default go 1.1 tool chain CloudForest achieves running times similar or
 better then implementations in other languages. Using gccgo 4.8.0 results in longer runnign times and
@@ -18,7 +19,7 @@ CloudForest is especially fast with data that includes lots of binary or low n c
 genomic variants). Catagorical features with n>31 are not currently supported but will be soon.
 
 
-Philosophy, Goals and Quirks
+Goals and Quirks
 
 CloudForest is intended to provide fast, comprehensible building blocks that can be used
 to implement ensembels of decision trees. CloudForest is written in (somewhat) idomatic

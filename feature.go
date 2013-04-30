@@ -3,13 +3,15 @@ package CloudForest
 import (
 	"fmt"
 	//"github.com/psilva261/timsort"
+	"math/big"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-const maxExhaustiveCatagoires = 10
+const maxExhaustiveCats = 10
+const maxNonBigCats = 30
 const minImp = 1e-12
 
 /*CatMap is for mapping catagorical values to integers.
@@ -113,6 +115,107 @@ func ParseFeature(record []string) Feature {
 
 }
 
+/*BigIterBestCatSplit performs an iterative search to find the split that minimizes impurity
+in the specified target.
+
+rf-ace finds the "best" catagorical split using a greedy method that starts with the
+single best catagory, and finds the best catagory to add on each iteration.
+
+
+Searching is implmented via bitwise on intergers for speed but will currentlly only work
+when there are less catagories then the number of bits in an int.
+
+The best split is returned as an int for which the bits coresponding to catagories that should
+be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
+trainig feature and should not be applied to testing data without doing so as the order of
+catagories may have changed.
+
+Pointers to slices for l and r and counter are used to reduce realocations during search
+and will not contain meaningfull results.
+
+l and r should have the same capacity as cases . counter is only used for catagorical targets and
+should have the same length as the number of catagories in the target.*/
+func (f *Feature) BigIterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64) {
+
+	left := *l
+	right := *r
+	/*BUG(ryan) this won't work for n > 32. Should use bigint? or iterative search for nCats>10
+
+	This is an iterative search for the best combinations of catagories.
+	*/
+
+	nCats := len(f.Back)
+	cat := 0
+
+	//overall running best impurity and split
+	impurityDecrease = minImp
+	bestSplit = big.NewInt(0)
+
+	//running best with n catagories
+	innerImp := minImp
+	innerSplit := big.NewInt(0)
+
+	//values for the current proposed n+1 catagory
+	nextImp := minImp
+	nextSplit := big.NewInt(0)
+
+	//iterativelly build a combination of catagories untill they
+	//stop getting better
+	for j := 0; j < nCats; j++ {
+
+		innerImp = impurityDecrease
+		innerSplit.SetInt64(0)
+		//find the best additonal catagory
+		for i := 0; i < nCats; i++ {
+
+			if bestSplit.Bit(i) != 0 {
+				continue
+			}
+
+			left = left[0:0]
+			right = right[0:0]
+
+			nextSplit.SetBit(bestSplit, i, 1)
+
+			for _, c := range *cases {
+				if f.Missing[c] == false {
+					cat = f.CatData[c]
+					if 0 != nextSplit.Bit(cat) {
+						left = append(left, c)
+					} else {
+						right = append(right, c)
+					}
+				}
+
+			}
+
+			//skip cases where the split didn't do any splitting
+			if len(left) == 0 || len(right) == 0 {
+				continue
+			}
+
+			nextImp = target.ImpurityDecrease(left, right, counter)
+
+			if nextImp > innerImp {
+				innerSplit.Set(nextSplit)
+				innerImp = nextImp
+
+			}
+
+		}
+		if innerImp > impurityDecrease {
+			bestSplit.Set(innerSplit)
+			impurityDecrease = innerImp
+
+		} else {
+			break
+		}
+
+	}
+
+	return
+}
+
 /*IterBestCatSplit performs an iterative search to find the split that minimizes impurity
 in the specified target.
 
@@ -161,7 +264,7 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[
 	//stop getting better
 	for j := 0; j < nCats; j++ {
 
-		innerImp = minImp
+		innerImp = impurityDecrease
 		innerSplit = 0
 		//find the best additonal catagory
 		for i := 0; i < nCats; i++ {
@@ -215,8 +318,8 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, l *[]int, r *[
 }
 
 /*
-BestCatSplit performs an exahustive or stoicastic search for the split that minimizes impurity
-in the specified target.
+BestCatSplit performs an exahustive search for the split that minimizes impurity
+in the specified target for catagorical features with less then 31 catagories.
 
 This implementation follows Brieman's implementation and the R/Matlab implementations
 based on it use exsaustive search overfor when there are less thatn 25/10 catagories
@@ -246,7 +349,7 @@ func (f *Feature) BestCatSplit(target *Feature,
 	impurityDecrease = minImp
 	left := *l
 	right := *r
-	/*BUG(ryan) this won't work for n > 32. Should use bigint random or iterative search for nCats>10
+	/*this won't work for n > 32. Should use bigint random or iterative search for nCats>10
 
 	Eahustive search of combinations of catagories is carried out by iterating an Int and using
 	the bits to define which catagories go to the left of the split.
@@ -254,14 +357,14 @@ func (f *Feature) BestCatSplit(target *Feature,
 	*/
 	nCats := len(f.Back)
 
-	useExhaustive := nCats <= maxExhaustiveCatagoires
+	useExhaustive := nCats <= maxExhaustiveCats
 	nPartitions := 1
 	if useExhaustive {
 		//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
 		nPartitions = (2 << uint(nCats-2))
 	} else {
 		//if more then the max we will loop max times and generate random combinations
-		nPartitions = (2 << uint(maxExhaustiveCatagoires-2))
+		nPartitions = (2 << uint(maxExhaustiveCats-2))
 	}
 	bestSplit = 0
 	//start at 1 to ingnore the set with all on one side
@@ -312,20 +415,30 @@ func (f *Feature) BestCatSplit(target *Feature,
 //Decode split builds a sliter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Catagorical
 //splitters are decoded to send catgorical values for which the bit in cat is 1 left.
-func (f *Feature) DecodeSplit(num float64, cat int) (s *Splitter) {
+func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter) {
 	if f.Numerical {
 		s = &Splitter{f.Name, true, num, nil}
 	} else {
 		nCats := len(f.Back)
 		s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
 
-		for j := 0; j < nCats; j++ {
+		if nCats > maxNonBigCats {
+			for j := 0; j < nCats; j++ {
+				if 0 != bigCat.Bit(j) {
+					s.Left[f.Back[j]] = true
+				}
 
-			if 0 != (cat & (1 << uint(j))) {
-				s.Left[f.Back[j]] = true
 			}
+		} else {
+			for j := 0; j < nCats; j++ {
 
+				if 0 != (cat & (1 << uint(j))) {
+					s.Left[f.Back[j]] = true
+				}
+
+			}
 		}
+
 	}
 	return
 }
@@ -408,13 +521,19 @@ func (f *Feature) BestSplit(target *Feature,
 	l *[]int,
 	r *[]int,
 	counter *[]int,
-	sorter *SortableFeature) (bestNum float64, bestCat int, impurityDecrease float64) {
+	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
 
 	switch f.Numerical {
 	case true:
 		bestNum, impurityDecrease = f.BestNumSplit(target, cases, l, r, counter, sorter)
 	case false:
-		if itter || len(f.Back) > 4 {
+		nCats := len(f.Back)
+		if itter || nCats > maxExhaustiveCats {
+
+			if nCats > maxNonBigCats {
+				fmt.Println("Using Big Code")
+				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, l, r, counter)
+			}
 			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, l, r, counter)
 		} else {
 			bestCat, impurityDecrease = f.BestCatSplit(target, cases, l, r, counter)
@@ -483,6 +602,7 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 	var f, bestF *Feature
 	var num, bestNum, inerImp float64
 	var cat, bestCat int
+	var bigCat, bestBigCat *big.Int
 
 	var counter []int
 	sorter := new(SortableFeature)
@@ -497,18 +617,19 @@ func (target *Feature) BestSplitter(fm *FeatureMatrix,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, sorter)
+		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, itter, &left, &right, &counter, sorter)
 		//BUG more stringent cutoff in BestSplitter?
-		if inerImp > 0.0 && inerImp > impurityDecrease {
+		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f
 			impurityDecrease = inerImp
 			bestNum = num
 			bestCat = cat
+			bestBigCat = bigCat
 		}
 
 	}
 	if impurityDecrease > minImp {
-		s = bestF.DecodeSplit(bestNum, bestCat)
+		s = bestF.DecodeSplit(bestNum, bestCat, bestBigCat)
 	}
 	return
 }
