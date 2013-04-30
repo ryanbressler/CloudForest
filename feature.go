@@ -194,7 +194,7 @@ func (f *Feature) BigIterBestCatSplit(target *Feature, cases *[]int, parentImp f
 				continue
 			}
 
-			nextImp = parentImp - target.ImpurityDecrease(left, right, counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, counter)
 
 			if nextImp > innerImp {
 				innerSplit.Set(nextSplit)
@@ -295,7 +295,7 @@ func (f *Feature) IterBestCatSplit(target *Feature, cases *[]int, parentImp floa
 				continue
 			}
 
-			nextImp = parentImp - target.ImpurityDecrease(left, right, counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, counter)
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -400,7 +400,7 @@ func (f *Feature) BestCatSplit(target *Feature,
 			continue
 		}
 
-		innerimp := parentImp - target.ImpurityDecrease(left, right, counter)
+		innerimp := parentImp - target.SplitImpurity(left, right, counter)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -495,7 +495,7 @@ func (f *Feature) BestNumSplit(target *Feature,
 		/*		BUG there is a realocation of a slice (not the underlying array) happening here in
 				BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 				but it was slower.  */
-		innerimp := parentImp - target.ImpurityDecrease(left[:i], left[i:], counter)
+		innerimp := parentImp - target.SplitImpurity(left[:i], left[i:], counter)
 
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
@@ -568,7 +568,7 @@ and i(tl) i(tR) are the left and right impurites.
 
 Counter is only used for catagorical targets and should have the same length as the number of catagories in the target.
 */
-func (target *Feature) ImpurityDecrease(l []int, r []int, counter *[]int) (impurityDecrease float64) {
+func (target *Feature) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
 	// l := *left
 	// r := *right
 	nl := float64(len(l))
