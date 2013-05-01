@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-const maxExhaustiveCats = 10
+const maxExhaustiveCats = 5
+const maxNonRandomExahustive = 10
 const maxNonBigCats = 30
 const minImp = 1e-12
 
@@ -148,11 +149,9 @@ func (f *Feature) BestSplit(target Target,
 		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
 	case false:
 		nCats := len(f.Back)
-		if itter || nCats > maxExhaustiveCats {
-
-			if nCats > maxNonBigCats {
-				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
-			}
+		if nCats > maxNonBigCats {
+			bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
+		} else if itter && nCats > maxExhaustiveCats {
 			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, parentImp, l, r, counter)
 		} else {
 			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, l, r, counter)
@@ -437,14 +436,14 @@ func (f *Feature) BestCatSplit(target Target,
 	*/
 	nCats := len(f.Back)
 
-	useExhaustive := nCats <= maxExhaustiveCats
+	useExhaustive := nCats <= maxNonRandomExahustive
 	nPartitions := 1
 	if useExhaustive {
 		//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
 		nPartitions = (2 << uint(nCats-2))
 	} else {
 		//if more then the max we will loop max times and generate random combinations
-		nPartitions = (2 << uint(maxExhaustiveCats-2))
+		nPartitions = (2 << uint(maxNonRandomExahustive-2))
 	}
 	bestSplit = 0
 	//start at 1 to ingnore the set with all on one side

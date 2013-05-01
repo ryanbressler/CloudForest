@@ -34,10 +34,10 @@ func main() {
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 	var itter bool
-	flag.BoolVar(&itter, "itterative", false, "Use an iterative instead of exahustive search for splitting catagorical variables.")
+	flag.BoolVar(&itter, "itterative", true, "Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.")
 
 	var l1 bool
-	flag.BoolVar(&itter, "l1", false, "Use l1 norm regression.")
+	flag.BoolVar(&itter, "l1", false, "Use l1 norm regression (target must be numeric).")
 
 	flag.Parse()
 
