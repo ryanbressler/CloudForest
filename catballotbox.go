@@ -51,29 +51,43 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 
 }
 
-//Tally error returns the error of the votes vs the provided feature.
-//For catagorical features it returns the error rate
-//For numerical features it returns root mean squared error.
-//The provided feature must use the same index as the feature matrix
-//the ballot box was constructed with.
-//Missing values are ignored.
-//Gini imurity is not used so this is not for use in rf implementations.
+/*
+Tally error returns the balanced clasification error for catagorical features.
+
+1 - sum((sum(Y(xi)=Y'(xi))/|xi|))
+
+where
+Y are the labels
+Y' are the estimated labels
+xi is the set of samples with the ith actual label
+
+Case for which the true catagory is not known are ignored.
+
+*/
 func (bb *CatBallotBox) TallyError(feature *Feature) (e float64) {
+	ncats := feature.NCats()
+	correct := make([]int, ncats)
+	total := make([]int, ncats)
 	e = 0.0
 
-	//Catagorical feature. Calculate error rate
-	c := 0
 	for i, value := range feature.CatData {
+
 		predicted := bb.Tally(i)
 		if !feature.Missing[i] {
-			if feature.Back[value] != predicted {
-				e += 1.0
+			total[value] += 1
+			if feature.Back[value] == predicted {
+				correct[value] += 1
 			}
 
-			c += 1
 		}
 	}
-	e = e / float64(c)
+
+	for i, ncorrect := range correct {
+		e += float64(ncorrect) / float64(total[i])
+	}
+
+	e /= float64(ncats)
+	e = 1.0 - e
 
 	return
 
