@@ -12,6 +12,54 @@ type Target interface {
 	FindPredicted(cases []int) (pred string)
 }
 
+/*
+RegretTarget wraps a catagorical feature for use in regret driven classification.
+*/
+type RegretTarget struct {
+	*Feature
+	costs []float64
+}
+
+/*
+SplitImpurity calculates the impurity of a splitinto the specified left and right
+groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
+and i(tl) i(tR) are the left and right impurites.
+
+Counter is only used for catagorical targets and should have the same length as the number of catagories in the target.
+*/
+func (target *RegretTarget) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
+	nl := float64(len(l))
+	nr := float64(len(r))
+
+	impurityDecrease = nl * target.Impurity(&l, counter)
+	impurityDecrease += nr * target.Impurity(&r, counter)
+
+	impurityDecrease /= nl + nr
+	return
+}
+
+func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
+	m := target.Modei(cases)
+	t := 0
+	for _, c := range cases {
+		if target.Missing[c] == false {
+			t += 1
+			cat := target.CatData[c]
+			if cat != m {
+				e += target.costs[cat]
+			}
+		}
+
+	}
+	e /= float64(1)
+
+	return
+
+}
+
+/*
+L1Target wraps a numerical feature as a target for us in l1 norm regresion.
+*/
 type L1Target struct {
 	*Feature
 }
