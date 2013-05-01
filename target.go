@@ -14,18 +14,29 @@ type Target interface {
 
 /*
 RegretTarget wraps a catagorical feature for use in regret driven classification.
+The ith entry in costs should contain the cost of misclassifying a case that actually
+has the ith catagory.
 */
 type RegretTarget struct {
 	*Feature
-	costs []float64
+	Costs []float64
+}
+
+//NewRegretTarget creates a RefretTarget and initializes RegretTarget.Costs to the proper length.
+func NewRegretTarget(f *Feature) *RegretTarget {
+	return &RegretTarget{f, make([]float64, f.NCats())}
+}
+
+/*RegretTarget.SetCosts puts costs in a map[string]float64 by feature name into the proper
+entries in RegretTarget.Costs.*/
+func (target *RegretTarget) SetCosts(costmap map[string]float64) {
+	for i, c := range target.Back {
+		target.Costs[i] = costmap[c]
+	}
 }
 
 /*
-SplitImpurity calculates the impurity of a splitinto the specified left and right
-groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
-and i(tl) i(tR) are the left and right impurites.
-
-Counter is only used for catagorical targets and should have the same length as the number of catagories in the target.
+RegretTarget.SplitImpurity is a version of Split Impurity that calls RegretTarget.Impurity
 */
 func (target *RegretTarget) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
 	nl := float64(len(l))
@@ -38,6 +49,8 @@ func (target *RegretTarget) SplitImpurity(l []int, r []int, counter *[]int) (imp
 	return
 }
 
+//RegretTarget.Impurity implements a simple regret functon that finds the average cost of
+//a set using the misclasiffication costs in RegretTarget.Costs.
 func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	m := target.Modei(cases)
 	t := 0
@@ -46,7 +59,7 @@ func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 			t += 1
 			cat := target.CatData[c]
 			if cat != m {
-				e += target.costs[cat]
+				e += target.Costs[cat]
 			}
 		}
 
@@ -64,11 +77,7 @@ type L1Target struct {
 }
 
 /*
-SplitImpurity calculates the impurity of a splitinto the specified left and right
-groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
-and i(tl) i(tR) are the left and right impurites.
-
-Counter is only used for catagorical targets and should have the same length as the number of catagories in the target.
+L1Target.SplitImpurity is an L1 version of SplitImpurity.
 */
 func (target *L1Target) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
 	nl := float64(len(l))
@@ -81,8 +90,7 @@ func (target *L1Target) SplitImpurity(l []int, r []int, counter *[]int) (impurit
 	return
 }
 
-//Impurity returns Gini impurity or mean squared error vs the mean for a set of cases
-//depending on weather the feature is catagorical or numerical
+//L1Target.Impurity is an L1 version of impurity returning L1 instead of squared error.
 func (target *L1Target) Impurity(cases *[]int, counter *[]int) (e float64) {
 	m := target.Mean(cases)
 	e = target.MeanL1Error(cases, m)
@@ -90,7 +98,7 @@ func (target *L1Target) Impurity(cases *[]int, counter *[]int) (e float64) {
 
 }
 
-//MeanL1Error returns the  Mean L1 norm error of the cases specifed vs the predicted
+//L1Target.MeanL1Error returns the  Mean L1 norm error of the cases specifed vs the predicted
 //value. Only non missing casses are considered.
 func (target *L1Target) MeanL1Error(cases *[]int, predicted float64) (e float64) {
 	e = 0.0

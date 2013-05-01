@@ -3,6 +3,9 @@ Package CloudForest implements decision trees for machine learning and includes 
 (golang) implementation of Breiman and Cutler's Random Forest for clasiffication and regression on
 heterogenous numerical/catagorical data with missing values.
 
+Notablly CloudForest includes the ability to implment and use alternative definitions of
+impurity and includes the ability to do L1 norm and simple weighted regret regression.
+
 CloudForest is being developed in the Shumelivich Lab at the Institute
 for Systems Biology and is released under a modified BSD style license.
 
@@ -15,9 +18,8 @@ When compiled with the default go 1.1 tool chain CloudForest achieves running ti
 better then implementations in other languages. Using gccgo (4.8.0 at least) results in longer
 running times and is not recomended at this time.
 
-CloudForest is especially fast with data that includes lots of binary or low n catagorical data (ie
-genomic variants) as it includeds optimized code to find the best spliter in these cases.
-
+CloudForest is especially fast with data that includes lots of binary or low n catagorical data and is
+well suited for use on genomic variants.
 
 Goals and Quirks
 
@@ -35,7 +37,7 @@ function/closure passed to a tree's root node's Recurse method:
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&canidates, mTry)
-			best, impDec := target.BestSplitter(fm, innercases, canidates[:mTry], itter, l, r)
+			best, impDec := fm.BestSplitter(target, innercases, canidates[:mTry], itter, l, r)
 			if best != nil && impDec > minImp {
 				//not a leaf node so define the spliter and left and right nodes
 				//so recursion will continue
@@ -55,7 +57,7 @@ function/closure passed to a tree's root node's Recurse method:
 
 This allows a researcher to include whatever additional analaysis they need (importance scores,
  proximity etc) in tree growth. The same Recurse method can also be used to analize existing forests
-to tabulate votes or extract scores structure. Utilities like leafcount and errorrate use this
+to tabulate scores or extract structure. Utilities like leafcount and errorrate use this
 method to tabulate data about the tree in collection objects.
 
 Go's slices are used extensivelly in CloudForest to make it simple to interact with optimized code.
@@ -107,8 +109,13 @@ In CloudForest data is stored using the FeatureMatrix struct which contains Feat
 The Feature struct  implments storage and methods for both catagorical and numerical data and is
 responsible for calculations of impurity etc and the search for the best split.
 
-Trees are built from Nodes and Splitters and stored within a Forest. Tree has a Grow method that
-implements Brieman and Cutler's method (see extract above). A GrowForest method is also provided
+The Target interface abstracts the methods of Feature that are needed for a feature to be predictable.
+This allows for the implementatiion of alternative types of regression and classification. L1Target
+and RegretTarget impliment L1 error regression and a simple cost weighted classification.
+
+Trees are built from Nodes and Splitters and stored within a Forest. Tree has a Grow
+implements Brieman and Cutler's method (see extract above) for growing a tree. A GrowForest
+method is also provided that implments the rest of the method including sampeling cases
 but it may be faster to grow the forest to disk as in the growforest utility.
 
 Prediction/Voteing is done using CatBallotBox and NumBallotBox which impliment the VoteTallyer
@@ -122,7 +129,11 @@ All utilities can be ran with -h to report ussage.
 growforest grows a random forest using the following paramaters
 
 	Usage of growforest:
+	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
 	  -cpuprofile="": write cpu profile to file
+	  -importance="": File name to output importance.
+	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
+	  -l1=false: Use l1 norm regression (target must be numeric).
 	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
 	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
 	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
@@ -130,6 +141,7 @@ growforest grows a random forest using the following paramaters
 	  -rfpred="rface.sf": File name to output predictor in rf-aces sf format.
 	  -target="": The row header of the target in the feature matrix.
 	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+
 
 
 errorrate calculates the error of a forest vs a testing data set and reports it to standard out

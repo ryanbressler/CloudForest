@@ -7,6 +7,16 @@ import (
 	"math/rand"
 )
 
+type RunningMean struct {
+	Mean  float64
+	Count int
+}
+
+func (rm *RunningMean) Add(val float64) {
+	rm.Mean = (rm.Mean*float64(rm.Count) + val) / (float64(rm.Count) + 1.0)
+	rm.Count += 1
+}
+
 //Sparse counter uses maps to track sparse integer counts in large matrix.
 //The matrix is assumed to contain zero values where nothing has been edded.
 type SparseCounter struct {

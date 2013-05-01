@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/ryanbressler/CloudForest"
@@ -18,6 +19,10 @@ func main() {
 		"rface.sf", "File name to output predictor in rf-aces sf format.")
 	targetname := flag.String("target",
 		"", "The row header of the target in the feature matrix.")
+	imp := flag.String("importance",
+		"", "File name to output importance.")
+	costs := flag.String("cost",
+		"", "For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.")
 
 	var nSamples int
 	flag.IntVar(&nSamples, "nSamples", 0, "The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases")
@@ -41,6 +46,8 @@ func main() {
 
 	flag.Parse()
 
+	fmt.Printf("nTrees : %v\n", nTrees)
+
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
@@ -62,26 +69,50 @@ func main() {
 	if nSamples <= 0 {
 		nSamples = len(data.Data[0].Missing)
 	}
+	fmt.Printf("nSamples : %v\n", nSamples)
 
 	if mTry <= 0 {
 		mTry = int(math.Ceil(math.Sqrt(float64(len(data.Data)))))
 	}
+	fmt.Printf("mTry : %v\n", mTry)
 
-	var target CloudForest.Target
-	if l1 {
-		target = &CloudForest.L1Target{&data.Data[data.Map[*targetname]]}
-	} else {
-		target = &data.Data[data.Map[*targetname]]
+	targeti, ok := data.Map[*targetname]
+	if !ok {
+		log.Fatal("Target not found in data.")
 	}
 
+	targetf := data.Data[targeti]
 	if leafSize <= 0 {
-		if target.NCats() == 0 {
+		if targetf.NCats() == 0 {
 			//regresion
 			leafSize = 4
 		} else {
 			//clasification
 			leafSize = 1
 		}
+	}
+	fmt.Printf("leafSize : %v\n", leafSize)
+
+	var target CloudForest.Target
+
+	switch {
+	case l1:
+		fmt.Println("Using l1 regression.")
+		target = &CloudForest.L1Target{&targetf}
+	case *costs != "":
+		fmt.Println("Using cost weighted classification: ", *costs)
+		costmap := make(map[string]float64)
+		err := json.Unmarshal([]byte(*costs), &costmap)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		regTarg := CloudForest.NewRegretTarget(&targetf)
+		regTarg.SetCosts(costmap)
+		target = regTarg
+
+	default:
+		target = &targetf
 	}
 
 	forestfile, err := os.Create(*rf)
@@ -92,13 +123,20 @@ func main() {
 	defer forestfile.Close()
 	fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
 
+	var imppnt *[]CloudForest.RunningMean
+	if *imp != "" {
+		fmt.Println("Recording Importance Scores.")
+		importance := make([]CloudForest.RunningMean, len(data.Data))
+		imppnt = &importance
+	}
+
 	canidates := make([]int, 0, len(data.Data))
-	targeti := data.Map[*targetname]
 	for i := 0; i < len(data.Data); i++ {
 		if i != targeti {
 			canidates = append(canidates, i)
 		}
 	}
+
 	tree := CloudForest.NewTree()
 	cases := make([]int, 0, nSamples)
 	l := make([]int, 0, nSamples)
@@ -111,9 +149,21 @@ func main() {
 			cases = append(cases, rand.Intn(nCases))
 		}
 
-		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, &l, &r)
+		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, imppnt, &l, &r)
 		fmt.Fprintf(forestfile, "TREE=%v\n", i)
 		tree.Root.Write(forestfile, "*")
+	}
+
+	if *imp != "" {
+		impfile, err := os.Create(*imp)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer impfile.Close()
+		for i, v := range *imppnt {
+			fmt.Fprintf(impfile, "%v\t%v\t%v\n", data.Data[i].Name, v.Mean, v.Count)
+
+		}
 	}
 
 }
