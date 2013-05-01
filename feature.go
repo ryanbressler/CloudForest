@@ -2,7 +2,6 @@ package CloudForest
 
 import (
 	"fmt"
-	//"github.com/psilva261/timsort"
 	"math/big"
 	"math/rand"
 	"sort"
@@ -113,6 +112,77 @@ func ParseFeature(record []string) Feature {
 	}
 	return f
 
+}
+
+/*
+BestSplit finds the best split of the features that can be achieved using
+the specified target and cases. It returns a Splitter and the decrease in impurity.
+
+Pointers to slices for l and r and counter are used to reduce realocations during search
+and will not contain meaningfull results after.
+
+For best performance, l and r should have the same capacity as cases. counter is only
+used for catagorical targets and should have the same length as the number of catagories
+in the target.
+*/
+func (f *Feature) BestSplit(target *Feature,
+	cases *[]int,
+	parentImp float64,
+	itter bool,
+	l *[]int,
+	r *[]int,
+	counter *[]int,
+	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
+
+	switch f.Numerical {
+	case true:
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
+	case false:
+		nCats := len(f.Back)
+		if itter || nCats > maxExhaustiveCats {
+
+			if nCats > maxNonBigCats {
+				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
+			}
+			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, parentImp, l, r, counter)
+		} else {
+			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, l, r, counter)
+		}
+
+	}
+	return
+
+}
+
+//Decode split builds a sliter from the numeric values returned by BestNumSplit or
+//BestCatSplit. Numeric splitters are decoded to send values <= num left. Catagorical
+//splitters are decoded to send catgorical values for which the bit in cat is 1 left.
+func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter) {
+	if f.Numerical {
+		s = &Splitter{f.Name, true, num, nil}
+	} else {
+		nCats := len(f.Back)
+		s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
+
+		if nCats > maxNonBigCats {
+			for j := 0; j < nCats; j++ {
+				if 0 != bigCat.Bit(j) {
+					s.Left[f.Back[j]] = true
+				}
+
+			}
+		} else {
+			for j := 0; j < nCats; j++ {
+
+				if 0 != (cat & (1 << uint(j))) {
+					s.Left[f.Back[j]] = true
+				}
+
+			}
+		}
+
+	}
+	return
 }
 
 /*BigIterBestCatSplit performs an iterative search to find the split that minimizes impurity
@@ -413,37 +483,6 @@ func (f *Feature) BestCatSplit(target *Feature,
 	return
 }
 
-//Decode split builds a sliter from the numeric values returned by BestNumSplit or
-//BestCatSplit. Numeric splitters are decoded to send values <= num left. Catagorical
-//splitters are decoded to send catgorical values for which the bit in cat is 1 left.
-func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter) {
-	if f.Numerical {
-		s = &Splitter{f.Name, true, num, nil}
-	} else {
-		nCats := len(f.Back)
-		s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
-
-		if nCats > maxNonBigCats {
-			for j := 0; j < nCats; j++ {
-				if 0 != bigCat.Bit(j) {
-					s.Left[f.Back[j]] = true
-				}
-
-			}
-		} else {
-			for j := 0; j < nCats; j++ {
-
-				if 0 != (cat & (1 << uint(j))) {
-					s.Left[f.Back[j]] = true
-				}
-
-			}
-		}
-
-	}
-	return
-}
-
 /*
 BestNumSsplit searches over the possible splits of cases that can be made with f
 and returns the one that minimizes the impurity of the target and the impurity decrease.
@@ -478,12 +517,8 @@ func (f *Feature) BestNumSplit(target *Feature,
 	sorter.Cases = left
 	sort.Sort(sorter)
 
-	// timsort is slower for by test cases but could potentially be made faster by eliminating
+	// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 	// repeated alocations
-	// sortedcases := *cases
-	// timsort.Ints(sortedcases, func(a, b int) bool {
-	// 	return f.NumData[a] < f.NumData[b]
-	// })
 
 	for i := 1; i < len(sorter.Cases)-1; i++ {
 		c := sorter.Cases[i]
@@ -508,45 +543,6 @@ func (f *Feature) BestNumSplit(target *Feature,
 }
 
 /*
-BestSplit finds the best split of the features that can be achieved using
-the specified target and cases it returns a Splitter and the decrease in impurity.
-
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
-
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.
-*/
-func (f *Feature) BestSplit(target *Feature,
-	cases *[]int,
-	parentImp float64,
-	itter bool,
-	l *[]int,
-	r *[]int,
-	counter *[]int,
-	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
-
-	switch f.Numerical {
-	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
-	case false:
-		nCats := len(f.Back)
-		if itter || nCats > maxExhaustiveCats {
-
-			if nCats > maxNonBigCats {
-				bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
-			}
-			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, parentImp, l, r, counter)
-		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, l, r, counter)
-		}
-
-	}
-	return
-
-}
-
-/*
 FilterMissing loops over the cases and appends them into filtered.
 For most use cases filtered should have zero length before you begin as it is not reset
 internally
@@ -561,7 +557,7 @@ func (f *Feature) FilterMissing(cases *[]int, filtered *[]int) {
 }
 
 /*
-Impurity Decrease calculates the decrease in impurity by spliting into the specified left and right
+SplitImpurity calculates the impurity of a splitinto the specified left and right
 groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR are the probability of case going left or right
 and i(tl) i(tR) are the left and right impurites.
 
@@ -572,11 +568,10 @@ func (target *Feature) SplitImpurity(l []int, r []int, counter *[]int) (impurity
 	// r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
-	switch target.Numerical {
-	case true:
+	if target.Numerical {
 		impurityDecrease = nl * target.NumImp(&l)
 		impurityDecrease += nr * target.NumImp(&r)
-	case false:
+	} else {
 		impurityDecrease = nl * target.GiniWithoutAlocate(&l, counter)
 		impurityDecrease += nr * target.GiniWithoutAlocate(&r, counter)
 	}
@@ -584,67 +579,13 @@ func (target *Feature) SplitImpurity(l []int, r []int, counter *[]int) (impurity
 	return
 }
 
-/*
-BestSplitter finds the best splitter from a number of canidate features to slit on by looping over
-all features and calling BestSplit.
-
-Pointers to slices for l and r are used to reduce realocations during repeated calls
-and will not contain meaningfull results.
-
-l and r should have capacity >=  cap(cases) to avoid resizing.
-*/
-func (target *Feature) BestSplitter(fm *FeatureMatrix,
-	cases []int,
-	canidates []int,
-	itter bool,
-	l *[]int,
-	r *[]int) (s *Splitter, impurityDecrease float64) {
-
-	parentImp := target.Impurity(&cases)
-	impurityDecrease = minImp
-
-	var f, bestF *Feature
-	var num, bestNum, inerImp float64
-	var cat, bestCat int
-	var bigCat, bestBigCat *big.Int
-
-	var counter []int
-	sorter := new(SortableFeature)
-	if target.Numerical == false {
-		counter = make([]int, len(target.Back), len(target.Back))
-	}
-
-	left := *l
-	right := *r
-
-	for _, i := range canidates {
-		left = left[:]
-		right = right[:]
-		f = &fm.Data[i]
-		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, itter, &left, &right, &counter, sorter)
-		//BUG more stringent cutoff in BestSplitter?
-		if inerImp > minImp && inerImp > impurityDecrease {
-			bestF = f
-			impurityDecrease = inerImp
-			bestNum = num
-			bestCat = cat
-			bestBigCat = bigCat
-		}
-
-	}
-	if impurityDecrease > minImp {
-		s = bestF.DecodeSplit(bestNum, bestCat, bestBigCat)
-	}
-	return
-}
-
 //Impurity returns Gini impurity or mean squared error vs the mean for a set of cases
 //depending on weather the feature is catagorical or numerical
-func (target *Feature) Impurity(cases *[]int) (e float64) {
+func (target *Feature) Impurity(cases *[]int, counter *[]int) (e float64) {
 	if target.Numerical {
 		e = target.NumImp(cases)
 	} else {
-		e = target.Gini(cases)
+		e = target.GiniWithoutAlocate(cases, counter)
 	}
 	return
 
@@ -725,6 +666,26 @@ func (target *Feature) Mean(cases *[]int) (m float64) {
 
 }
 
+//Mode returns the mode catagory feature for the cases specified
+func (f *Feature) Mode(cases *[]int) (m string) {
+	counts := make([]int, len(f.Back))
+	for _, i := range *cases {
+		if !f.Missing[i] {
+			counts[f.CatData[i]] += 1
+		}
+
+	}
+	max := 0
+	for k, v := range counts {
+		if v > max {
+			m = f.Back[k]
+			max = v
+		}
+	}
+	return
+
+}
+
 //Find predicted takes the indexes of a set of cases and returns the
 //predicted value. For catagorical features this is a string containing the
 //most common catagory and for numerical it is the mean of the values.
@@ -735,21 +696,7 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 		pred = fmt.Sprintf("%v", f.Mean(&cases))
 
 	case false:
-		//catagorical...abstract to mode function?
-		m := make([]int, len(f.Back))
-		for _, i := range cases {
-			if !f.Missing[i] {
-				m[f.CatData[i]] += 1
-			}
-
-		}
-		max := 0
-		for k, v := range m {
-			if v > max {
-				pred = f.Back[k]
-				max = v
-			}
-		}
+		pred = f.Mode(&cases)
 
 	}
 	return

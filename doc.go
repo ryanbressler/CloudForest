@@ -26,8 +26,9 @@ to implement ensembels of decision trees. CloudForest is written in (somewhat) i
 go to allow a programer to implement and scale new models and analysis quickly instead
 of having to modify complex code.
 
-Go's support for first class functions is key to CloudForests flexiblity. For example
-growing a decision tree using Breiman and Cutler's method can be done in an anonymous
+Go's support for first class functions is used to provide a interface to run code as data
+is percolated through a tree. This method is flexible enough that it can extend the tree being
+analised. Growing a decision tree using Breiman and Cutler's method can be done in an anonymous
 function/closure passed to a tree's root node's Recurse method:
 
 	tree.Root.Recurse(func(n *Node, innercases []int) {
@@ -54,7 +55,8 @@ function/closure passed to a tree's root node's Recurse method:
 
 This allows a researcher to include whatever additional analaysis they need (importance scores,
  proximity etc) in tree growth. The same Recurse method can also be used to analize existing forests
-to tabulate votes or extract scores structure.
+to tabulate votes or extract scores structure. Utilities like leafcount and errorrate use this
+method to tabulate data about the tree in collection objects.
 
 Go's slices are used extensivelly in CloudForest to make it simple to interact with optimized code.
 Many previous imlementations of Random Forest have avoided reallocation by reordering data in
