@@ -1,9 +1,6 @@
 package CloudForest
 
-import (
-	"fmt"
-	"io"
-)
+import ()
 
 //Forest represents a collection of decision trees grown to predict Target.
 type Forest struct {
@@ -63,13 +60,4 @@ func GrowRandomForest(fm *FeatureMatrix,
 		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, importance, &l, &r)
 	}
 	return
-}
-
-func (f *Forest) SavePredictor(w io.Writer) {
-	fmt.Fprintf(w, "FOREST=RF,TARGET=%v,NTREES=%v\n", f.Target, len(f.Trees))
-	for i, t := range f.Trees {
-		fmt.Fprintf(w, "TREE=%v\n", i)
-		t.Root.Write(w, "*")
-	}
-
 }
