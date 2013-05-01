@@ -37,7 +37,7 @@ func main() {
 	flag.BoolVar(&itter, "itterative", true, "Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.")
 
 	var l1 bool
-	flag.BoolVar(&itter, "l1", false, "Use l1 norm regression (target must be numeric).")
+	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
 	flag.Parse()
 

@@ -143,18 +143,19 @@ func (f *Feature) BestSplit(target Target,
 	r *[]int,
 	counter *[]int,
 	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
-
 	switch f.Numerical {
 	case true:
 		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
 	case false:
 		nCats := len(f.Back)
-		if nCats > maxNonBigCats {
+		if itter && nCats > maxNonBigCats {
 			bestBigCat, impurityDecrease = f.BigIterBestCatSplit(target, cases, parentImp, l, r, counter)
 		} else if itter && nCats > maxExhaustiveCats {
 			bestCat, impurityDecrease = f.IterBestCatSplit(target, cases, parentImp, l, r, counter)
+		} else if nCats > maxNonBigCats {
+			bestBigCat, impurityDecrease = f.BigBestCatSplit(target, cases, parentImp, maxNonRandomExahustive, l, r, counter)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, maxNonRandomExahustive, l, r, counter)
 		}
 
 	}
@@ -195,10 +196,6 @@ func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitte
 
 /*BigIterBestCatSplit performs an iterative search to find the split that minimizes impurity
 in the specified target.
-
-rf-ace finds the "best" catagorical split using a greedy method that starts with the
-single best catagory, and finds the best catagory to add on each iteration.
-
 
 Searching is implmented via bitwise on intergers for speed but will currentlly only work
 when there are less catagories then the number of bits in an int.
@@ -294,15 +291,12 @@ func (f *Feature) BigIterBestCatSplit(target Target, cases *[]int, parentImp flo
 	return
 }
 
-/*IterBestCatSplit performs an iterative search to find the split that minimizes impurity
+/*
+IterBestCatSplit performs an iterative search to find the split that minimizes impurity
 in the specified target.
 
-rf-ace finds the "best" catagorical split using a greedy method that starts with the
-single best catagory, and finds the best catagory to add on each iteration.
-
-
-Searching is implmented via bitwise on intergers for speed but will currentlly only work
-when there are less catagories then the number of bits in an int.
+Searching is implmented via bitwise ops on ints (32 bit) for speed but will currentlly only work
+when there are <31 catagories. Use BigInterBestCatSplit above that.
 
 The best split is returned as an int for which the bits coresponding to catagories that should
 be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
@@ -403,9 +397,9 @@ This implementation follows Brieman's implementation and the R/Matlab implementa
 based on it use exsaustive search overfor when there are less thatn 25/10 catagories
 and random splits above that.
 
-Searching is implmented via bitwise oporations vs an incrementing or random integer for speed
-but will currentlly only work when there are less catagories then the number of bits in an
-int.
+Searching is implmented via bitwise oporations vs an incrementing or random int (32 bit) for speed
+but will currentlly only work when there are less then 31 catagories. Use one of the Big functions
+above that.
 
 The best split is returned as an int for which the bits coresponding to catagories that should
 be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
@@ -421,6 +415,7 @@ should have the same length as the number of catagories in the target.
 func (f *Feature) BestCatSplit(target Target,
 	cases *[]int,
 	parentImp float64,
+	maxEx int,
 	l *[]int,
 	r *[]int,
 	counter *[]int) (bestSplit int, impurityDecrease float64) {
@@ -428,28 +423,30 @@ func (f *Feature) BestCatSplit(target Target,
 	impurityDecrease = minImp
 	left := *l
 	right := *r
-	/*this won't work for n > 32. Should use bigint random or iterative search for nCats>10
+	/*
 
-	Eahustive search of combinations of catagories is carried out by iterating an Int and using
-	the bits to define which catagories go to the left of the split.
+		Eahustive search of combinations of catagories is carried out by iterating an Int and using
+		the bits to define which catagories go to the left of the split.
 
 	*/
 	nCats := len(f.Back)
 
-	useExhaustive := nCats <= maxNonRandomExahustive
+	useExhaustive := nCats <= maxEx
 	nPartitions := 1
 	if useExhaustive {
 		//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
 		nPartitions = (2 << uint(nCats-2))
 	} else {
 		//if more then the max we will loop max times and generate random combinations
-		nPartitions = (2 << uint(maxNonRandomExahustive-2))
+		nPartitions = (2 << uint(maxEx-2))
 	}
 	bestSplit = 0
+	bits := 0
+	innerimp := 0.0
 	//start at 1 to ingnore the set with all on one side
 	for i := 1; i < nPartitions; i++ {
 
-		bits := i
+		bits = i
 		if !useExhaustive {
 			//generate random partition
 			bits = rand.Int()
@@ -463,10 +460,9 @@ func (f *Feature) BestCatSplit(target Target,
 		for _, c := range *cases {
 			if f.Missing[c] == false {
 				j = f.CatData[c]
-				switch 0 != (bits & (1 << uint(j))) {
-				case true:
+				if 0 != (bits & (1 << uint(j))) {
 					left = append(left, c)
-				case false:
+				} else {
 					right = append(right, c)
 				}
 			}
@@ -478,11 +474,103 @@ func (f *Feature) BestCatSplit(target Target,
 			continue
 		}
 
-		innerimp := parentImp - target.SplitImpurity(left, right, counter)
+		innerimp = parentImp - target.SplitImpurity(left, right, counter)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
 			impurityDecrease = innerimp
+
+		}
+
+	}
+
+	return
+}
+
+/*BigBestCatSplit performs a random/exahustive search to find the split that minimizes impurity
+in the specified target.
+
+Searching is implmented via bitwise on Big.Ints to handle large n catagorical features but BestCatSplit
+should be used for n <31.
+
+The best split is returned as a BigInt for which the bits coresponding to catagories that should
+be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
+trainig feature and should not be applied to testing data without doing so as the order of
+catagories may have changed.
+
+Pointers to slices for l and r and counter are used to reduce realocations during search
+and will not contain meaningfull results.
+
+l and r should have the same capacity as cases . counter is only used for catagorical targets and
+should have the same length as the number of catagories in the target.*/
+func (f *Feature) BigBestCatSplit(target Target, cases *[]int, parentImp float64, maxEx int, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64) {
+
+	left := *l
+	right := *r
+
+	nCats := len(f.Back)
+
+	//overall running best impurity and split
+	impurityDecrease = minImp
+	bestSplit = big.NewInt(0)
+
+	//running best with n catagories
+	innerImp := minImp
+
+	bits := big.NewInt(1)
+
+	var randgn *rand.Rand
+	var maxPart *big.Int
+	useExhaustive := nCats <= maxEx
+	nPartitions := big.NewInt(2)
+	if useExhaustive {
+		//2**(nCats-2) is the number of valid partitions (collapsing symetric partions)
+		nPartitions.Lsh(nPartitions, uint(nCats-2))
+	} else {
+		//if more then the max we will loop max times and generate random combinations
+		nPartitions.Lsh(nPartitions, uint(maxEx-2))
+		maxPart = big.NewInt(2)
+		maxPart.Lsh(maxPart, uint(nCats-2))
+		randgn = rand.New(rand.NewSource(0))
+	}
+
+	//iterativelly build a combination of catagories untill they
+	//stop getting better
+	for i := big.NewInt(1); i.Cmp(nPartitions) == -1; i.Add(i, big.NewInt(1)) {
+
+		bits.Set(i)
+		if !useExhaustive {
+			//generate random partition
+			bits.Rand(randgn, maxPart)
+		}
+
+		//check the value of the j'th bit of i and
+		//send j left or right
+		left = left[0:0]
+		right = right[0:0]
+		j := 0
+		for _, c := range *cases {
+			if f.Missing[c] == false {
+				j = f.CatData[c]
+				if 0 != bits.Bit(j) {
+					left = append(left, c)
+				} else {
+					right = append(right, c)
+				}
+			}
+
+		}
+
+		//skip cases where the split didn't do any splitting
+		if len(left) == 0 || len(right) == 0 {
+			continue
+		}
+
+		innerImp = parentImp - target.SplitImpurity(left, right, counter)
+
+		if innerImp > impurityDecrease {
+			bestSplit.Set(bits)
+			impurityDecrease = innerImp
 
 		}
 
@@ -676,6 +764,13 @@ func (target *Feature) Mean(cases *[]int) (m float64) {
 
 //Mode returns the mode catagory feature for the cases specified
 func (f *Feature) Mode(cases *[]int) (m string) {
+	m = f.Back[f.Modei(cases)]
+	return
+
+}
+
+//Mode returns the mode catagory feature for the cases specified
+func (f *Feature) Modei(cases *[]int) (m int) {
 	counts := make([]int, len(f.Back))
 	for _, i := range *cases {
 		if !f.Missing[i] {
@@ -686,7 +781,7 @@ func (f *Feature) Mode(cases *[]int) (m string) {
 	max := 0
 	for k, v := range counts {
 		if v > max {
-			m = f.Back[k]
+			m = k
 			max = v
 		}
 	}

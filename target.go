@@ -41,7 +41,7 @@ func (target *RegretTarget) SplitImpurity(l []int, r []int, counter *[]int) (imp
 func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	m := target.Modei(cases)
 	t := 0
-	for _, c := range cases {
+	for _, c := range *cases {
 		if target.Missing[c] == false {
 			t += 1
 			cat := target.CatData[c]
@@ -51,10 +51,9 @@ func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 		}
 
 	}
-	e /= float64(1)
+	e /= float64(t)
 
 	return
-
 }
 
 /*
