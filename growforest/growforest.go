@@ -36,6 +36,9 @@ func main() {
 	var itter bool
 	flag.BoolVar(&itter, "itterative", false, "Use an iterative instead of exahustive search for splitting catagorical variables.")
 
+	var l1 bool
+	flag.BoolVar(&itter, "l1", false, "Use l1 norm regression.")
+
 	flag.Parse()
 
 	if *cpuprofile != "" {
@@ -59,20 +62,28 @@ func main() {
 	if nSamples <= 0 {
 		nSamples = len(data.Data[0].Missing)
 	}
+
 	if mTry <= 0 {
 		mTry = int(math.Ceil(math.Sqrt(float64(len(data.Data)))))
 	}
-	target := &data.Data[data.Map[*targetname]]
+
+	var target CloudForest.Target
+	if l1 {
+		target = &CloudForest.L1Target{&data.Data[data.Map[*targetname]]}
+	} else {
+		target = &data.Data[data.Map[*targetname]]
+	}
 
 	if leafSize <= 0 {
-		switch target.Numerical {
-		case true:
+		if target.NCats() == 0 {
+			//regresion
 			leafSize = 4
-		case false:
+		} else {
+			//clasification
 			leafSize = 1
 		}
 	}
-	//create output file now to make sure it is writeable before doing long computations.
+
 	forestfile, err := os.Create(*rf)
 	if err != nil {
 		log.Fatal(err)
@@ -82,7 +93,7 @@ func main() {
 	fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
 
 	canidates := make([]int, 0, len(data.Data))
-	targeti := data.Map[target.Name]
+	targeti := data.Map[*targetname]
 	for i := 0; i < len(data.Data); i++ {
 		if i != targeti {
 			canidates = append(canidates, i)
@@ -104,6 +115,5 @@ func main() {
 		fmt.Fprintf(forestfile, "TREE=%v\n", i)
 		tree.Root.Write(forestfile, "*")
 	}
-	/*forrest := CloudForest.GrowRandomForest(data, target, nSamples, mTry, nTrees, leafSize, itter)
-	forrest.SavePredictor(forestfile)*/
+
 }

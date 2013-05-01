@@ -23,7 +23,7 @@ and will not contain meaningfull results.
 
 l and r should have capacity >=  cap(cases) to avoid resizing.
 */
-func (fm *FeatureMatrix) BestSplitter(target *Feature,
+func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases []int,
 	canidates []int,
 	itter bool,
@@ -37,10 +37,13 @@ func (fm *FeatureMatrix) BestSplitter(target *Feature,
 	var cat, bestCat int
 	var bigCat, bestBigCat *big.Int
 
-	var counter []int
 	sorter := new(SortableFeature)
-	if target.Numerical == false {
-		counter = make([]int, len(target.Back), len(target.Back))
+	var counter []int
+
+	ncats := target.NCats()
+
+	if ncats > 0 {
+		counter = make([]int, ncats, ncats)
 	}
 
 	parentImp := target.Impurity(&cases, &counter)

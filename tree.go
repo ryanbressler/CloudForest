@@ -60,7 +60,7 @@ mTry specifies the number of canidate features to evaluate for each split.
 leafSize specifies the minimum number of cases at a leafNode.
 */
 func (t *Tree) Grow(fm *FeatureMatrix,
-	target *Feature,
+	target Target,
 	cases []int,
 	canidates []int,
 	mTry int,
