@@ -120,8 +120,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	forestwriter := CloudForest.NewForestWriter(forestfile)
 	defer forestfile.Close()
-	fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
+
+	forestwriter.WriteForestHeader(*targetname, nTrees)
+	//fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
 
 	var imppnt *[]CloudForest.RunningMean
 	if *imp != "" {
@@ -150,8 +153,7 @@ func main() {
 		}
 
 		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, imppnt, &l, &r)
-		fmt.Fprintf(forestfile, "TREE=%v\n", i)
-		tree.Root.Write(forestfile, "*")
+		forestwriter.WriteTree(tree, i)
 	}
 
 	if *imp != "" {

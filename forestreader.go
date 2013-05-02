@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+/*TODO: refactor into forestreader struct that supports tree by tree analysis*/
+
 /*ParseRfAcePredictor reads a forest from an io.Reader.
 The forest should be in rf-ace's "stoicastic forest" sf format
 It ignores fields that are not use by cloud forest.

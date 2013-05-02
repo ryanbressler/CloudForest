@@ -214,9 +214,8 @@ func (f *Feature) BigIterBestCatSplit(target Target, cases *[]int, parentImp flo
 
 	left := *l
 	right := *r
-	/*BUG(ryan) this won't work for n > 32. Should use bigint? or iterative search for nCats>10
-
-	This is an iterative search for the best combinations of catagories.
+	/*
+		This is an iterative search for the best combinations of catagories.
 	*/
 
 	nCats := len(f.Back)
@@ -312,9 +311,8 @@ func (f *Feature) IterBestCatSplit(target Target, cases *[]int, parentImp float6
 
 	left := *l
 	right := *r
-	/*BUG(ryan) this won't work for n > 32. Should use bigint? or iterative search for nCats>10
-
-	This is an iterative search for the best combinations of catagories.
+	/*
+		This is an iterative search for the best combinations of catagories.
 	*/
 
 	nCats := len(f.Back)
