@@ -44,6 +44,9 @@ func main() {
 	var l1 bool
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
+	var entropy bool
+	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be catagorical).")
+
 	flag.Parse()
 
 	fmt.Printf("nTrees : %v\n", nTrees)
@@ -57,6 +60,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	//Parse Data
 	datafile, err := os.Open(*fm)
 	if err != nil {
 		log.Fatal(err)
@@ -76,6 +80,7 @@ func main() {
 	}
 	fmt.Printf("mTry : %v\n", mTry)
 
+	//find the target feature
 	targeti, ok := data.Map[*targetname]
 	if !ok {
 		log.Fatal("Target not found in data.")
@@ -93,6 +98,7 @@ func main() {
 	}
 	fmt.Printf("leafSize : %v\n", leafSize)
 
+	//****** Set up Target for Alternative Impurity  if needed *******//
 	var target CloudForest.Target
 
 	switch {
@@ -111,6 +117,10 @@ func main() {
 		regTarg.SetCosts(costmap)
 		target = regTarg
 
+	case entropy:
+		fmt.Println("Using entropy minimizing classification.")
+		target = &CloudForest.EntropyTarget{&targetf}
+
 	default:
 		target = &targetf
 	}
@@ -123,7 +133,7 @@ func main() {
 	forestwriter := CloudForest.NewForestWriter(forestfile)
 	forestwriter.WriteForestHeader(*targetname, nTrees)
 
-	//fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
+	//****************** Needed Collections and vars ******************//
 
 	var imppnt *[]CloudForest.RunningMean
 	if *imp != "" {
@@ -143,6 +153,8 @@ func main() {
 	cases := make([]int, 0, nSamples)
 	l := make([]int, 0, nSamples)
 	r := make([]int, 0, nSamples)
+
+	//****************** Good Stuff Stars Here ;) ******************//
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
 		cases = cases[0:0]

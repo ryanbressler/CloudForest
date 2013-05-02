@@ -64,19 +64,23 @@ to tabulate scores or extract structure. Utilities like leafcount and errorrate 
 method to tabulate data about the tree in collection objects.
 
 
-Impurity
+Alternative Impurities
 
 Decision tree's are grown with the goal of reducing "Impurity" which is usually defined as Gini
 Impurity for catagorical targets or mean squared error for numerical targets. CloudForest grows
-trees against the Target interface which allows for alternative definitions of impurity.  L1Target
-and RegretTarget impliment L1 norm error regression and a simple cost weighted classification.
+trees against the Target interface which allows for alternative definitions of impurity. CloudForest
+includes several alternative targets:
+
+ EntropyTarget : For use in entropy minimizing classification
+ RegretTarget  : For use in classification driven by differing costs in miscatagorization.
+ L1Target      : For use in L1 norm error regression (which may be less sensative to outliers).
 
 
-Splitting
+Effichent Splitting
 
 Repeatedly spliting the data and searching for the best split at each node of a decision tree
 are the most computationally intensive parts of decision tree learning and CloudForest includes
-optimized (if quirky) code for these areas.
+optimized code to perform these tasks.
 
 Go's slices are used extensivelly in CloudForest to make it simple to interact with optimized code.
 Many previous imlementations of Random Forest have avoided reallocation by reordering data in
@@ -205,6 +209,7 @@ Growforest Utility
 	Usage of growforest:
 	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
 	  -cpuprofile="": write cpu profile to file
+	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
 	  -importance="": File name to output importance.
 	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
 	  -l1=false: Use l1 norm regression (target must be numeric).
@@ -260,7 +265,8 @@ Adele Cuttler. Their code and paper's can be found at:
 http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm
 
 All code in CloudForest is origional but some ideas for methods and optimizations were inspired by
-rf-ace and R's randomForest package:
+Timo Erkilla's rf-ace and Andy Liaw and Matthew Wiener randomForest R package based on Brieman and
+Cuttler's code:
 
 https://code.google.com/p/rf-ace/
 http://cran.r-project.org/web/packages/randomForest/index.html
@@ -271,6 +277,11 @@ excellent description and analysis of Random Forests though CloudForest does not
 any of the additional analysis it describes:
 http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
 
+The idea for EntropyTarget comes from Ross Quinlan's ID3:
+http://en.wikipedia.org/wiki/ID3_algorithm
+
+"The Elements of Statistical Learning" 2nd edition by Trevor Hastie, Robert Tibshirani and Jerome Friedman
+was also consulted during development.
 
 */
 package CloudForest
