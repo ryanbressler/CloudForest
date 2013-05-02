@@ -33,7 +33,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer forestfile.Close()
-	forest := CloudForest.ParseRfAcePredictor(forestfile)
+	forestreader := CloudForest.NewForestReader(forestfile)
+	forest, err := forestreader.ReadForest()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
 	featureCounts := make([]int, nfeatures) // a total count of the number of times each feature was used to split

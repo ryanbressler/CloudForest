@@ -119,11 +119,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	forestwriter := CloudForest.NewForestWriter(forestfile)
 	defer forestfile.Close()
-
+	forestwriter := CloudForest.NewForestWriter(forestfile)
 	forestwriter.WriteForestHeader(*targetname, nTrees)
+
 	//fmt.Fprintf(forestfile, "FOREST=RF,TARGET=%v,NTREES=%v\n", *targetname, nTrees)
 
 	var imppnt *[]CloudForest.RunningMean

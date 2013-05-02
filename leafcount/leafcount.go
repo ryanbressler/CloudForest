@@ -28,7 +28,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer forestfile.Close()
-	forest := CloudForest.ParseRfAcePredictor(forestfile)
+	forestreader := CloudForest.NewForestReader(forestfile)
+	forest, err := forestreader.ReadForest()
+	if err != nil {
+		log.Fatal(err)
+	}
 	log.Print("Forest has ", len(forest.Trees), " trees ")
 
 	counts := new(CloudForest.SparseCounter)

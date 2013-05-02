@@ -5,26 +5,23 @@ import (
 	"io"
 )
 
-//Not fully implemented yet.
+/*
+ForestWriter wraps an io writer with functionality to write forests either with one
+call to WriteForest or incrimentally using WriteForestHeader and WriteTree.
+ForestWriter save's a forest in .sf format; see the package doc's in doc.go for
+full format details.
+It won't include fields that are not use by CloudForest.
+*/
 type ForestWriter struct {
 	w io.Writer
 }
 
-/*NewForestWriter save's a forest in rf-ace's "stoicastic forest" sf format
-It won't include fields that are not use by cloud forest.
-Start of an example file:
-
-	FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800,CATEGORIES="",SHRINKAGE=0
-	TREE=0
-	NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false",RVALUES="true"
-	NODE=*L,PRED=3.75
-	NODE=*R,PRED=1
-
-Node should be a path the form *LRL where * indicates the root L and R indicate Left and Right.*/
+/*NewForestWriter returns a pointer to a new ForestWriter. */
 func NewForestWriter(w io.Writer) *ForestWriter {
 	return &ForestWriter{w}
 }
 
+//WriteForest writes an entire forest including all headers.
 func (fw *ForestWriter) WriteForest(forest *Forest) {
 	fw.WriteForestHeader(forest.Target, len(forest.Trees))
 	for i, tree := range forest.Trees {
@@ -32,20 +29,40 @@ func (fw *ForestWriter) WriteForest(forest *Forest) {
 	}
 }
 
+//WriteTree writes an entire Tree including the header.
 func (fw *ForestWriter) WriteTree(tree *Tree, ntree int) {
 	fw.WriteTreeHeader(ntree)
 	fw.WriteNodeAndChildren(tree.Root, "*")
 }
 
+//WriteForestHeader writes only the header of a forest.
 func (fw *ForestWriter) WriteForestHeader(target string, ntrees int) {
 	fmt.Fprintf(fw.w, "FOREST=RF,TARGET=%v,NTREES=%v\n", target, ntrees)
 }
 
+//WrieTreeHeader writes only the header line for a tree.
 func (fw *ForestWriter) WriteTreeHeader(ntree int) {
 	fmt.Fprintf(fw.w, "TREE=%v\n", ntree)
 }
 
+//WriteNodeAndChildren recursivelly writes out the target node and all of its chilldren.
+//WriteTree is prefered for most use cases.
 func (fw *ForestWriter) WriteNodeAndChildren(n *Node, path string) {
+
+	fw.WriteNode(n, path)
+	if n.Splitter != nil && n.Left != nil {
+		fw.WriteNodeAndChildren(n.Left, path+"L")
+	}
+	if n.Splitter != nil && n.Right != nil {
+		fw.WriteNodeAndChildren(n.Right, path+"R")
+	}
+
+}
+
+//WriteNode writes a single node but not it's children. WriteTree will be used more
+//often but WriteNode can be used to grow a large tree directelly to disk without
+//storing it in memory.
+func (fw *ForestWriter) WriteNode(n *Node, path string) {
 	node := fmt.Sprintf("NODE=%v", path)
 	if n.Pred != "" {
 		node += fmt.Sprintf(",PRED=%v", n.Pred)
@@ -62,12 +79,4 @@ func (fw *ForestWriter) WriteNodeAndChildren(n *Node, path string) {
 		}
 	}
 	fmt.Fprintln(fw.w, node)
-
-	if n.Splitter != nil && n.Left != nil {
-		fw.WriteNodeAndChildren(n.Left, path+"L")
-	}
-	if n.Splitter != nil && n.Right != nil {
-		fw.WriteNodeAndChildren(n.Right, path+"R")
-	}
-
 }

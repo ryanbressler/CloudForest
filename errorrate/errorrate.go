@@ -28,7 +28,12 @@ func main() {
 		log.Fatal(err)
 	}
 	defer forestfile.Close()
-	forest := CloudForest.ParseRfAcePredictor(forestfile)
+	forestreader := CloudForest.NewForestReader(forestfile)
+	forest, err := forestreader.ReadForest()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	target := &data.Data[data.Map[forest.Target]]
 	var bb CloudForest.VoteTallyer
 	switch target.Numerical {
