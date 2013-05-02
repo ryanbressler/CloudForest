@@ -16,7 +16,7 @@ func main() {
 	fm := flag.String("train",
 		"featurematrix.afm", "AFM formated feature matrix containing training data.")
 	rf := flag.String("rfpred",
-		"rface.sf", "File name to output predictor in rf-aces sf format.")
+		"rface.sf", "File name to output predictor forest in sf format.")
 	targetname := flag.String("target",
 		"", "The row header of the target in the feature matrix.")
 	imp := flag.String("importance",

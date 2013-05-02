@@ -6,13 +6,16 @@ import (
 	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
 	fm := flag.String("fm",
-		"featurematrix.afm", "AFM formated feature matrix containing test data.")
+		"featurematrix.afm", "AFM formated feature matrix containing data.")
 	rf := flag.String("rfpred",
 		"rface.sf", "A predictor forest.")
+	predfn := flag.String("preds",
+		"predictions.tsv", "The name of a file to write the predictions into.")
 
 	flag.Parse()
 
@@ -34,9 +37,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	target := &data.Data[data.Map[forest.Target]]
+	predfile, err := os.Create(*predfn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var bb CloudForest.VoteTallyer
-	switch target.Numerical {
+	switch strings.HasPrefix(forest.Target, "N") {
 	case true:
 		bb = CloudForest.NewNumBallotBox(len(data.Data[0].Missing))
 	case false:
@@ -47,7 +54,16 @@ func main() {
 	for _, tree := range forest.Trees {
 		tree.Vote(data, bb)
 	}
-	er := bb.TallyError(target)
-	fmt.Printf("%v\n", er)
+
+	fmt.Printf("Outputing Predictions to %v\n", *predfn)
+	for i, l := range data.CaseLabels {
+		fmt.Fprintf(predfile, "%v\t%v\n", l, bb.Tally(i))
+	}
+
+	targeti, hasTarget := data.Map[forest.Target]
+	if hasTarget {
+		er := bb.TallyError(&data.Data[targeti])
+		fmt.Printf("Error Rate: %v\n", er)
+	}
 
 }

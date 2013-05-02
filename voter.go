@@ -9,4 +9,5 @@ import ()
 type VoteTallyer interface {
 	Vote(casei int, pred string)
 	TallyError(feature *Feature) float64
+	Tally(casei int) string
 }

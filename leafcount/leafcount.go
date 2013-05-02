@@ -9,7 +9,7 @@ import (
 
 func main() {
 	fm := flag.String("fm", "featurematrix.afm", "AFM formated feature matrix to use.")
-	rf := flag.String("rfpred", "rface.sf", "A predictor forest as outputed by rf-ace")
+	rf := flag.String("rfpred", "rface.sf", "A predictor forest.")
 	outf := flag.String("leaves", "leaves.tsv", "a case by case sparse matrix of leaf cooccurance in tsv format")
 	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of leaf cooccurance in tsv format")
 

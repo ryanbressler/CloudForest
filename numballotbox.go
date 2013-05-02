@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 )
@@ -43,7 +44,7 @@ func (bb *NumBallotBox) VoteNum(casei int, pred float64) {
 
 //TallyNumerical tallies the votes for the case specified by i as
 //if it is a Numerical feature. Ie it returns the mean of all votes.
-func (bb *NumBallotBox) Tally(i int) (predicted float64) {
+func (bb *NumBallotBox) TallyNum(i int) (predicted float64) {
 	predicted = 0.0
 	votes := 0
 	for k, v := range bb.box[i] {
@@ -53,6 +54,10 @@ func (bb *NumBallotBox) Tally(i int) (predicted float64) {
 	}
 	predicted = predicted / float64(votes)
 	return
+}
+
+func (bb *NumBallotBox) Tally(i int) (predicted string) {
+	return fmt.Sprintf("%v", bb.TallyNum(i))
 }
 
 //Tally error returns the error of the votes vs the provided feature.
@@ -69,7 +74,7 @@ func (bb *NumBallotBox) TallyError(feature *Feature) (e float64) {
 	d := 0.0
 	c := 0
 	for i, value := range feature.NumData {
-		predicted := bb.Tally(i)
+		predicted := bb.TallyNum(i)
 		if !feature.Missing[i] && !math.IsNaN(predicted) {
 			d = float64(value) - predicted
 			e += d * d

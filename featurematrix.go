@@ -10,8 +10,9 @@ import (
 //FeatureMatrix contains a slice of Features and a Map to look of the index of a feature
 //by its string id.
 type FeatureMatrix struct {
-	Data []Feature
-	Map  map[string]int
+	Data       []Feature
+	Map        map[string]int
+	CaseLabels []string
 }
 
 /*
@@ -81,13 +82,14 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 	lookup := make(map[string]int, 0)
 	tsv := csv.NewReader(input)
 	tsv.Comma = '\t'
-	_, err := tsv.Read()
+	headers, err := tsv.Read()
 	if err == io.EOF {
-		return &FeatureMatrix{data, lookup}
+		return &FeatureMatrix{data, lookup, headers[1:]}
 	} else if err != nil {
 		log.Print("Error:", err)
-		return &FeatureMatrix{data, lookup}
+		return &FeatureMatrix{data, lookup, headers[1:]}
 	}
+	headers = headers[1:]
 
 	count := 0
 	for {
@@ -102,5 +104,5 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 		lookup[record[0]] = count
 		count++
 	}
-	return &FeatureMatrix{data, lookup}
+	return &FeatureMatrix{data, lookup, headers}
 }
