@@ -36,7 +36,13 @@ func main() {
 	var mTry int
 	flag.IntVar(&mTry, "mTry", 0, "Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.")
 
+	var nContrasts int
+	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artifical contrast features to include in the feature matrix.")
+
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
+	var contrastAll bool
+	flag.BoolVar(&contrastAll, "contrastall", false, "Include a shuffled artifical contrast copy of every feature.")
 
 	var itter bool
 	flag.BoolVar(&itter, "itterative", true, "Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.")
@@ -79,6 +85,15 @@ func main() {
 		mTry = int(math.Ceil(math.Sqrt(float64(len(data.Data)))))
 	}
 	fmt.Printf("mTry : %v\n", mTry)
+
+	if nContrasts > 0 {
+		fmt.Printf("Adding %v Random Contrasts\n", nContrasts)
+		data.AddContrasts(nContrasts)
+	}
+	if contrastAll {
+		fmt.Printf("Adding Random Contrasts for All Features.\n")
+		data.ContrastAll()
+	}
 
 	//find the target feature
 	targeti, ok := data.Map[*targetname]

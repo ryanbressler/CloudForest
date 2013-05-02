@@ -5,50 +5,12 @@ import (
 	"math/big"
 	"math/rand"
 	"sort"
-	"strconv"
-	"strings"
 )
 
 const maxExhaustiveCats = 5
 const maxNonRandomExahustive = 10
 const maxNonBigCats = 30
 const minImp = 1e-12
-
-/*CatMap is for mapping catagorical values to integers.
-It contains:
-
-	Map  : a map of ints by the string used fot the catagory
-	Back : a slice of strings by the int that represents them
-
-And is embeded by Feature and CatBallotBox.
-*/
-type CatMap struct {
-	Map  map[string]int //map categories from string to Num
-	Back []string       // map categories from Num to string
-}
-
-//CatToNum provides the Num equivelent of the provided catagorical value
-//if it allready exists or adds it to the map and returns the new value if
-//it doesn't.
-func (cm *CatMap) CatToNum(value string) (numericv int) {
-	numericv, exsists := cm.Map[value]
-	if exsists == false {
-		numericv = len(cm.Back)
-		cm.Map[value] = numericv
-		cm.Back = append(cm.Back, value)
-
-	}
-	return
-}
-
-func (cm *CatMap) NCats() (n int) {
-	if cm.Back == nil {
-		n = 0
-	} else {
-		n = len(cm.Back)
-	}
-	return
-}
 
 /*Feature is a structure representing a single feature in a feature matrix.
 It contains:
@@ -65,63 +27,6 @@ type Feature struct {
 	Missing   []bool
 	Numerical bool
 	Name      string
-}
-
-//ParseFeature parses a Feature from an array of strings and a capacity
-//capacity is the number of cases and will usually be len(record)-1 but
-//but doesn't need to be calculated for every row of a large file.
-//The type of the feature us infered from the start ofthe first (header) field
-//in record:
-//"N:"" indicating numerical, anything else (usually "C:" and "B:") for catagorical
-func ParseFeature(record []string) Feature {
-	capacity := len(record)
-	f := Feature{
-		&CatMap{make(map[string]int, 0),
-			make([]string, 0, 0)},
-		nil,
-		nil,
-		make([]bool, 0, capacity),
-		false,
-		record[0]}
-
-	switch record[0][0:2] {
-	case "N:":
-		f.NumData = make([]float64, 0, capacity)
-		//Numerical
-		f.Numerical = true
-		for i := 1; i < len(record); i++ {
-			v, err := strconv.ParseFloat(record[i], 64)
-			if err != nil {
-				f.NumData = append(f.NumData, 0.0)
-				f.Missing = append(f.Missing, true)
-				continue
-			}
-			f.NumData = append(f.NumData, float64(v))
-			f.Missing = append(f.Missing, false)
-
-		}
-
-	default:
-		f.CatData = make([]int, 0, capacity)
-		//Assume Catagorical
-		f.Numerical = false
-		for i := 1; i < len(record); i++ {
-			v := record[i]
-			norm := strings.ToLower(v)
-			if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
-
-				f.CatData = append(f.CatData, 0)
-				f.Missing = append(f.Missing, true)
-				continue
-			}
-			f.CatData = append(f.CatData, f.CatToNum(v))
-			f.Missing = append(f.Missing, false)
-
-		}
-
-	}
-	return f
-
 }
 
 /*
@@ -306,7 +211,8 @@ Pointers to slices for l and r and counter are used to reduce realocations durin
 and will not contain meaningfull results.
 
 l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.*/
+should have the same length as the number of catagories in the target.
+*/
 func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
 
 	left := *l
@@ -798,6 +704,50 @@ func (f *Feature) FindPredicted(cases []int) (pred string) {
 
 	case false:
 		pred = f.Mode(&cases)
+
+	}
+	return
+
+}
+
+/*ShuffledCopy returns a shuffled version of f for use as an artifical contrast in evaluation of
+importance scores. The new feature will be named featurename:SHUFFLED*/
+func (f *Feature) ShuffledCopy() (fake *Feature) {
+	capacity := len(f.Missing)
+	fake = &Feature{
+		&CatMap{f.Map,
+			f.Back},
+		nil,
+		nil,
+		make([]bool, capacity),
+		f.Numerical,
+		f.Name + ":SHUFFLED"}
+
+	copy(fake.Missing, f.Missing)
+	if f.Numerical {
+		fake.NumData = make([]float64, capacity)
+		copy(fake.NumData, f.NumData)
+	} else {
+		fake.CatData = make([]int, capacity)
+		copy(fake.CatData, f.CatData)
+	}
+
+	//shuffle
+	for j := 0; j < capacity; j++ {
+		sourcei := j + rand.Intn(capacity-j)
+		missing := fake.Missing[j]
+		fake.Missing[j] = fake.Missing[sourcei]
+		fake.Missing[sourcei] = missing
+
+		if fake.Numerical {
+			data := fake.NumData[j]
+			fake.NumData[j] = fake.NumData[sourcei]
+			fake.NumData[sourcei] = data
+		} else {
+			data := fake.CatData[j]
+			fake.CatData[j] = fake.CatData[sourcei]
+			fake.CatData[sourcei] = data
+		}
 
 	}
 	return

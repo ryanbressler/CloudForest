@@ -1,7 +1,7 @@
 /*
 Package CloudForest implements ensembles of decision trees for machine learning in pure go (golang).
 It includes an implementation of Breiman and Cutler's Random Forest for clasiffication and regression
-on heterogenous numerical/catagorical data with missing values.
+on heterogenous numerical/catagorical data with missing values and some related algorythems.
 
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems Biology.
 
@@ -10,12 +10,12 @@ Code and Issue tracker can be found at https://github.com/ryanbressler/CloudFore
 
 Speed
 
-When compiled with the default go 1.1 tool chain CloudForest achieves running times similar or
+When compiled with go1.1 CloudForest achieves running times similar or
 better then implementations in other languages. Using gccgo (4.8.0 at least) results in longer
-running times and is not recomended at this time.
+running times and is not recomended untill full go1.1 support is implemented in gc 4.8.1.
 
-CloudForest is especially fast with data that includes lots of binary or low n catagorical data and is
-well suited for use on genomic variants.
+CloudForest is especially fast with data that includes lots of binary or low n catagorical
+data and is well suited for use on genomic variants.
 
 
 Goals
@@ -207,6 +207,7 @@ Growforest Utility
 "growforest" trains a forest using the following paramaters which can be listed with -h
 
 	Usage of growforest:
+	  -contrastall=false: Include a shuffled artifical contrast copy of every feature.
 	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
 	  -cpuprofile="": write cpu profile to file
 	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
@@ -215,11 +216,13 @@ Growforest Utility
 	  -l1=false: Use l1 norm regression (target must be numeric).
 	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
 	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
+	  -nContrasts=0: The number of randomized artifical contrast features to include in the feature matrix.
 	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
 	  -nTrees=100: Number of trees to grow in the predictor.
 	  -rfpred="rface.sf": File name to output predictor forest in sf format.
 	  -target="": The row header of the target in the feature matrix.
 	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+
 
 
 Applyforrest Utility
@@ -271,13 +274,12 @@ Cuttler's code:
 https://code.google.com/p/rf-ace/
 http://cran.r-project.org/web/packages/randomForest/index.html
 
+The idea for Artifical Contrasts was found in:
 Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
-Ensembles, Artificial Variables, and Redundancy Elimination" also deserves mention for its
-excellent description and analysis of Random Forests though CloudForest does not (yet?) implement
-any of the additional analysis it describes:
+Ensembles, Artificial Variables, and Redundancy Elimination"
 http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
 
-The idea for EntropyTarget comes from Ross Quinlan's ID3:
+The idea for growing trees to minmize catagorical entropy comes from Ross Quinlan's ID3:
 http://en.wikipedia.org/wiki/ID3_algorithm
 
 "The Elements of Statistical Learning" 2nd edition by Trevor Hastie, Robert Tibshirani and Jerome Friedman
