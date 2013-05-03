@@ -1,21 +1,19 @@
 /*
 Package CloudForest implements ensembles of decision trees for machine learning in pure go (golang).
-It includes an implementation of Breiman and Cutler's Random Forest for clasiffication and regression
-on heterogenous numerical/catagorical data with missing values and some related algorythems.
+It includes implementations of Breiman and Cutler's Random Forest for clasiffication and regression
+on heterogenous numerical/catagorical data with missing values and several related algorythems
+including entropy and cost driven classification, l1 regression and feature selection with
+artifical contrasts.
+
+Comand line utilities to grow, apply and analize forests are included.
 
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems Biology.
 
-Code and Issue tracker can be found at https://github.com/ryanbressler/CloudForest
+Documentation has been generated with godoc and can be viewed live at:
+http://godoc.org/github.com/ryanbressler/CloudForest
 
-
-Speed
-
-When compiled with go1.1 CloudForest achieves running times similar or
-better then implementations in other languages. Using gccgo (4.8.0 at least) results in longer
-running times and is not recomended untill full go1.1 support is implemented in gc 4.8.1.
-
-CloudForest is especially fast with data that includes lots of binary or low n catagorical
-data and is well suited for use on genomic variants.
+Pull requests and bug reports are welcome; Code Repo and Issue tracker can be found at:
+https://github.com/ryanbressler/CloudForest
 
 
 Goals
@@ -122,6 +120,30 @@ BestCatSplitBig and BestCatSplitIterBig. All numerical predictors are handled by
 reliest on go's sorting package.
 
 
+Missing Values
+
+By default missing values are ignored in most cloud forest code. Ie BestSplit will split will remove
+cases for which the feature is missing from it's calculation. This allows for quick but rough
+prediction in data with few missing values.
+
+Optionally, feature.ImputeMissing or featurematrixImputeMissing can be called before forest growth
+to impute missing values to the feature mean/mode which Brieman [1] suggests as a fast method for
+imputing values.
+
+This forest could also be analized for proximity (using leafcount or tree.GetLeaves) to do the
+more accurate proximity weighted imputation Brieman describes.
+
+[1] http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#missing1
+
+Importance and Contrasts
+
+Variable Importance in CloudForest is calculated as the mean decrease in impurity over all of
+the splits made using a feature.
+
+To provide a baseline for evaluating importance, artificial contrast features can be used by
+including shuffled copies of existing features.
+
+
 Main Structures
 
 In CloudForest data is stored using the FeatureMatrix struct which contains Features.
@@ -139,6 +161,72 @@ but it may be faster to grow the forest to disk as in the growforest utility.
 
 Prediction and Voteing is done using Tree.Vote and CatBallotBox and NumBallotBox which impliment the
 VoteTallyer interface.
+
+
+Speed
+
+When compiled with go1.1 CloudForest achieves running times similar to implementations in
+other languages. Using gccgo (4.8.0 at least) results in longer running times and is not
+recomended untill full go1.1 support is implemented in gc 4.8.1.
+
+CloudForest is especially fast with data that includes lots of binary or low n catagorical
+data and is well suited for use on genomic variants.
+
+Growforest Utility
+
+"growforest" trains a forest using the following paramaters which can be listed with -h
+
+	Usage of growforest:
+	  -contrastall=false: Include a shuffled artifical contrast copy of every feature.
+	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
+	  -cpuprofile="": write cpu profile to file
+	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
+	  -importance="": File name to output importance.
+	  -impute=false: Impute missing values to feature mean/mode instead of filtering them out when splitting.
+	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
+	  -l1=false: Use l1 norm regression (target must be numeric).
+	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
+	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
+	  -nContrasts=0: The number of randomized artifical contrast features to include in the feature matrix.
+	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
+	  -nTrees=100: Number of trees to grow in the predictor.
+	  -rfpred="rface.sf": File name to output predictor forest in sf format.
+	  -target="": The row header of the target in the feature matrix.
+	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+
+
+Applyforrest Utility
+
+"applyforest" applies a forest to the specified feature matrix and outputs predictions as a two column
+(caselabel	predictedvalue) tsv.
+
+	Usage of applyforest:
+	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
+	  -preds="predictions.tsv": The name of a file to write the predictions into.
+	  -rfpred="rface.sf": A predictor forest.
+
+
+
+Errorrate Utility
+
+errorrate calculates the error of a forest vs a testing data set and reports it to standard out
+
+	Usage of errorrate:
+	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
+	  -rfpred="rface.sf": A predictor forest.
+
+
+Leafcount Utility
+
+leafcount outputs counts of case case coocurence on leaf nodes (Brieman's proximity) and counts of the
+number of times a feature is used to split a node containing each case (a measure of relative/local
+importance).
+
+	Usage of leafcount:
+	  -branches="branches.tsv": a case by feature sparse matrix of leaf cooccurance in tsv format
+	  -fm="featurematrix.afm": AFM formated feature matrix to use.
+	  -leaves="leaves.tsv": a case by case sparse matrix of leaf cooccurance in tsv format
+	  -rfpred="rface.sf": A predictor forest.
 
 
 Feature Matrix Files
@@ -200,65 +288,6 @@ An example .sf file:
 	NODE=*R,PRED=1
 
 Cloud forest can parse and apply .sf files generated by at least some versions of rf-ace.
-
-
-Growforest Utility
-
-"growforest" trains a forest using the following paramaters which can be listed with -h
-
-	Usage of growforest:
-	  -contrastall=false: Include a shuffled artifical contrast copy of every feature.
-	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
-	  -cpuprofile="": write cpu profile to file
-	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
-	  -importance="": File name to output importance.
-	  -impute=false: Impute missing values to feature mean/mode instead of filtering them out when splitting.
-	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
-	  -l1=false: Use l1 norm regression (target must be numeric).
-	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
-	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
-	  -nContrasts=0: The number of randomized artifical contrast features to include in the feature matrix.
-	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
-	  -nTrees=100: Number of trees to grow in the predictor.
-	  -rfpred="rface.sf": File name to output predictor forest in sf format.
-	  -target="": The row header of the target in the feature matrix.
-	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
-
-
-
-Applyforrest Utility
-
-"applyforest" applies a forest to the specified feature matrix and outputs predictions as a two column
-(caselabel	predictedvalue) tsv.
-
-	Usage of applyforest:
-	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
-	  -preds="predictions.tsv": The name of a file to write the predictions into.
-	  -rfpred="rface.sf": A predictor forest.
-
-
-
-Errorrate Utility
-
-errorrate calculates the error of a forest vs a testing data set and reports it to standard out
-
-	Usage of errorrate:
-	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
-	  -rfpred="rface.sf": A predictor forest.
-
-
-Leafcount Utility
-
-leafcount outputs counts of case case coocurence on leaf nodes (Brieman's proximity) and counts of the
-number of times a feature is used to split a node containing each case (a measure of relative/local
-importance).
-
-	Usage of leafcount:
-	  -branches="branches.tsv": a case by feature sparse matrix of leaf cooccurance in tsv format
-	  -fm="featurematrix.afm": AFM formated feature matrix to use.
-	  -leaves="leaves.tsv": a case by case sparse matrix of leaf cooccurance in tsv format
-	  -rfpred="rface.sf": A predictor forest.
-
 
 
 Refrences

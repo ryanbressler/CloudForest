@@ -1,2 +1,1127 @@
-see doc.go
-or http://godoc.org/github.com/ryanbressler/CloudForest
+PACKAGE DOCUMENTATION
+
+package CloudForest
+    import "/Users/ryan/Code/go/src/github.com/ryanbressler/CloudForest"
+
+    Package CloudForest implements ensembles of decision trees for machine
+    learning in pure go (golang). It includes implementations of Breiman and
+    Cutler's Random Forest for clasiffication and regression on heterogenous
+    numerical/catagorical data with missing values and several related
+    algorythems including entropy and cost driven classification, l1
+    regression and feature selection with artifical contrasts.
+
+    Comand line utilities to grow, apply and analize forests are included.
+
+    CloudForest is being developed in the Shumelivich Lab at the Institute
+    for Systems Biology.
+
+    Documentation has been generated with godoc and can be viewed live at:
+    http://godoc.org/github.com/ryanbressler/CloudForest
+
+    Pull requests and bug reports are welcome; Code Repo and Issue tracker
+    can be found at: https://github.com/ryanbressler/CloudForest
+
+
+    Goals
+
+    CloudForest is intended to provide fast, comprehensible building blocks
+    that can be used to implement ensembels of decision trees. CloudForest
+    is written in idomatic go to allow a data scientist to develop and scale
+    new models and analysis quickly instead of having to modify complex
+    legacy code.
+
+    Datastructures and file formats are chosen with use in multi threaded
+    and cluster enviroments in mind.
+
+
+    Working with Trees
+
+    Go's support for first class functions is used to provide a interface to
+    run code as data is percolated through a tree. This method is flexible
+    enough that it can extend the tree being analised. Growing a decision
+    tree using Breiman and Cutler's method can be done in an anonymous
+    function/closure passed to a tree's root node's Recurse method:
+
+	tree.Root.Recurse(func(n *Node, innercases []int) {
+		if (2 * leafSize) <= len(innercases) {
+			SampleFirstN(&canidates, mTry)
+			best, impDec := fm.BestSplitter(target, innercases, canidates[:mTry], itter, l, r)
+			if best != nil && impDec > minImp {
+				//not a leaf node so define the spliter and left and right nodes
+				//so recursion will continue
+				n.Splitter = best
+				n.Pred = ""
+				n.Left = new(Node)
+				n.Right = new(Node)
+				return
+			}
+		}
+		//Leaf node so find the predictive value and set it in n.Pred
+		n.Splitter = nil
+		n.Pred = target.FindPredicted(innercases)
+	}, featurematrix, cases)
+
+    This allows a researcher to include whatever additional analaysis they
+    need (importance scores, proximity etc) in tree growth. The same Recurse
+    method can also be used to analize existing forests to tabulate scores
+    or extract structure. Utilities like leafcount and errorrate use this
+    method to tabulate data about the tree in collection objects.
+
+
+    Alternative Impurities
+
+    Decision tree's are grown with the goal of reducing "Impurity" which is
+    usually defined as Gini Impurity for catagorical targets or mean squared
+    error for numerical targets. CloudForest grows trees against the Target
+    interface which allows for alternative definitions of impurity.
+    CloudForest includes several alternative targets:
+
+	EntropyTarget : For use in entropy minimizing classification
+	RegretTarget  : For use in classification driven by differing costs in miscatagorization.
+	L1Target      : For use in L1 norm error regression (which may be less sensative to outliers).
+
+
+    Effichent Splitting
+
+    Repeatedly spliting the data and searching for the best split at each
+    node of a decision tree are the most computationally intensive parts of
+    decision tree learning and CloudForest includes optimized code to
+    perform these tasks.
+
+    Go's slices are used extensivelly in CloudForest to make it simple to
+    interact with optimized code. Many previous imlementations of Random
+    Forest have avoided reallocation by reordering data in place and keeping
+    track of start and end indexes. In go, slices pointing at the same
+    underlying arrays make this sort of optimization transparent. For
+    example a function like:
+
+	func(s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []int)
+
+    can return left and right slices that point to the same underlying array
+    as the origional slice of cases but these slices should not have their
+    values changed.
+
+    Split searching also accepts pointers to slices that will be reset to
+    zero length and reused without reallocation. These slices won't contain
+    meaningfull data after the search is done but provide signifigant speed
+    gains. Their use can be seen in the l and r parmaters passed to
+    BestSplitter in the the tree growing code above and functions that
+    accept them include:
+
+	func (fm *FeatureMatrix) BestSplitter(target Target,
+		cases []int,
+		canidates []int,
+		itter bool,
+		l *[]int,
+		r *[]int) (s *Splitter, impurityDecrease float64)
+	func (f *Feature) BestSplit(target *Feature,
+		cases *[]int,
+		itter bool,
+		l *[]int,
+		r *[]int,
+		counter *[]int,
+		sorter *SortableFeature) (bestNum float64, bestCat int, impurityDecrease float64)
+
+    Which accept reusable l, r, counter and sorter objects.
+
+    For catagorical predictors, BestSplit will also attempt to inteligently
+    choose between 4 diffrent implementations depending on userinput and the
+    number of catagories. These include exahustive, random, and iterative
+    searches implemented with bitwise oporations against int and big.Int
+    dependign on the number of catagories. See BestCatSplit,
+    BestCatSplitIter, BestCatSplitBig and BestCatSplitIterBig. All numerical
+    predictors are handled by BestNumSplit which reliest on go's sorting
+    package.
+
+
+    Missing Values
+
+    By default missing values are ignored in most cloud forest code. Ie
+    BestSplit will split will remove cases for which the feature is missing
+    from it's calculation. This allows for quick but rough prediction in
+    data with few missing values.
+
+    Optionally, feature.ImputeMissing or featurematrixImputeMissing can be
+    called before forest growth to impute missing values to the feature
+    mean/mode which Brieman [1] suggests as a fast method for imputing
+    values.
+
+    This forest could also be analized for proximity (using leafcount or
+    tree.GetLeaves) to do the more accurate proximity weighted imputation
+    Brieman describes.
+
+    [1]
+    http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#missing1
+
+
+    Importance and Contrasts
+
+    Variable Importance in CloudForest is calculated as the mean decrease in
+    impurity over all of the splits made using a feature.
+
+    To provide a baseline for evaluating importance, artificial contrast
+    features can be used by including shuffled copies of existing features.
+
+
+    Main Structures
+
+    In CloudForest data is stored using the FeatureMatrix struct which
+    contains Features.
+
+    The Feature struct implments storage and methods for both catagorical
+    and numerical data and calculations of impurity etc and the search for
+    the best split.
+
+    The Target interface abstracts the methods of Feature that are needed
+    for a feature to be predictable. This allows for the implementatiion of
+    alternative types of regression and classification.
+
+    Trees are built from Nodes and Splitters and stored within a Forest.
+    Tree has a Grow implements Brieman and Cutler's method (see extract
+    above) for growing a tree. A GrowForest method is also provided that
+    implments the rest of the method including sampeling cases but it may be
+    faster to grow the forest to disk as in the growforest utility.
+
+    Prediction and Voteing is done using Tree.Vote and CatBallotBox and
+    NumBallotBox which impliment the VoteTallyer interface.
+
+
+    Speed
+
+    When compiled with go1.1 CloudForest achieves running times similar to
+    implementations in other languages. Using gccgo (4.8.0 at least) results
+    in longer running times and is not recomended untill full go1.1 support
+    is implemented in gc 4.8.1.
+
+    CloudForest is especially fast with data that includes lots of binary or
+    low n catagorical data and is well suited for use on genomic variants.
+
+
+    Growforest Utility
+
+    "growforest" trains a forest using the following paramaters which can be
+    listed with -h
+
+	Usage of growforest:
+	  -contrastall=false: Include a shuffled artifical contrast copy of every feature.
+	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
+	  -cpuprofile="": write cpu profile to file
+	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
+	  -importance="": File name to output importance.
+	  -impute=false: Impute missing values to feature mean/mode instead of filtering them out when splitting.
+	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
+	  -l1=false: Use l1 norm regression (target must be numeric).
+	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
+	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
+	  -nContrasts=0: The number of randomized artifical contrast features to include in the feature matrix.
+	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
+	  -nTrees=100: Number of trees to grow in the predictor.
+	  -rfpred="rface.sf": File name to output predictor forest in sf format.
+	  -target="": The row header of the target in the feature matrix.
+	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+
+
+    Applyforrest Utility
+
+    "applyforest" applies a forest to the specified feature matrix and
+    outputs predictions as a two column (caselabel predictedvalue) tsv.
+
+	Usage of applyforest:
+	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
+	  -preds="predictions.tsv": The name of a file to write the predictions into.
+	  -rfpred="rface.sf": A predictor forest.
+
+
+    Errorrate Utility
+
+    errorrate calculates the error of a forest vs a testing data set and
+    reports it to standard out
+
+	Usage of errorrate:
+	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
+	  -rfpred="rface.sf": A predictor forest.
+
+
+    Leafcount Utility
+
+    leafcount outputs counts of case case coocurence on leaf nodes
+    (Brieman's proximity) and counts of the number of times a feature is
+    used to split a node containing each case (a measure of relative/local
+    importance).
+
+	Usage of leafcount:
+	  -branches="branches.tsv": a case by feature sparse matrix of leaf cooccurance in tsv format
+	  -fm="featurematrix.afm": AFM formated feature matrix to use.
+	  -leaves="leaves.tsv": a case by case sparse matrix of leaf cooccurance in tsv format
+	  -rfpred="rface.sf": A predictor forest.
+
+
+    Feature Matrix Files
+
+    CloudForest borrows the anotated feature matrix (.afm) and stoicastic
+    forest (.sf) file formats from Timo Erkkila's rf-ace which can be found
+    at https://code.google.com/p/rf-ace/
+
+    An anotated feature matrix (.afm) file is a tab deliminated file with
+    column and row headers. Columns represent cases and rows represent
+    features. A row header/feature id includes a prefix to specify the
+    feature type
+
+	"N:" Prefix for numerical feature id.
+	"C:" Prefix for catagorical feature id.
+	"B:" Prefix for boolean feature id.
+
+    Catagorical and boolean features use strings for their catagorie labels.
+    Missing values are represented by "?","nan","na", or "null" (case
+    insensative). A short example:
+
+	featureid	case1	case2	case3
+	N:NumF1	0.0	.1	na
+	C:CatF2 red	red	green
+
+
+    Stoichastic Forest Files
+
+    A stoichastic forest (.sf) file contains a forest of decision trees. The
+    main advantage of this format as opposed to an established format like
+    json is that an sf file can be written iterativelly tree by tree and
+    multiple .sf files can be combined with minimal logic required allowing
+    for massivelly parralel growth of forests with low memory use.
+
+    An .sf fileconsists of lines each of which is a comma seperated list of
+    key value pairs. Lines can designate either a FOREST, TREE, or NODE.
+    Each tree belongs to the preceding forest and each node to the preciding
+    tree. Nodes must be written in order of increasing depth.
+
+    CloudForest generates fiewer fields then rf-ace but requires the
+    following. Other fields will be ignored
+
+    Forest requires forest type (allways RF currently), target and ntrees:
+
+	FOREST=RF|GBT|..,TARGET="$feature_id",NTREES=int
+
+    Tree requires only an int and the value is ignored though the line is
+    needed to designate a new tree:
+
+	TREE=int
+
+    Node requires a path encoded so that the root node is specified by "*"
+    and each split left or right as "L" or "R". Leaf nodes should also
+    define PRED such as "PRED=1.5" or "PRED=red". Splitter nodes should
+    define SPLITTER with a feature id inside of double quotes,
+    SPLITTERTYPE=[CATEGORICAL|NUMERICAL] and a LVALUE term which can be
+    either a float inside of double quotes representing the highest value
+    sent left or a ":" seperated list of catagorical values sent left.
+
+	NODE=$path,PRED=[float|string],SPLITTER="$feature_id",SPLITTERTYPE=[CATEGORICAL|NUMERICAL] LVALUES="[float|: seperated list"
+
+    An example .sf file:
+
+	FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800
+	TREE=0
+	NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false"
+	NODE=*L,PRED=3.75
+	NODE=*R,PRED=1
+
+    Cloud forest can parse and apply .sf files generated by at least some
+    versions of rf-ace.
+
+
+    Refrences
+
+    The idea for (and trademakr of the term) Random Forests originated with
+    Leo Brieman and Adele Cuttler. Their code and paper's can be found at:
+
+    http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm
+
+    All code in CloudForest is origional but some ideas for methods and
+    optimizations were inspired by Timo Erkilla's rf-ace and Andy Liaw and
+    Matthew Wiener randomForest R package based on Brieman and Cuttler's
+    code:
+
+    https://code.google.com/p/rf-ace/
+    http://cran.r-project.org/web/packages/randomForest/index.html
+
+    The idea for Artifical Contrasts was found in: Eugene Tuv, Alexander
+    Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
+    Ensembles, Artificial Variables, and Redundancy Elimination"
+    http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
+
+    The idea for growing trees to minmize catagorical entropy comes from
+    Ross Quinlan's ID3: http://en.wikipedia.org/wiki/ID3_algorithm
+
+    "The Elements of Statistical Learning" 2nd edition by Trevor Hastie,
+    Robert Tibshirani and Jerome Friedman was also consulted during
+    development.
+
+
+FUNCTIONS
+
+func SampleFirstN(deck *[]int, n int)
+    SampleFirstN ensures that the first n entries in the supplied deck are
+    randomly drawn from all entries without replacment for use in selecting
+    canidate features to split on. It accepts a pointer to the deck so that
+    it can be used repeatedl on the same deck avoiding realocations.
+
+func SampleWithReplacment(nSamples int, totalCases int) (cases []int)
+    SampleWithReplacment samples nSamples random draws from [0,totalCases)
+    with replacment for use in selecting cases to grow a tree from.
+
+
+TYPES
+
+type CatBallotBox struct {
+    *CatMap
+    // contains filtered or unexported fields
+}
+    Keeps track of votes by trees. Not thread safe....could be made so or
+    abstracted to an interface to support diffrent implementations.
+
+
+func NewCatBallotBox(size int) *CatBallotBox
+    Build a new ballot box for the number of cases specified by "size".
+
+
+func (bb *CatBallotBox) Tally(i int) (predicted string)
+    TallyCatagorical tallies the votes for the case specified by i as if it
+    is a Catagorical or boolean feature. Ie it returns the mode (the most
+    frequent value) of all votes.
+
+func (bb *CatBallotBox) TallyError(feature *Feature) (e float64)
+    Tally error returns the balanced clasification error for catagorical
+    features.
+
+    1 - sum((sum(Y(xi)=Y'(xi))/|xi|))
+
+    where Y are the labels Y' are the estimated labels xi is the set of
+    samples with the ith actual label
+
+    Case for which the true catagory is not known are ignored.
+
+func (bb *CatBallotBox) Vote(casei int, pred string)
+    Vote registers a vote that case "casei" should be predicted to be the
+    catagory "pred".
+
+
+type CatMap struct {
+    Map  map[string]int //map categories from string to Num
+    Back []string       // map categories from Num to string
+}
+    CatMap is for mapping catagorical values to integers. It contains:
+
+	Map  : a map of ints by the string used fot the catagory
+	Back : a slice of strings by the int that represents them
+
+    And is embeded by Feature and CatBallotBox.
+
+
+func (cm *CatMap) CatToNum(value string) (numericv int)
+    CatToNum provides the Num equivelent of the provided catagorical value
+    if it allready exists or adds it to the map and returns the new value if
+    it doesn't.
+
+func (cm *CatMap) NCats() (n int)
+
+
+type EntropyTarget struct {
+    *Feature
+}
+    EntropyTarget wraps a catagorical feature for use in entropy driven
+    classification as in Ross Quinlan's ID3 (Iterative Dichotomiser 3).
+
+
+func NewEntropyTarget(f *Feature) *EntropyTarget
+    NewEntropyTarget creates a RefretTarget and initializes
+    EntropyTarget.Costs to the proper length.
+
+
+func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64)
+    EntropyTarget.Impurity implements catagorical entropy as
+    sum(pj*log2(pj)) where pj is the number of cases with the j'th catagory
+    over the total number of cases.
+
+func (target *EntropyTarget) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+    EntropyTarget.SplitImpurity is a version of Split Impurity that calls
+    EntropyTarget.Impurity
+
+
+type Feature struct {
+    *CatMap
+    NumData   []float64
+    CatData   []int
+    Missing   []bool
+    Numerical bool
+    Name      string
+}
+    Feature is a structure representing a single feature in a feature
+    matrix. It contains: An embedded CatMap (may only be instantiated for
+    cat data)
+
+	NumData   : A slice of floates used for numerical data and nil otherwise
+	CatData   : A slice of ints for catagorical data and nil otherwise
+	Missing   : A slice of bools indicating missing values. Measure this for length.
+	Numerical : is the feature numerical
+	Name      : the name of the feature
+
+
+func ParseFeature(record []string) Feature
+    ParseFeature parses a Feature from an array of strings and a capacity
+    capacity is the number of cases and will usually be len(record)-1 but
+    but doesn't need to be calculated for every row of a large file. The
+    type of the feature us infered from the start ofthe first (header) field
+    in record: "N:"" indicating numerical, anything else (usually "C:" and
+    "B:") for catagorical
+
+
+func (f *Feature) BestCatSplit(target Target,
+    cases *[]int,
+    parentImp float64,
+    maxEx int,
+    l *[]int,
+    r *[]int,
+    counter *[]int) (bestSplit int, impurityDecrease float64)
+    BestCatSplit performs an exahustive search for the split that minimizes
+    impurity in the specified target for catagorical features with less then
+    31 catagories.
+
+    This implementation follows Brieman's implementation and the R/Matlab
+    implementations based on it use exsaustive search overfor when there are
+    less thatn 25/10 catagories and random splits above that.
+
+    Searching is implmented via bitwise oporations vs an incrementing or
+    random int (32 bit) for speed but will currentlly only work when there
+    are less then 31 catagories. Use one of the Big functions above that.
+
+    The best split is returned as an int for which the bits coresponding to
+    catagories that should be sent left has been flipped. This can be
+    decoded into a splitter using DecodeSplit on the trainig feature and
+    should not be applied to testing data without doing so as the order of
+    catagories may have changed.
+
+    Pointers to slices for l and r and counter are used to reduce
+    realocations during search and will not contain meaningfull results.
+
+    l and r should have the same capacity as cases . counter is only used
+    for catagorical targets and should have the same length as the number of
+    catagories in the target.
+
+func (f *Feature) BestCatSplitBig(target Target, cases *[]int, parentImp float64, maxEx int, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64)
+    BestCatSplitBig performs a random/exahustive search to find the split
+    that minimizes impurity in the specified target.
+
+    Searching is implmented via bitwise on Big.Ints to handle large n
+    catagorical features but BestCatSplit should be used for n <31.
+
+    The best split is returned as a BigInt for which the bits coresponding
+    to catagories that should be sent left has been flipped. This can be
+    decoded into a splitter using DecodeSplit on the trainig feature and
+    should not be applied to testing data without doing so as the order of
+    catagories may have changed.
+
+    Pointers to slices for l and r and counter are used to reduce
+    realocations during search and will not contain meaningfull results.
+
+    l and r should have the same capacity as cases . counter is only used
+    for catagorical targets and should have the same length as the number of
+    catagories in the target.
+
+func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64)
+    BestCatSplitIter performs an iterative search to find the split that
+    minimizes impurity in the specified target.
+
+    Searching is implmented via bitwise ops on ints (32 bit) for speed but
+    will currentlly only work when there are <31 catagories. Use
+    BigInterBestCatSplit above that.
+
+    The best split is returned as an int for which the bits coresponding to
+    catagories that should be sent left has been flipped. This can be
+    decoded into a splitter using DecodeSplit on the trainig feature and
+    should not be applied to testing data without doing so as the order of
+    catagories may have changed.
+
+    Pointers to slices for l and r and counter are used to reduce
+    realocations during search and will not contain meaningfull results.
+
+    l and r should have the same capacity as cases . counter is only used
+    for catagorical targets and should have the same length as the number of
+    catagories in the target.
+
+func (f *Feature) BestCatSplitIterBig(target Target, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64)
+    BestCatSplitIterBig performs an iterative search to find the split that
+    minimizes impurity in the specified target.
+
+    Searching is implmented via bitwise on intergers for speed but will
+    currentlly only work when there are less catagories then the number of
+    bits in an int.
+
+    The best split is returned as an int for which the bits coresponding to
+    catagories that should be sent left has been flipped. This can be
+    decoded into a splitter using DecodeSplit on the trainig feature and
+    should not be applied to testing data without doing so as the order of
+    catagories may have changed.
+
+    Pointers to slices for l and r and counter are used to reduce
+    realocations during search and will not contain meaningfull results.
+
+    l and r should have the same capacity as cases . counter is only used
+    for catagorical targets and should have the same length as the number of
+    catagories in the target.
+
+func (f *Feature) BestNumSplit(target Target,
+    cases *[]int,
+    parentImp float64,
+    l *[]int,
+    r *[]int,
+    counter *[]int,
+    sorter *SortableFeature) (bestSplit float64, impurityDecrease float64)
+    BestNumSsplit searches over the possible splits of cases that can be
+    made with f and returns the one that minimizes the impurity of the
+    target and the impurity decrease.
+
+    It searches by sorting the cases by the potential splitter and then
+    evaluating each "gap" between cases with non equal value as a potential
+    split.
+
+    Pointers to slices for l and r and counter are used to reduce
+    realocations during search and will not contain meaningfull results.
+
+    l and r should have the same capacity as cases . counter is only used
+    for catagorical targets and should have the same length as the number of
+    catagories in the target.
+
+func (f *Feature) BestSplit(target Target,
+    cases *[]int,
+    parentImp float64,
+    itter bool,
+    l *[]int,
+    r *[]int,
+    counter *[]int,
+    sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64)
+    BestSplit finds the best split of the features that can be achieved
+    using the specified target and cases. It returns a Splitter and the
+    decrease in impurity.
+
+    Pointers to slices for l and r and counter are used to reduce
+    realocations during search and will not contain meaningfull results
+    after.
+
+    For best performance, l and r should have the same capacity as cases.
+    counter is only used for catagorical targets and should have the same
+    length as the number of catagories in the target.
+
+func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter)
+    Decode split builds a sliter from the numeric values returned by
+    BestNumSplit or BestCatSplit. Numeric splitters are decoded to send
+    values <= num left. Catagorical splitters are decoded to send catgorical
+    values for which the bit in cat is 1 left.
+
+func (f *Feature) FilterMissing(cases *[]int, filtered *[]int)
+    FilterMissing loops over the cases and appends them into filtered. For
+    most use cases filtered should have zero length before you begin as it
+    is not reset internally
+
+func (f *Feature) FindPredicted(cases []int) (pred string)
+    Find predicted takes the indexes of a set of cases and returns the
+    predicted value. For catagorical features this is a string containing
+    the most common catagory and for numerical it is the mean of the values.
+
+func (target *Feature) Gini(cases *[]int) (e float64)
+    Gini returns the gini impurity for the specified cases in the feature
+    gini impurity is calculated as 1 - Sum(fi^2) where fi is the fraction of
+    cases in the ith catagory.
+
+func (target *Feature) GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64)
+    giniWithoutAlocate calculates gini impurity using the spupplied counter
+    which must be a slcie with length equal to the number of cases. This
+    allows you to reduce allocations but the counter will also contain per
+    catagory counts.
+
+func (target *Feature) Impurity(cases *[]int, counter *[]int) (e float64)
+    Impurity returns Gini impurity or mean squared error vs the mean for a
+    set of cases depending on weather the feature is catagorical or
+    numerical
+
+func (f *Feature) ImputeMissing()
+    ImputeMissing imputes the missing values in a feature to the mean or
+    mode of the feature.
+
+func (target *Feature) Mean(cases *[]int) (m float64)
+    Mean returns the mean of the feature for the cases specified
+
+func (target *Feature) MeanSquaredError(cases *[]int, predicted float64) (e float64)
+    MeanSquaredError returns the Mean Squared error of the cases specifed vs
+    the predicted value. Only non missing casses are considered.
+
+func (f *Feature) Mode(cases *[]int) (m string)
+    Mode returns the mode catagory feature for the cases specified
+
+func (f *Feature) Modei(cases *[]int) (m int)
+    Mode returns the mode catagory feature for the cases specified
+
+func (target *Feature) NumImp(cases *[]int) (e float64)
+    Numerical Impurity returns the mean squared error vs the mean
+
+func (f *Feature) ShuffledCopy() (fake *Feature)
+    ShuffledCopy returns a shuffled version of f for use as an artifical
+    contrast in evaluation of importance scores. The new feature will be
+    named featurename:SHUFFLED
+
+func (target *Feature) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+    SplitImpurity calculates the impurity of a splitinto the specified left
+    and right groups. This is depined as pLi*(tL)+pR*i(tR) where pL and pR
+    are the probability of case going left or right and i(tl) i(tR) are the
+    left and right impurites.
+
+    Counter is only used for catagorical targets and should have the same
+    length as the number of catagories in the target.
+
+
+type FeatureMatrix struct {
+    Data       []Feature
+    Map        map[string]int
+    CaseLabels []string
+}
+    FeatureMatrix contains a slice of Features and a Map to look of the
+    index of a feature by its string id.
+
+
+func ParseAFM(input io.Reader) *FeatureMatrix
+    Parse an AFM (anotated feature matrix) out of an io.Reader AFM format is
+    a tsv with row and column headers where the row headers start with N:
+    indicating numerical, C: indicating catagorical or B: indicating boolean
+    For this parser features without N: are assumed to be catagorical
+
+
+func (fm *FeatureMatrix) AddContrasts(n int)
+    AddContrasts appends n artificial contrast features to a feature matrix.
+    These features are generated by randomly selecting (with replacement) an
+    existing feature and creating a shuffled copy named
+    featurename:SHUFFLED.
+
+    These features can be used as a contrast to evaluate the importance
+    score's assigned to actual features.
+
+func (fm *FeatureMatrix) BestSplitter(target Target,
+    cases []int,
+    canidates []int,
+    itter bool,
+    l *[]int,
+    r *[]int) (s *Splitter, impurityDecrease float64)
+    BestSplitter finds the best splitter from a number of canidate features
+    to slit on by looping over all features and calling BestSplit.
+
+    Pointers to slices for l and r are used to reduce realocations during
+    repeated calls and will not contain meaningfull results.
+
+    l and r should have capacity >= cap(cases) to avoid resizing.
+
+func (fm *FeatureMatrix) ContrastAll()
+    ContrastAll adds shuffled copies of every feature to the feature matrix.
+    These features are generated by randomly selecting (with replacement) an
+    existing feature and creating a shuffled copy named
+    featurename:SHUFFLED.
+
+    These features can be used as a contrast to evaluate the importance
+    score's assigned to actual features. ContrastAll is particularly usefull
+    vs AddContrast when one wishes to identify [psuedo] unique identifiers
+    that might lead to overfitting.
+
+func (fm *FeatureMatrix) ImputeMissing()
+    ImputeMissing imputes missing values in all features to the mean or mode
+    of the feature.
+
+
+type Forest struct {
+    //Forest string
+    Target string
+    Trees  []*Tree
+}
+    Forest represents a collection of decision trees grown to predict
+    Target.
+
+
+func GrowRandomForest(fm *FeatureMatrix,
+    target *Feature,
+    nSamples int,
+    mTry int,
+    nTrees int,
+    leafSize int,
+    itter bool,
+    importance *[]RunningMean) (f *Forest)
+    GrowRandomForest grows a forest using Brieman and Cutler's method. For
+    many cases it it will be quicker to reimplment this method to write
+    trees directelly to disk or grow trees in parralel. See the growforest
+    comand line utility for an example of this.
+
+    target is the feature to predict.
+
+    nSamples is the number of cases to sample (with replacment) for each
+    tree.
+
+    mTry is the number of canidate features to evaluate at each node.
+
+    nTrees is the number of trees to grow.
+
+    leafSize is the minimum number of cases that should end up on a leaf.
+
+    itter indicates weather to use iterative spliting for all catagorical
+    features or only those with more then 6 catagories.
+
+
+
+type ForestReader struct {
+    // contains filtered or unexported fields
+}
+    ForestReader wraps an io.Reader to reads a forest. It includes
+    ReadForest for reading an entire forest or ReadTree for reading a forest
+    tree by tree. The forest should be in .sf format see the package doc's
+    in doc.go for full format details. It ignores fields that are not use by
+    CloudForest.
+
+
+func NewForestReader(r io.Reader) *ForestReader
+    NewForestReader wraps the supplied io.Reader as a ForestReader.
+
+
+func (fr *ForestReader) ParseRfAcePredictorLine(line string) map[string]string
+    ParseRfAcePredictorLine parses a single line of an rf-ace sf "stoicastic
+    forest" and returns a map[string]string of the key value pairs.
+
+func (fr *ForestReader) ReadForest() (forest *Forest, err error)
+    ForestReader.ReadForest reads the next forest from the underlying
+    reader. If io.EOF or another error is encountered it returns that.
+
+func (fr *ForestReader) ReadTree() (tree *Tree, forest *Forest, err error)
+    ForestReader.ReadTree reads the next tree from the underlying reader. If
+    the next tree is in a new forest it returns a forest object as well. If
+    an io.EOF or other error is encountered it returns that as well as any
+    partially parsed structs.
+
+
+type ForestWriter struct {
+    // contains filtered or unexported fields
+}
+    ForestWriter wraps an io writer with functionality to write forests
+    either with one call to WriteForest or incrimentally using
+    WriteForestHeader and WriteTree. ForestWriter save's a forest in .sf
+    format; see the package doc's in doc.go for full format details. It
+    won't include fields that are not use by CloudForest.
+
+
+func NewForestWriter(w io.Writer) *ForestWriter
+    NewForestWriter returns a pointer to a new ForestWriter.
+
+
+func (fw *ForestWriter) WriteForest(forest *Forest)
+    WriteForest writes an entire forest including all headers.
+
+func (fw *ForestWriter) WriteForestHeader(target string, ntrees int)
+    WriteForestHeader writes only the header of a forest.
+
+func (fw *ForestWriter) WriteNode(n *Node, path string)
+    WriteNode writes a single node but not it's children. WriteTree will be
+    used more often but WriteNode can be used to grow a large tree
+    directelly to disk without storing it in memory.
+
+func (fw *ForestWriter) WriteNodeAndChildren(n *Node, path string)
+    WriteNodeAndChildren recursivelly writes out the target node and all of
+    its chilldren. WriteTree is prefered for most use cases.
+
+func (fw *ForestWriter) WriteTree(tree *Tree, ntree int)
+    WriteTree writes an entire Tree including the header.
+
+func (fw *ForestWriter) WriteTreeHeader(ntree int)
+    WrieTreeHeader writes only the header line for a tree.
+
+
+type L1Target struct {
+    *Feature
+}
+    L1Target wraps a numerical feature as a target for us in l1 norm
+    regresion.
+
+
+func (target *L1Target) Impurity(cases *[]int, counter *[]int) (e float64)
+    L1Target.Impurity is an L1 version of impurity returning L1 instead of
+    squared error.
+
+func (target *L1Target) MeanL1Error(cases *[]int, predicted float64) (e float64)
+    L1Target.MeanL1Error returns the Mean L1 norm error of the cases
+    specifed vs the predicted value. Only non missing casses are considered.
+
+func (target *L1Target) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+    L1Target.SplitImpurity is an L1 version of SplitImpurity.
+
+
+type Leaf struct {
+    Cases []int
+    Pred  string
+}
+    Leaf is a struct for storing the index of the cases at a terminal "Leaf"
+    node along with the Numeric predicted value.
+
+
+
+type Node struct {
+    Left     *Node
+    Right    *Node
+    Pred     string
+    Splitter *Splitter
+}
+    A node of a decision tree. Pred is a string containg either the catagory
+    or a representation of a float (less then ideal)
+
+
+func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int)
+    Recurse is used to apply a Recursable function at every downstream node
+    as the cases specified by case []int are split using the data in fm
+    *Featurematrix. For example votes can be tabulated using code like
+
+	t.Root.Recurse(func(n *Node, cases []int) {
+		if n.Left == nil && n.Right == nil {
+			// I'm in a leaf node
+			for i := 0; i < len(cases); i++ {
+				bb.Vote(cases[i], n.Pred)
+			}
+		}
+	}, fm, cases)
+
+
+type NumBallotBox struct {
+    // contains filtered or unexported fields
+}
+    Keeps track of votes by trees. Not thread safe....could be made so or
+    abstracted to an interface to support diffrent implementations.
+
+
+func NewNumBallotBox(size int) *NumBallotBox
+    Build a new ballot box for the number of cases specified by "size".
+
+
+func (bb *NumBallotBox) Tally(i int) (predicted string)
+
+func (bb *NumBallotBox) TallyError(feature *Feature) (e float64)
+    Tally error returns the error of the votes vs the provided feature. For
+    catagorical features it returns the error rate For numerical features it
+    returns mean squared error. The provided feature must use the same index
+    as the feature matrix the ballot box was constructed with. Missing
+    values are ignored. Gini imurity is not used so this is not for use in
+    rf implementations.
+
+func (bb *NumBallotBox) TallyNum(i int) (predicted float64)
+    TallyNumerical tallies the votes for the case specified by i as if it is
+    a Numerical feature. Ie it returns the mean of all votes.
+
+func (bb *NumBallotBox) Vote(casei int, pred string)
+    Vote parses the float in the string and votes for it
+
+func (bb *NumBallotBox) VoteNum(casei int, pred float64)
+    VoteNum registers a vote that case "casei" should be predicted to have
+    the numerical value "vote."
+
+
+type Recursable func(*Node, []int)
+    Recurssable defines a function signature for functions that can be
+    called at every down stream node of a tree as Node.Recurse recurses up
+    the tree. The function should have two paramaters, the current node and
+    an array of ints specifying the cases that have not been split away.
+
+
+
+type RegretTarget struct {
+    *Feature
+    Costs []float64
+}
+    RegretTarget wraps a catagorical feature for use in regret driven
+    classification. The ith entry in costs should contain the cost of
+    misclassifying a case that actually has the ith catagory.
+
+
+func NewRegretTarget(f *Feature) *RegretTarget
+    NewRegretTarget creates a RefretTarget and initializes
+    RegretTarget.Costs to the proper length.
+
+
+func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64)
+    RegretTarget.Impurity implements a simple regret functon that finds the
+    average cost of a set using the misclasiffication costs in
+    RegretTarget.Costs.
+
+func (target *RegretTarget) SetCosts(costmap map[string]float64)
+    RegretTarget.SetCosts puts costs in a map[string]float64 by feature name
+    into the proper entries in RegretTarget.Costs.
+
+func (target *RegretTarget) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+    RegretTarget.SplitImpurity is a version of Split Impurity that calls
+    RegretTarget.Impurity
+
+
+type RunningMean struct {
+    Mean  float64
+    Count int
+}
+
+
+func (rm *RunningMean) Add(val float64)
+
+
+type SortableFeature struct {
+    Feature *Feature
+    Cases   []int
+}
+    Sortable feature is a wrapper for a feature and set of cases that
+    satisfies the sort.Interface interface so that the case indexes in Cases
+    can be sorted using sort.Sort
+
+
+func (sf SortableFeature) Len() int
+    Len returns the number of cases.
+
+func (sf SortableFeature) Less(i int, j int) bool
+    Less determines if the ith case is less then the jth case.
+
+func (sf SortableFeature) Swap(i int, j int)
+    Swap exchanges the ith and jth cases.
+
+
+type SparseCounter struct {
+    Map map[int]map[int]int
+}
+    Sparse counter uses maps to track sparse integer counts in large matrix.
+    The matrix is assumed to contain zero values where nothing has been
+    edded.
+
+
+func (sc *SparseCounter) Add(i int, j int, val int)
+    Add increases the count in i,j by val.
+
+func (sc *SparseCounter) WriteTsv(writer io.Writer)
+    Write tsv writes the non zero counts out into a three colum tsv containg
+    i, j, and count in the columns.
+
+
+type Splitter struct {
+    Feature   string
+    Numerical bool
+    Value     float64
+    Left      map[string]bool
+}
+    Splitter contains fields that can be used to cases by a single feature.
+    The split can be either numerical in which case it is defined by the
+    Value field or catagorical in which case it is defined by the Left and
+    Right fields.
+
+
+func (s *Splitter) DescribeMap(input map[string]bool) string
+
+func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int)
+    Splitter.Split seperates cases []int using the data in fm *FeatureMatrix
+    and returns left and right []ints. It applies either a Numerical or
+    Catagorical split. In the Numerical case everything <= to Value is sent
+    left; for the Catagorical case a look up table is used.
+
+func (s *Splitter) SplitCat(f *Feature, cases *[]int, l *[]int, r *[]int)
+
+func (s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []int)
+    SplitInPlace splits a slice of cases into left and right slices without
+    allocating a new underlying array by sorting cases into
+    left,missing,right order and returning slices that point to the left and
+    right cases.
+
+func (s *Splitter) SplitNum(f *Feature, cases *[]int, l *[]int, r *[]int)
+    SplitNum is a low level fuction that splits the supplied cases into the
+    supplied left and right *[]ints which should be empty when SplitNum is
+    called.
+
+
+type Target interface {
+    NCats() (n int)
+    SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+    Impurity(cases *[]int, counter *[]int) (impurity float64)
+    FindPredicted(cases []int) (pred string)
+}
+    Target abstracts the methods needed for a feature to be predictable.
+
+
+
+type Tree struct {
+    //Tree int
+    Root *Node
+}
+    Tree represents a single decision tree.
+
+
+func NewTree() *Tree
+
+
+func (t *Tree) AddNode(path string, pred string, splitter *Splitter)
+    AddNode adds a node a the specified path with the specivied pred value
+    and/or Splitter. Paths are specified in the same format as in rf-aces sf
+    files, as a string of 'L' and 'R'. Nodes must be added from the root up
+    as the case where the path specifies a node whose parent does not
+    allready exist in the tree is not handled well.
+
+func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf
+    GetLeaves is called by the leaf count utility to gather statistics about
+    the nodes of a tree including the sets of cases at "leaf" nodes that
+    aren't split further and the number of times each feature is used to
+    split away each case.
+
+func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter
+    GetSplits returns the arrays of all Numeric spliters of a tree.
+
+func (t *Tree) Grow(fm *FeatureMatrix,
+    target Target,
+    cases []int,
+    canidates []int,
+    mTry int,
+    leafSize int,
+    itter bool,
+    importance *[]RunningMean,
+    l *[]int,
+    r *[]int)
+    tree.Grow grows the reciever tree through recursion. It uses impurity
+    decrease to selct spliters at each node as in Brieman's Random Forest.
+    It should be called on a tree with only a root node defined.
+
+    fm is a feature matrix of training data.
+
+    target is the feature to predict via regression or classification as
+    determined by feature type.
+
+    cases specifies the cases to calculate impurity decrease over and can
+    contain repeated values to allow for sampeling of cases with replacment
+    as in RF.
+
+    mTry specifies the number of canidate features to evaluate for each
+    split.
+
+    leafSize specifies the minimum number of cases at a leafNode.
+
+func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer)
+    Tree.Vote casts a vote for the predicted value of each case in fm
+    *FeatureMatrix. into bb *BallotBox. Since BallotBox is not thread safe
+    trees should not vote into the same BallotBox in parralel.
+
+
+type VoteTallyer interface {
+    Vote(casei int, pred string)
+    TallyError(feature *Feature) float64
+    Tally(casei int) string
+}
+    VoteTallyer is used to tabulate votes by trees and is implimented by
+    feature type specific structs like NumBallotBox and CatBallotBox. Vote
+    should register a cote that casei should be predicted as pred.
+    TallyError returns the error vs the supplied feature.
+
+
+
+
+SUBDIRECTORIES
+
+	applyforest
+	errorrate
+	growforest
+	leafcount
+	splitcount
+
