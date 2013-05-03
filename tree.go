@@ -5,11 +5,12 @@ import ()
 //Tree represents a single decision tree.
 type Tree struct {
 	//Tree int
-	Root *Node
+	Root   *Node
+	Target string
 }
 
 func NewTree() *Tree {
-	return &Tree{new(Node)}
+	return &Tree{new(Node), ""}
 }
 
 //AddNode adds a node a the specified path with the specivied pred value and/or

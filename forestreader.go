@@ -35,7 +35,7 @@ func (fr *ForestReader) ReadForest() (forest *Forest, err error) {
 	if err != nil {
 		return
 	}
-	if peek[0] != 'F' {
+	if peek[0] != 'F' && peek[0] != 'T' {
 		err = errors.New("Forest Header Not Found.")
 		return
 	}
@@ -52,6 +52,10 @@ func (fr *ForestReader) ReadForest() (forest *Forest, err error) {
 			forest = f
 		}
 		if t != nil {
+			if forest == nil {
+				forest = new(Forest)
+				forest.Target = t.Target
+			}
 			forest.Trees = append(forest.Trees, t)
 		}
 		if e == io.EOF {
@@ -91,6 +95,7 @@ func (fr *ForestReader) ReadTree() (tree *Tree, forest *Forest, err error) {
 		case strings.HasPrefix(line, "TREE"):
 			intree = true
 			tree = new(Tree)
+			tree.Target = parsed["TARGET"]
 
 		case strings.HasPrefix(line, "NODE"):
 			if intree == false {
