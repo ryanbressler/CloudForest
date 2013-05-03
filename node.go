@@ -14,6 +14,7 @@ type Recursable func(*Node, []int)
 type Node struct {
 	Left     *Node
 	Right    *Node
+	Missing  *Node
 	Pred     string
 	Splitter *Splitter
 }
@@ -32,8 +33,11 @@ type Node struct {
 func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
 	r(n, cases)
 	if n.Splitter != nil {
-		ls, rs := n.Splitter.SplitInPlace(fm, cases)
+		ls, rs, ms := n.Splitter.SplitInPlace(fm, cases)
 		n.Left.Recurse(r, fm, ls)
 		n.Right.Recurse(r, fm, rs)
+		if len(ms) > 0 && n.Missing != nil {
+			n.Missing.Recurse(r, fm, ms)
+		}
 	}
 }

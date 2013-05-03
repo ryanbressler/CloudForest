@@ -37,6 +37,12 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 					loc.Right = n
 				}
 				loc = loc.Right
+
+			case "M":
+				if loc.Missing == nil {
+					loc.Missing = n
+				}
+				loc = loc.Missing
 			}
 
 		}

@@ -43,7 +43,7 @@ SplitInPlace splits a slice of cases into left and right slices without allocati
 a new underlying array by sorting cases into left,missing,right order and returning
 slices that point to the left and right cases.
 */
-func (s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []int) {
+func (s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []int, m []int) {
 	length := len(cases)
 
 	lastleft := -1
@@ -82,6 +82,7 @@ func (s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []in
 
 	l = cases[:lastleft+1]
 	r = cases[lastright:]
+	m = cases[lastleft+1 : lastright]
 
 	return
 }
