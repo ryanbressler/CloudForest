@@ -78,7 +78,7 @@ func (f *Feature) BestSplit(target Target,
 		}
 		nmissing := float64(len(missing))
 		if nmissing > 0 {
-			missingimp := f.Impurity(&missing, counter)
+			missingimp := target.Impurity(&missing, counter)
 
 			total := float64(len(*cases))
 			nonmissing := total - nmissing
