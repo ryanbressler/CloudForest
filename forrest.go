@@ -52,18 +52,13 @@ func GrowRandomForest(fm *FeatureMatrix,
 	//Slices for reuse during search for best spliter.
 	l := make([]int, 0, nSamples)
 	r := make([]int, 0, nSamples)
-	var m *[]int
-	if splitmissing {
-		missing := make([]int, 0, nSamples)
-		m = &missing
-	}
 
 	for i := 0; i < nTrees; i++ {
 		nCases := len(fm.Data[0].Missing)
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())
-		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, splitmissing, importance, &l, &r, m)
+		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, splitmissing, importance, &l, &r)
 	}
 	return
 }

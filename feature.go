@@ -44,31 +44,37 @@ func (f *Feature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	itter bool,
+	splitmissing bool,
 	l *[]int,
 	r *[]int,
-	m *[]int,
 	counter *[]int,
 	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
 
+	left := *l
+	left = left[0:0]
+
+	f.FilterMissing(cases, &left)
+	nonmissingparentImp := target.Impurity(&left, counter)
+
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, cases, nonmissingparentImp, l, r, counter, sorter)
 	case false:
 		nCats := len(f.Back)
 		if itter && nCats > maxNonBigCats {
-			bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, cases, parentImp, l, r, counter)
+			bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, cases, nonmissingparentImp, l, r, counter)
 		} else if itter && nCats > maxExhaustiveCats {
-			bestCat, impurityDecrease = f.BestCatSplitIter(target, cases, parentImp, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplitIter(target, cases, nonmissingparentImp, l, r, counter)
 		} else if nCats > maxNonBigCats {
-			bestBigCat, impurityDecrease = f.BestCatSplitBig(target, cases, parentImp, maxNonRandomExahustive, l, r, counter)
+			bestBigCat, impurityDecrease = f.BestCatSplitBig(target, cases, nonmissingparentImp, maxNonRandomExahustive, l, r, counter)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, parentImp, maxNonRandomExahustive, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplit(target, cases, nonmissingparentImp, maxNonRandomExahustive, l, r, counter)
 		}
 
 	}
 
-	if m != nil {
-		missing := *m
+	if splitmissing {
+		missing := *l
 		missing = missing[0:0]
 
 		for _, i := range *cases {
@@ -83,7 +89,7 @@ func (f *Feature) BestSplit(target Target,
 			total := float64(len(*cases))
 			nonmissing := total - nmissing
 			//fmt.Println(missingimp, nmissing, total, nonmissing, impurityDecrease)
-			impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-parentImp) - nmissing*missingimp) / total)
+			impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
 			//fmt.Println(impurityDecrease)
 		}
 	}

@@ -31,9 +31,9 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases []int,
 	canidates []int,
 	itter bool,
+	splitmissing bool,
 	l *[]int,
-	r *[]int,
-	m *[]int) (s *Splitter, impurityDecrease float64) {
+	r *[]int) (s *Splitter, impurityDecrease float64) {
 
 	impurityDecrease = minImp
 
@@ -60,7 +60,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		left = left[:]
 		right = right[:]
 		f = &fm.Data[i]
-		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, itter, &left, &right, m, &counter, sorter)
+		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, itter, splitmissing, &left, &right, &counter, sorter)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f
