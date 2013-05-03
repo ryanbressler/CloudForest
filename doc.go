@@ -212,6 +212,7 @@ Growforest Utility
 	  -cpuprofile="": write cpu profile to file
 	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
 	  -importance="": File name to output importance.
+	  -impute=false: Impute missing values to feature mean/mode instead of filtering them out when splitting.
 	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
 	  -l1=false: Use l1 norm regression (target must be numeric).
 	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.

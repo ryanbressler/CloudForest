@@ -121,6 +121,15 @@ func (fm *FeatureMatrix) ContrastAll() {
 	}
 }
 
+/*
+ImputeMissing imputes missing values in all features to the mean or mode of the feature.
+*/
+func (fm *FeatureMatrix) ImputeMissing() {
+	for _, f := range fm.Data {
+		f.ImputeMissing()
+	}
+}
+
 //Parse an AFM (anotated feature matrix) out of an io.Reader
 //AFM format is a tsv with row and column headers where the row headers start with
 //N: indicating numerical, C: indicating catagorical or B: indicating boolean

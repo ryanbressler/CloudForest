@@ -44,6 +44,9 @@ func main() {
 	var contrastAll bool
 	flag.BoolVar(&contrastAll, "contrastall", false, "Include a shuffled artifical contrast copy of every feature.")
 
+	var impute bool
+	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode instead of filtering them out when splitting.")
+
 	var itter bool
 	flag.BoolVar(&itter, "itterative", true, "Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.")
 
@@ -93,6 +96,10 @@ func main() {
 	if contrastAll {
 		fmt.Printf("Adding Random Contrasts for All Features.\n")
 		data.ContrastAll()
+	}
+	if impute {
+		fmt.Println("Imputing missing values to feature mean/mode.")
+		data.ImputeMissing()
 	}
 
 	//find the target feature

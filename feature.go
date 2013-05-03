@@ -753,3 +753,29 @@ func (f *Feature) ShuffledCopy() (fake *Feature) {
 	return
 
 }
+
+//ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
+func (f *Feature) ImputeMissing() {
+	cases := make([]int, 0, len(f.Missing))
+	for i, _ := range f.Missing {
+		cases = append(cases, i)
+	}
+	mean := 0.0
+	mode := 0
+	if f.Numerical {
+		mean = f.Mean(&cases)
+	} else {
+		mode = f.Modei(&cases)
+	}
+	for i, m := range f.Missing {
+		if m {
+			if f.Numerical {
+				f.NumData[i] = mean
+			} else {
+				f.CatData[i] = mode
+			}
+			f.Missing[i] = false
+
+		}
+	}
+}
