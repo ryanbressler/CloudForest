@@ -46,8 +46,10 @@ func (f *Feature) BestSplit(target Target,
 	itter bool,
 	l *[]int,
 	r *[]int,
+	m *[]int,
 	counter *[]int,
 	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
+
 	switch f.Numerical {
 	case true:
 		bestNum, impurityDecrease = f.BestNumSplit(target, cases, parentImp, l, r, counter, sorter)
@@ -64,6 +66,28 @@ func (f *Feature) BestSplit(target Target,
 		}
 
 	}
+
+	if m != nil {
+		missing := *m
+		missing = missing[0:0]
+
+		for _, i := range *cases {
+			if f.Missing[i] {
+				missing = append(missing, i)
+			}
+		}
+		nmissing := float64(len(missing))
+		if nmissing > 0 {
+			missingimp := f.Impurity(&missing, counter)
+
+			total := float64(len(*cases))
+			nonmissing := total - nmissing
+			//fmt.Println(missingimp, nmissing, total, nonmissing, impurityDecrease)
+			impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-parentImp) - nmissing*missingimp) / total)
+			//fmt.Println(impurityDecrease)
+		}
+	}
+
 	return
 
 }

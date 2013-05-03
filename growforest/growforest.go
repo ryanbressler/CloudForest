@@ -179,6 +179,12 @@ func main() {
 	l := make([]int, 0, nSamples)
 	r := make([]int, 0, nSamples)
 
+	var m *[]int
+	if splitmissing {
+		missing := make([]int, 0, nSamples)
+		m = &missing
+	}
+
 	//****************** Good Stuff Stars Here ;) ******************//
 	for i := 0; i < nTrees; i++ {
 		//sample nCases case with replacment
@@ -188,7 +194,7 @@ func main() {
 			cases = append(cases, rand.Intn(nCases))
 		}
 
-		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, &l, &r)
+		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, &l, &r, m)
 		forestwriter.WriteTree(tree, i)
 	}
 
