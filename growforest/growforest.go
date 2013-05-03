@@ -47,6 +47,9 @@ func main() {
 	var impute bool
 	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode instead of filtering them out when splitting.")
 
+	var splitmissing bool
+	flag.BoolVar(&splitmissing, "splitmissing", false, "Split missing values onto a third branch at each node (experimental).")
+
 	var itter bool
 	flag.BoolVar(&itter, "itterative", true, "Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.")
 
@@ -185,7 +188,7 @@ func main() {
 			cases = append(cases, rand.Intn(nCases))
 		}
 
-		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, imppnt, &l, &r)
+		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, &l, &r)
 		forestwriter.WriteTree(tree, i)
 	}
 

@@ -73,6 +73,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	mTry int,
 	leafSize int,
 	itter bool,
+	splitmissing bool,
 	importance *[]RunningMean,
 	l *[]int,
 	r *[]int) {
@@ -96,6 +97,9 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				n.Pred = ""
 				n.Left = new(Node)
 				n.Right = new(Node)
+				if splitmissing {
+					n.Missing = new(Node)
+				}
 				return
 			}
 		}

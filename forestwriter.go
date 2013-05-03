@@ -56,6 +56,9 @@ func (fw *ForestWriter) WriteNodeAndChildren(n *Node, path string) {
 	if n.Splitter != nil && n.Right != nil {
 		fw.WriteNodeAndChildren(n.Right, path+"R")
 	}
+	if n.Splitter != nil && n.Missing != nil {
+		fw.WriteNodeAndChildren(n.Right, path+"M")
+	}
 
 }
 
