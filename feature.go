@@ -50,11 +50,26 @@ func (f *Feature) BestSplit(target Target,
 	counter *[]int,
 	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
 
-	left := *l
-	left = left[0:0]
+	nonmiss := *l
+	nonmiss = nonmiss[0:0]
+	missing := *r
+	missing = missing[0:0]
 
-	f.FilterMissing(cases, &left)
-	nonmissingparentImp := target.Impurity(&left, counter)
+	f.FilterMissing(cases, &nonmiss)
+	nonmissingparentImp := target.Impurity(&nonmiss, counter)
+
+	for _, i := range *cases {
+		if f.Missing[i] {
+			missing = append(missing, i)
+		}
+	}
+	nmissing := float64(len(missing))
+	total := float64(len(*cases))
+	nonmissing := total - nmissing
+	missingimp := 0.0
+	if nmissing > 0 {
+		missingimp = target.Impurity(&missing, counter)
+	}
 
 	switch f.Numerical {
 	case true:
@@ -73,27 +88,9 @@ func (f *Feature) BestSplit(target Target,
 
 	}
 
-	if splitmissing {
-		missing := *l
-		missing = missing[0:0]
-
-		for _, i := range *cases {
-			if f.Missing[i] {
-				missing = append(missing, i)
-			}
-		}
-		nmissing := float64(len(missing))
-		if nmissing > 0 {
-			missingimp := target.Impurity(&missing, counter)
-
-			total := float64(len(*cases))
-			nonmissing := total - nmissing
-			//fmt.Println(missingimp, nmissing, total, nonmissing, impurityDecrease)
-			impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
-			//fmt.Println(impurityDecrease)
-		}
+	if nmissing > 0 {
+		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
 	}
-
 	return
 
 }
