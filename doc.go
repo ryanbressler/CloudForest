@@ -38,7 +38,7 @@ function/closure passed to a tree's root node's Recurse method:
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&canidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, canidates[:mTry], itter, l, r)
+			best, impDec := fm.BestSplitter(target, innercases, canidates[:mTry], itter, allocs)
 			if best != nil && impDec > minImp {
 				//not a leaf node so define the spliter and left and right nodes
 				//so recursion will continue
@@ -90,27 +90,24 @@ arrays make this sort of optimization transparent. For example a function like:
 can return left and right slices that point to the same underlying array as the origional
 slice of cases but these slices should not have their values changed.
 
-Split searching also accepts pointers to slices that will be reset to zero length and reused
-without reallocation. These slices won't contain meaningfull data after the search is done but
-provide signifigant speed gains. Their use can be seen in the l and r parmaters passed to
-BestSplitter in the the tree growing code above and functions that accept them include:
+Functions used while searching for the best plit also accepts pointers to a BestSplitAllocs
+struct which contains pointers to structures that are reused during searching to keep memory allocations
+to a minmum. This can be seen in functions like:
 
 	func (fm *FeatureMatrix) BestSplitter(target Target,
 		cases []int,
 		canidates []int,
 		itter bool,
-		l *[]int,
-		r *[]int) (s *Splitter, impurityDecrease float64)
+		splitmissing bool,
+		allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64)
 
-	func (f *Feature) BestSplit(target *Feature,
+	func (f *Feature) BestSplit(target Target,
 		cases *[]int,
+		parentImp float64,
 		itter bool,
-		l *[]int,
-		r *[]int,
-		counter *[]int,
-		sorter *SortableFeature) (bestNum float64, bestCat int, impurityDecrease float64)
+		splitmissing bool,
+		allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64)
 
-Which accept reusable l, r, counter and sorter objects.
 
 For catagorical predictors, BestSplit will also attempt to inteligently choose between 4
 diffrent implementations depending on userinput and the number of catagories.
@@ -123,12 +120,13 @@ reliest on go's sorting package.
 Missing Values
 
 By default cloud forest uses a fast heuristic for missing values. When proposing a split on a feature
-with missing data the missing cases are removed and the impuirty value is corrected to use three way impurity:
+with missing data the missing cases are removed and the impuirty value is corrected to use three way impurity
+which reduces the bias towards features with lots of missing data:
 	p(l)I(l)+p(r)I(r)+p(m)I(m)
 
 Missing values in the target variable are left out of impurity calculations.
 
-This provides reasonable results in cases where missing values are rare.
+This provides reasonable results in many cases.
 
 Optionally, feature.ImputeMissing or featurematrixImputeMissing can be called before forest growth
 to impute missing values to the feature mean/mode which Brieman [2] suggests as a fast method for

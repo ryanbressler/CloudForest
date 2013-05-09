@@ -33,57 +33,59 @@ type Feature struct {
 BestSplit finds the best split of the features that can be achieved using
 the specified target and cases. It returns a Splitter and the decrease in impurity.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results after.
+itter tells the spliter to use iterative (instead of random) searches for large catagorical features.
 
-For best performance, l and r should have the same capacity as cases. counter is only
-used for catagorical targets and should have the same length as the number of catagories
-in the target.
+splitmissing tells the spliter to keep missing features in a third branch at each node.
+
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
 */
 func (f *Feature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	itter bool,
 	splitmissing bool,
-	l *[]int,
-	r *[]int,
-	counter *[]int,
-	sorter *SortableFeature) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
 
-	nonmiss := *l
+	nonmiss := *allocs.NonMissing
 	nonmiss = nonmiss[0:0]
-	missing := *r
+	missing := *allocs.Right
 	missing = missing[0:0]
-
-	f.FilterMissing(cases, &nonmiss)
-	nonmissingparentImp := target.Impurity(&nonmiss, counter)
 
 	for _, i := range *cases {
 		if f.Missing[i] {
 			missing = append(missing, i)
+		} else {
+			nonmiss = append(nonmiss, i)
 		}
+	}
+	if len(nonmiss) == 0 {
+		return
 	}
 	nmissing := float64(len(missing))
 	total := float64(len(*cases))
 	nonmissing := total - nmissing
+
+	nonmissingparentImp := target.Impurity(&nonmiss, allocs.Counter)
+
 	missingimp := 0.0
 	if nmissing > 0 {
-		missingimp = target.Impurity(&missing, counter)
+		missingimp = target.Impurity(&missing, allocs.Counter)
 	}
 
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, cases, nonmissingparentImp, l, r, counter, sorter)
+		bestNum, impurityDecrease = f.BestNumSplit(target, &nonmiss, nonmissingparentImp, allocs)
 	case false:
-		nCats := len(f.Back)
+		nCats := f.NCats()
 		if itter && nCats > maxNonBigCats {
-			bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, cases, nonmissingparentImp, l, r, counter)
+			bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, &nonmiss, nonmissingparentImp, allocs)
 		} else if itter && nCats > maxExhaustiveCats {
-			bestCat, impurityDecrease = f.BestCatSplitIter(target, cases, nonmissingparentImp, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplitIter(target, &nonmiss, nonmissingparentImp, allocs)
 		} else if nCats > maxNonBigCats {
-			bestBigCat, impurityDecrease = f.BestCatSplitBig(target, cases, nonmissingparentImp, maxNonRandomExahustive, l, r, counter)
+			bestBigCat, impurityDecrease = f.BestCatSplitBig(target, &nonmiss, nonmissingparentImp, maxNonRandomExahustive, allocs)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, cases, nonmissingparentImp, maxNonRandomExahustive, l, r, counter)
+			bestCat, impurityDecrease = f.BestCatSplit(target, &nonmiss, nonmissingparentImp, maxNonRandomExahustive, allocs)
 		}
 
 	}
@@ -102,7 +104,7 @@ func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitte
 	if f.Numerical {
 		s = &Splitter{f.Name, true, num, nil}
 	} else {
-		nCats := len(f.Back)
+		nCats := f.NCats()
 		s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
 
 		if nCats > maxNonBigCats {
@@ -127,7 +129,7 @@ func (f *Feature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitte
 }
 
 /*BestCatSplitIterBig performs an iterative search to find the split that minimizes impurity
-in the specified target.
+in the specified target. It expects to be provided for cases fir which the feature is not missing.
 
 Searching is implmented via bitwise on intergers for speed but will currentlly only work
 when there are less catagories then the number of bits in an int.
@@ -137,20 +139,19 @@ be sent left has been flipped. This can be decoded into a splitter using DecodeS
 trainig feature and should not be applied to testing data without doing so as the order of
 catagories may have changed.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
 
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.*/
-func (f *Feature) BestCatSplitIterBig(target Target, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64) {
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
+*/
+func (f *Feature) BestCatSplitIterBig(target Target, cases *[]int, parentImp float64, allocs *BestSplitAllocs) (bestSplit *big.Int, impurityDecrease float64) {
 
-	left := *l
-	right := *r
+	left := *allocs.Left
+	right := *allocs.Right
 	/*
 		This is an iterative search for the best combinations of catagories.
 	*/
 
-	nCats := len(f.Back)
+	nCats := f.NCats()
 	cat := 0
 
 	//overall running best impurity and split
@@ -184,13 +185,12 @@ func (f *Feature) BestCatSplitIterBig(target Target, cases *[]int, parentImp flo
 			nextSplit.SetBit(bestSplit, i, 1)
 
 			for _, c := range *cases {
-				if f.Missing[c] == false {
-					cat = f.CatData[c]
-					if 0 != nextSplit.Bit(cat) {
-						left = append(left, c)
-					} else {
-						right = append(right, c)
-					}
+
+				cat = f.CatData[c]
+				if 0 != nextSplit.Bit(cat) {
+					left = append(left, c)
+				} else {
+					right = append(right, c)
 				}
 
 			}
@@ -200,7 +200,7 @@ func (f *Feature) BestCatSplitIterBig(target Target, cases *[]int, parentImp flo
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(left, right, counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
 
 			if nextImp > innerImp {
 				innerSplit.Set(nextSplit)
@@ -224,7 +224,7 @@ func (f *Feature) BestCatSplitIterBig(target Target, cases *[]int, parentImp flo
 
 /*
 BestCatSplitIter performs an iterative search to find the split that minimizes impurity
-in the specified target.
+in the specified target. It expects to be provided for cases fir which the feature is not missing.
 
 Searching is implmented via bitwise ops on ints (32 bit) for speed but will currentlly only work
 when there are <31 catagories. Use BigInterBestCatSplit above that.
@@ -234,21 +234,18 @@ be sent left has been flipped. This can be decoded into a splitter using DecodeS
 trainig feature and should not be applied to testing data without doing so as the order of
 catagories may have changed.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
-
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
 */
-func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float64, l *[]int, r *[]int, counter *[]int) (bestSplit int, impurityDecrease float64) {
+func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float64, allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
-	left := *l
-	right := *r
+	left := *allocs.Left
+	right := *allocs.Right
 	/*
 		This is an iterative search for the best combinations of catagories.
 	*/
 
-	nCats := len(f.Back)
+	nCats := f.NCats()
 	cat := 0
 
 	//overall running best impurity and split
@@ -282,13 +279,12 @@ func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float6
 			nextSplit = bestSplit | 1<<uint(i)
 
 			for _, c := range *cases {
-				if f.Missing[c] == false {
-					cat = f.CatData[c]
-					if 0 != (nextSplit & (1 << uint(cat))) {
-						left = append(left, c)
-					} else {
-						right = append(right, c)
-					}
+
+				cat = f.CatData[c]
+				if 0 != (nextSplit & (1 << uint(cat))) {
+					left = append(left, c)
+				} else {
+					right = append(right, c)
 				}
 
 			}
@@ -298,7 +294,7 @@ func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float6
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(left, right, counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -323,6 +319,7 @@ func (f *Feature) BestCatSplitIter(target Target, cases *[]int, parentImp float6
 /*
 BestCatSplit performs an exahustive search for the split that minimizes impurity
 in the specified target for catagorical features with less then 31 catagories.
+It expects to be provided for cases fir which the feature is not missing.
 
 This implementation follows Brieman's implementation and the R/Matlab implementations
 based on it use exsaustive search overfor when there are less thatn 25/10 catagories
@@ -337,30 +334,25 @@ be sent left has been flipped. This can be decoded into a splitter using DecodeS
 trainig feature and should not be applied to testing data without doing so as the order of
 catagories may have changed.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
-
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
 */
 func (f *Feature) BestCatSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	maxEx int,
-	l *[]int,
-	r *[]int,
-	counter *[]int) (bestSplit int, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
 	impurityDecrease = minImp
-	left := *l
-	right := *r
+	left := *allocs.Left
+	right := *allocs.Right
 	/*
 
 		Eahustive search of combinations of catagories is carried out by iterating an Int and using
 		the bits to define which catagories go to the left of the split.
 
 	*/
-	nCats := len(f.Back)
+	nCats := f.NCats()
 
 	useExhaustive := nCats <= maxEx
 	nPartitions := 1
@@ -389,13 +381,12 @@ func (f *Feature) BestCatSplit(target Target,
 		right = right[0:0]
 		j := 0
 		for _, c := range *cases {
-			if f.Missing[c] == false {
-				j = f.CatData[c]
-				if 0 != (bits & (1 << uint(j))) {
-					left = append(left, c)
-				} else {
-					right = append(right, c)
-				}
+
+			j = f.CatData[c]
+			if 0 != (bits & (1 << uint(j))) {
+				left = append(left, c)
+			} else {
+				right = append(right, c)
 			}
 
 		}
@@ -405,7 +396,7 @@ func (f *Feature) BestCatSplit(target Target,
 			continue
 		}
 
-		innerimp = parentImp - target.SplitImpurity(left, right, counter)
+		innerimp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -419,7 +410,7 @@ func (f *Feature) BestCatSplit(target Target,
 }
 
 /*BestCatSplitBig performs a random/exahustive search to find the split that minimizes impurity
-in the specified target.
+in the specified target. It expects to be provided for cases fir which the feature is not missing.
 
 Searching is implmented via bitwise on Big.Ints to handle large n catagorical features but BestCatSplit
 should be used for n <31.
@@ -429,17 +420,15 @@ be sent left has been flipped. This can be decoded into a splitter using DecodeS
 trainig feature and should not be applied to testing data without doing so as the order of
 catagories may have changed.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
+*/
+func (f *Feature) BestCatSplitBig(target Target, cases *[]int, parentImp float64, maxEx int, allocs *BestSplitAllocs) (bestSplit *big.Int, impurityDecrease float64) {
 
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.*/
-func (f *Feature) BestCatSplitBig(target Target, cases *[]int, parentImp float64, maxEx int, l *[]int, r *[]int, counter *[]int) (bestSplit *big.Int, impurityDecrease float64) {
+	left := *allocs.Left
+	right := *allocs.Right
 
-	left := *l
-	right := *r
-
-	nCats := len(f.Back)
+	nCats := f.NCats()
 
 	//overall running best impurity and split
 	impurityDecrease = minImp
@@ -481,13 +470,12 @@ func (f *Feature) BestCatSplitBig(target Target, cases *[]int, parentImp float64
 		right = right[0:0]
 		j := 0
 		for _, c := range *cases {
-			if f.Missing[c] == false {
-				j = f.CatData[c]
-				if 0 != bits.Bit(j) {
-					left = append(left, c)
-				} else {
-					right = append(right, c)
-				}
+
+			j = f.CatData[c]
+			if 0 != bits.Bit(j) {
+				left = append(left, c)
+			} else {
+				right = append(right, c)
 			}
 
 		}
@@ -497,7 +485,7 @@ func (f *Feature) BestCatSplitBig(target Target, cases *[]int, parentImp float64
 			continue
 		}
 
-		innerImp = parentImp - target.SplitImpurity(left, right, counter)
+		innerImp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
 
 		if innerImp > impurityDecrease {
 			bestSplit.Set(bits)
@@ -514,34 +502,25 @@ func (f *Feature) BestCatSplitBig(target Target, cases *[]int, parentImp float64
 BestNumSsplit searches over the possible splits of cases that can be made with f
 and returns the one that minimizes the impurity of the target and the impurity decrease.
 
+It expects to be provided for cases fir which the feature is not missing.
+
 It searches by sorting the cases by the potential splitter and then evaluating each "gap"
 between cases with non equal value as a potential split.
 
-Pointers to slices for l and r and counter are used to reduce realocations during search
-and will not contain meaningfull results.
-
-l and r should have the same capacity as cases . counter is only used for catagorical targets and
-should have the same length as the number of catagories in the target.
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
 */
 func (f *Feature) BestNumSplit(target Target,
 	cases *[]int,
 	parentImp float64,
-	l *[]int,
-	r *[]int,
-	counter *[]int,
-	sorter *SortableFeature) (bestSplit float64, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (bestSplit float64, impurityDecrease float64) {
 
 	impurityDecrease = minImp
 	bestSplit = 0.0
 
-	//Only need l  because slicing it is faster then moving data
-	//l to r though there may be a way to fix this in the future
-	left := *l
-	left = left[0:0]
-
-	f.FilterMissing(cases, &left)
+	sorter := allocs.Sorter
 	sorter.Feature = f
-	sorter.Cases = left
+	sorter.Cases = *cases
 	sort.Sort(sorter)
 
 	// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
@@ -557,7 +536,7 @@ func (f *Feature) BestNumSplit(target Target,
 		/*		BUG there is a realocation of a slice (not the underlying array) happening here in
 				BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 				but it was slower.  */
-		innerimp := parentImp - target.SplitImpurity(left[:i], left[i:], counter)
+		innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], allocs.Counter)
 
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
@@ -631,7 +610,7 @@ func (target *Feature) NumImp(cases *[]int) (e float64) {
 //gini impurity is calculated as 1 - Sum(fi^2) where fi is the fraction
 //of cases in the ith catagory.
 func (target *Feature) Gini(cases *[]int) (e float64) {
-	counter := make([]int, len(target.Back))
+	counter := make([]int, target.NCats())
 	e = target.GiniWithoutAlocate(cases, &counter)
 	return
 }
@@ -704,7 +683,7 @@ func (f *Feature) Mode(cases *[]int) (m string) {
 
 //Mode returns the mode catagory feature for the cases specified
 func (f *Feature) Modei(cases *[]int) (m int) {
-	counts := make([]int, len(f.Back))
+	counts := make([]int, f.NCats())
 	for _, i := range *cases {
 		if !f.Missing[i] {
 			counts[f.CatData[i]] += 1

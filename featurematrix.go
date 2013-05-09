@@ -22,18 +22,19 @@ type FeatureMatrix struct {
 BestSplitter finds the best splitter from a number of canidate features to slit on by looping over
 all features and calling BestSplit.
 
-Pointers to slices for l and r are used to reduce realocations during repeated calls
-and will not contain meaningfull results.
+itter tells the spliter to use iterative (instead of random) searches for large catagorical features.
 
-l and r should have capacity >=  cap(cases) to avoid resizing.
+splitmissing tells the spliter to keep missing features in a third branch at each node.
+
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
 */
 func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases []int,
 	canidates []int,
 	itter bool,
 	splitmissing bool,
-	l *[]int,
-	r *[]int) (s *Splitter, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64) {
 
 	impurityDecrease = minImp
 
@@ -42,25 +43,11 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	var cat, bestCat int
 	var bigCat, bestBigCat *big.Int
 
-	sorter := new(SortableFeature)
-	var counter []int
-
-	ncats := target.NCats()
-
-	if ncats > 0 {
-		counter = make([]int, ncats, ncats)
-	}
-
-	parentImp := target.Impurity(&cases, &counter)
-
-	left := *l
-	right := *r
+	parentImp := target.Impurity(&cases, allocs.Counter)
 
 	for _, i := range canidates {
-		left = left[:]
-		right = right[:]
 		f = &fm.Data[i]
-		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, itter, splitmissing, &left, &right, &counter, sorter)
+		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, itter, splitmissing, allocs)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f

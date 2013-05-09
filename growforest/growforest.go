@@ -176,8 +176,7 @@ func main() {
 
 	tree := CloudForest.NewTree()
 	cases := make([]int, 0, nSamples)
-	l := make([]int, 0, nSamples)
-	r := make([]int, 0, nSamples)
+	allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
 
 	//****************** Good Stuff Stars Here ;) ******************//
 	for i := 0; i < nTrees; i++ {
@@ -188,7 +187,7 @@ func main() {
 			cases = append(cases, rand.Intn(nCases))
 		}
 
-		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, &l, &r)
+		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, allocs)
 		forestwriter.WriteTree(tree, i)
 	}
 

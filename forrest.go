@@ -26,8 +26,8 @@ leafSize is the minimum number of cases that should end up on a leaf.
 
 itter indicates weather to use iterative spliting for all catagorical features or only those
 with more then 6 catagories.
-
 */
+
 func GrowRandomForest(fm *FeatureMatrix,
 	target *Feature,
 	nSamples int,
@@ -50,15 +50,14 @@ func GrowRandomForest(fm *FeatureMatrix,
 	}
 
 	//Slices for reuse during search for best spliter.
-	l := make([]int, 0, nSamples)
-	r := make([]int, 0, nSamples)
+	allocs := NewBestSplitAllocs(nSamples, target)
 
 	for i := 0; i < nTrees; i++ {
 		nCases := len(fm.Data[0].Missing)
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())
-		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, splitmissing, importance, &l, &r)
+		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, splitmissing, importance, allocs)
 	}
 	return
 }
