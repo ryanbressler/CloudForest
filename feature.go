@@ -618,8 +618,10 @@ func (target *Feature) Impurity(cases *[]int, counter *[]int) (e float64) {
 
 }
 
-//Numerical Impurity returns the mean squared error vs the mean
+//Numerical Impurity returns the mean squared error vs the mean calculated with a two pass algorythem.
 func (target *Feature) NumImp(cases *[]int) (e float64) {
+	//TODO: benchmark regression with single pass computatioanl formula for sum of squares sum(xi^2)-sum(xi)^2/N
+	//and/or with online algorythem http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
 	m := target.Mean(cases)
 	e = target.MeanSquaredError(cases, m)
 	return

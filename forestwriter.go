@@ -3,6 +3,7 @@ package CloudForest
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 /*
@@ -77,9 +78,18 @@ func (fw *ForestWriter) WriteNode(n *Node, path string) {
 		case true:
 			node += fmt.Sprintf(",SPLITTERTYPE=NUMERICAL,LVALUES=%v,RVALUES=%v", n.Splitter.Value, n.Splitter.Value)
 		case false:
-			left := n.Splitter.DescribeMap(n.Splitter.Left)
+			left := fw.DescribeMap(n.Splitter.Left)
 			node += fmt.Sprintf(",SPLITTERTYPE=CATEGORICAL,LVALUES=%v", left)
 		}
 	}
 	fmt.Fprintln(fw.w, node)
+}
+
+//DescribeMap serialzes the "left" map of a catagorical splitter.
+func (fw *ForestWriter) DescribeMap(input map[string]bool) string {
+	keys := make([]string, 0)
+	for k := range input {
+		keys = append(keys, k)
+	}
+	return "\"" + strings.Join(keys, ":") + "\""
 }

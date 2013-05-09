@@ -20,8 +20,10 @@ type Node struct {
 }
 
 //Recurse is used to apply a Recursable function at every downstream node as the cases
-//specified by case []int are split using the data in fm *Featurematrix.
-//For example votes can be tabulated using code like
+//specified by case []int are split using the data in fm *Featurematrix. Recursion
+//down a branchstops when a a node with n.Splitter == nil is reached. Recursion down
+//the Missing branch is only used if n.Missing!=nil.
+//For example votes can be tabulated using code like:
 //	t.Root.Recurse(func(n *Node, cases []int) {
 //		if n.Left == nil && n.Right == nil {
 //			// I'm in a leaf node
@@ -33,7 +35,7 @@ type Node struct {
 func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
 	r(n, cases)
 	if n.Splitter != nil {
-		ls, rs, ms := n.Splitter.SplitInPlace(fm, cases)
+		ls, rs, ms := n.Splitter.Split(fm, cases)
 		n.Left.Recurse(r, fm, ls)
 		n.Right.Recurse(r, fm, rs)
 		if len(ms) > 0 && n.Missing != nil {

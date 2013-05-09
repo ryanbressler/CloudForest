@@ -2,7 +2,7 @@
 Package CloudForest implements ensembles of decision trees for machine learning in pure go (golang).
 It includes implementations of Breiman and Cutler's Random Forest for clasiffication and regression
 on heterogenous numerical/catagorical data with missing values and several related algorythems
-including entropy and cost driven classification, l1 regression and feature selection with
+including entropy and cost driven classification, L1 regression and feature selection with
 artifical contrasts.
 
 Comand line utilities to grow, apply and analize forests are included.
@@ -19,17 +19,17 @@ https://github.com/ryanbressler/CloudForest
 Goals
 
 CloudForest is intended to provide fast, comprehensible building blocks that can be used
-to implement ensembels of decision trees. CloudForest is written in idomatic
-go to allow a data scientist to develop and scale new models and analysis quickly
-instead of having to modify complex legacy code.
+to implement ensembels of decision trees. CloudForest is written in go to allow a data
+scientist to develop and scale new models and analysis quickly instead of having to
+modify complex legacy code.
 
-Datastructures and file formats are chosen with use in multi threaded and cluster enviroments
-in mind.
+Datastructures and file formats are chosen to balance speed and comprehensibility
+with use in multi threaded and cluster enviroments in mind.
 
 
 Working with Trees
 
-Go's support for first class functions is used to provide a interface to run code as data
+Go's support for function types is used to provide a interface to run code as data
 is percolated through a tree. This method is flexible enough that it can extend the tree being
 analised. Growing a decision tree using Breiman and Cutler's method can be done in an anonymous
 function/closure passed to a tree's root node's Recurse method:
@@ -122,18 +122,33 @@ reliest on go's sorting package.
 
 Missing Values
 
-By default missing values are ignored in most cloud forest code. Ie BestSplit will split will remove
-cases for which the feature is missing from it's calculation. This allows for quick but rough
-prediction in data with few missing values.
+By default cloud forest uses a fast heuristic for missing values. When proposing a split on a feature
+with missing data the missing cases are removed and the impuirty value is corrected to use three way impurity:
+	p(l)I(l)+p(r)I(r)+p(m)I(m)
+
+Missing values in the target variable are left out of impurity calculations.
+
+This provides reasonable results in cases where missing values are rare.
 
 Optionally, feature.ImputeMissing or featurematrixImputeMissing can be called before forest growth
-to impute missing values to the feature mean/mode which Brieman [1] suggests as a fast method for
+to impute missing values to the feature mean/mode which Brieman [2] suggests as a fast method for
 imputing values.
 
 This forest could also be analized for proximity (using leafcount or tree.GetLeaves) to do the
 more accurate proximity weighted imputation Brieman describes.
 
+Experimental support is provided for 3 way splitting which preserves missing cases on a thrid branch
+as used in rf-ace. [3] This has so far yielded mixed results in testing.
+
+At some point in the future support may be added for local imputing of missing values during tree growth
+as described in [3]
+
+
 [1] http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#missing1
+
+[2] https://code.google.com/p/rf-ace/
+
+[3] http://projecteuclid.org/DPubS?verb=Display&version=1.0&service=UI&handle=euclid.aoas/1223908043&page=record
 
 Importance and Contrasts
 
@@ -169,8 +184,6 @@ When compiled with go1.1 CloudForest achieves running times similar to implement
 other languages. Using gccgo (4.8.0 at least) results in longer running times and is not
 recomended untill full go1.1 support is implemented in gc 4.8.1.
 
-CloudForest is especially fast with data that includes lots of binary or low n catagorical
-data and is well suited for use on genomic variants.
 
 Growforest Utility
 
