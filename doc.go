@@ -1,13 +1,14 @@
 /*
-Package CloudForest implements ensembles of decision trees for machine learning in pure go (golang).
+Package CloudForest implements ensembles of decision trees for machine learning in pure Go (golang.org).
 It includes implementations of Breiman and Cutler's Random Forest for clasiffication and regression
 on heterogenous numerical/catagorical data with missing values and several related algorythems
 including entropy and cost driven classification, L1 regression and feature selection with
 artifical contrasts.
 
-Comand line utilities to grow, apply and analize forests are included.
+Comand line utilities to grow, apply and analize forests are provided in sub directories.
 
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems Biology.
+
 
 Documentation has been generated with godoc and can be viewed live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
@@ -19,7 +20,7 @@ https://github.com/ryanbressler/CloudForest
 Goals
 
 CloudForest is intended to provide fast, comprehensible building blocks that can be used
-to implement ensembels of decision trees. CloudForest is written in go to allow a data
+to implement ensembels of decision trees. CloudForest is written in Go to allow a data
 scientist to develop and scale new models and analysis quickly instead of having to
 modify complex legacy code.
 
@@ -90,9 +91,9 @@ arrays make this sort of optimization transparent. For example a function like:
 can return left and right slices that point to the same underlying array as the origional
 slice of cases but these slices should not have their values changed.
 
-Functions used while searching for the best plit also accepts pointers to a BestSplitAllocs
-struct which contains pointers to slices that are resized to zero length and reused during
-searching to keep memory allocations to a minmum. This can be seen in functions like:
+Functions used while searching for the best split also accepts pointers to reusable slices and
+structs to makimize speed by keeping memory allocations to a minimum. BestSplitAllocs contains
+pointers to these items and its use can be seen in functions like:
 
 	func (fm *FeatureMatrix) BestSplitter(target Target,
 		cases []int,
@@ -110,10 +111,12 @@ searching to keep memory allocations to a minmum. This can be seen in functions 
 
 
 For catagorical predictors, BestSplit will also attempt to inteligently choose between 4
-diffrent implementations depending on userinput and the number of catagories.
-These include exahustive, random, and iterative searches implemented with bitwise oporations
-against int and big.Int dependign on the number of catagories. See BestCatSplit, BestCatSplitIter,
-BestCatSplitBig and BestCatSplitIterBig. All numerical predictors are handled by BestNumSplit which
+diffrent implementations depending on user input and the number of catagories.
+These include exahustive, random, and iterative searches for the best combinaton of catagories
+implemented with bitwise oporations against int and big.Int. See BestCatSplit, BestCatSplitIter,
+BestCatSplitBig and BestCatSplitIterBig.
+
+All numerical predictors are handled by BestNumSplit which
 reliest on go's sorting package.
 
 
@@ -123,11 +126,11 @@ By default cloud forest uses a fast heuristic for missing values. When proposing
 with missing data the missing cases are removed and the impuirty value is corrected to use three way impurity
 which reduces the bias towards features with lots of missing data:
 
-	p(l)I(l)+p(r)I(r)+p(m)I(m)
+								I(split) = p(l)I(l)+p(r)I(r)+p(m)I(m)
 
 Missing values in the target variable are left out of impurity calculations.
 
-This provides reasonable results in many cases.
+This provided generally good results at a fraction of the computational costs of imputing data.
 
 Optionally, feature.ImputeMissing or featurematrixImputeMissing can be called before forest growth
 to impute missing values to the feature mean/mode which Brieman [2] suggests as a fast method for
@@ -136,12 +139,11 @@ imputing values.
 This forest could also be analized for proximity (using leafcount or tree.GetLeaves) to do the
 more accurate proximity weighted imputation Brieman describes.
 
-Experimental support is provided for 3 way splitting which preserves missing cases on a thrid branch
-as used in rf-ace. [3] This has so far yielded mixed results in testing.
+Experimental support is provided for 3 way splitting which splits missing cases onto a third branch.
+[2] This has so far yielded mixed results in testing.
 
 At some point in the future support may be added for local imputing of missing values during tree growth
 as described in [3]
-
 
 [1] http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm#missing1
 
