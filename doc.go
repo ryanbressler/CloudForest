@@ -91,8 +91,8 @@ can return left and right slices that point to the same underlying array as the 
 slice of cases but these slices should not have their values changed.
 
 Functions used while searching for the best plit also accepts pointers to a BestSplitAllocs
-struct which contains pointers to structures that are reused during searching to keep memory allocations
-to a minmum. This can be seen in functions like:
+struct which contains pointers to slices that are resized to zero length and reused during
+searching to keep memory allocations to a minmum. This can be seen in functions like:
 
 	func (fm *FeatureMatrix) BestSplitter(target Target,
 		cases []int,
@@ -122,6 +122,7 @@ Missing Values
 By default cloud forest uses a fast heuristic for missing values. When proposing a split on a feature
 with missing data the missing cases are removed and the impuirty value is corrected to use three way impurity
 which reduces the bias towards features with lots of missing data:
+
 	p(l)I(l)+p(r)I(r)+p(m)I(m)
 
 Missing values in the target variable are left out of impurity calculations.
