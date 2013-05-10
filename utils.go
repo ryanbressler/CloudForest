@@ -8,12 +8,15 @@ import (
 	"sync"
 )
 
+//RunningMean is a thread safe struct for keeping track of running means as used in
+//importance calculations. (TODO: could this be made lock free?)
 type RunningMean struct {
 	*sync.Mutex
 	Mean  float64
 	Count int
 }
 
+//RunningMean.Add add's the specifed value to the running mean in a thread safe way.
 func (rm *RunningMean) Add(val float64) {
 	rm.Lock()
 	rm.Mean = (rm.Mean*float64(rm.Count) + val) / (float64(rm.Count) + 1.0)
