@@ -5,16 +5,20 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"sync"
 )
 
 type RunningMean struct {
+	*sync.Mutex
 	Mean  float64
 	Count int
 }
 
 func (rm *RunningMean) Add(val float64) {
+	rm.Lock()
 	rm.Mean = (rm.Mean*float64(rm.Count) + val) / (float64(rm.Count) + 1.0)
 	rm.Count += 1
+	rm.Unlock()
 }
 
 //Sparse counter uses maps to track sparse integer counts in large matrix.

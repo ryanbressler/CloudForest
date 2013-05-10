@@ -47,45 +47,43 @@ func (f *Feature) BestSplit(target Target,
 	splitmissing bool,
 	allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
 
-	nonmiss := *allocs.NonMissing
-	nonmiss = nonmiss[0:0]
-	missing := *allocs.Right
-	missing = missing[0:0]
+	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
+	*allocs.Right = (*allocs.Right)[0:0]
 
 	for _, i := range *cases {
 		if f.Missing[i] {
-			missing = append(missing, i)
+			*allocs.Right = append(*allocs.Right, i)
 		} else {
-			nonmiss = append(nonmiss, i)
+			*allocs.NonMissing = append(*allocs.NonMissing, i)
 		}
 	}
-	if len(nonmiss) == 0 {
+	if len(*allocs.NonMissing) == 0 {
 		return
 	}
-	nmissing := float64(len(missing))
+	nmissing := float64(len(*allocs.Right))
 	total := float64(len(*cases))
 	nonmissing := total - nmissing
 
-	nonmissingparentImp := target.Impurity(&nonmiss, allocs.Counter)
+	nonmissingparentImp := target.Impurity(allocs.NonMissing, allocs.Counter)
 
 	missingimp := 0.0
 	if nmissing > 0 {
-		missingimp = target.Impurity(&missing, allocs.Counter)
+		missingimp = target.Impurity(allocs.Right, allocs.Counter)
 	}
 
 	switch f.Numerical {
 	case true:
-		bestNum, impurityDecrease = f.BestNumSplit(target, &nonmiss, nonmissingparentImp, allocs)
+		bestNum, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, allocs)
 	case false:
 		nCats := f.NCats()
 		if itter && nCats > maxNonBigCats {
-			bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, &nonmiss, nonmissingparentImp, allocs)
+			bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, allocs.NonMissing, nonmissingparentImp, allocs)
 		} else if itter && nCats > maxExhaustiveCats {
-			bestCat, impurityDecrease = f.BestCatSplitIter(target, &nonmiss, nonmissingparentImp, allocs)
+			bestCat, impurityDecrease = f.BestCatSplitIter(target, allocs.NonMissing, nonmissingparentImp, allocs)
 		} else if nCats > maxNonBigCats {
-			bestBigCat, impurityDecrease = f.BestCatSplitBig(target, &nonmiss, nonmissingparentImp, maxNonRandomExahustive, allocs)
+			bestBigCat, impurityDecrease = f.BestCatSplitBig(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
 		} else {
-			bestCat, impurityDecrease = f.BestCatSplit(target, &nonmiss, nonmissingparentImp, maxNonRandomExahustive, allocs)
+			bestCat, impurityDecrease = f.BestCatSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
 		}
 
 	}

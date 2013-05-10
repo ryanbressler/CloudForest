@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 	"runtime/pprof"
 )
 
@@ -23,6 +24,9 @@ func main() {
 		"", "File name to output importance.")
 	costs := flag.String("cost",
 		"", "For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.")
+
+	var nCores int
+	flag.IntVar(&nCores, "nCores", 1, "The number of cores to use.")
 
 	var nSamples int
 	flag.IntVar(&nSamples, "nSamples", 0, "The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases")
@@ -72,6 +76,9 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	if nCores > 1 {
+		runtime.GOMAXPROCS(nCores)
+	}
 	//Parse Data
 	datafile, err := os.Open(*fm)
 	if err != nil {
@@ -167,28 +174,43 @@ func main() {
 		imppnt = &importance
 	}
 
-	canidates := make([]int, 0, len(data.Data))
-	for i := 0; i < len(data.Data); i++ {
-		if i != targeti {
-			canidates = append(canidates, i)
-		}
-	}
-
-	tree := CloudForest.NewTree()
-	cases := make([]int, 0, nSamples)
-	allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
+	treechan := make(chan *CloudForest.Tree, 0)
 
 	//****************** Good Stuff Stars Here ;) ******************//
+	for core := 0; core < nCores; core++ {
+		go func() {
+			canidates := make([]int, 0, len(data.Data))
+			for i := 0; i < len(data.Data); i++ {
+				if i != targeti {
+					canidates = append(canidates, i)
+				}
+			}
+			tree := CloudForest.NewTree()
+			cases := make([]int, 0, nSamples)
+			allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
+			for i := 0; i < nTrees; i++ {
+				//sample nCases case with replacment
+				cases = cases[0:0]
+				nCases := len(data.Data[0].Missing)
+				for j := 0; j < nSamples; j++ {
+					cases = append(cases, rand.Intn(nCases))
+				}
+
+				tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, allocs)
+				treechan <- tree
+				tree = <-treechan
+			}
+		}()
+
+	}
+
 	for i := 0; i < nTrees; i++ {
-		//sample nCases case with replacment
-		cases = cases[0:0]
-		nCases := len(data.Data[0].Missing)
-		for i := 0; i < nSamples; i++ {
-			cases = append(cases, rand.Intn(nCases))
+		tree := <-treechan
+		forestwriter.WriteTree(tree, i)
+		if i < nTrees-1 {
+			treechan <- tree
 		}
 
-		tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, allocs)
-		forestwriter.WriteTree(tree, i)
 	}
 
 	if *imp != "" {

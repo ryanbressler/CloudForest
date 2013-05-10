@@ -202,11 +202,14 @@ Growforest Utility
 	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
 	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
 	  -nContrasts=0: The number of randomized artifical contrast features to include in the feature matrix.
+	  -nCores=1: The number of cores to use.
 	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
 	  -nTrees=100: Number of trees to grow in the predictor.
 	  -rfpred="rface.sf": File name to output predictor forest in sf format.
+	  -splitmissing=false: Split missing values onto a third branch at each node (experimental).
 	  -target="": The row header of the target in the feature matrix.
 	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+
 
 
 Applyforrest Utility
