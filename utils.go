@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-//RunningMean is a thread safe struct for keeping track of running means as used in
+//RunningMean is a thread safe strut for keeping track of running means as used in
 //importance calculations. (TODO: could this be made lock free?)
 type RunningMean struct {
 	*sync.Mutex
@@ -16,7 +16,7 @@ type RunningMean struct {
 	Count int
 }
 
-//RunningMean.Add add's the specifed value to the running mean in a thread safe way.
+//RunningMean.Add add's the specified value to the running mean in a thread safe way.
 func (rm *RunningMean) Add(val float64) {
 	rm.Lock()
 	rm.Mean = (rm.Mean*float64(rm.Count) + val) / (float64(rm.Count) + 1.0)
@@ -25,7 +25,7 @@ func (rm *RunningMean) Add(val float64) {
 }
 
 //Sparse counter uses maps to track sparse integer counts in large matrix.
-//The matrix is assumed to contain zero values where nothing has been edded.
+//The matrix is assumed to contain zero values where nothing has been added.
 type SparseCounter struct {
 	Map map[int]map[int]int
 }
@@ -45,7 +45,7 @@ func (sc *SparseCounter) Add(i int, j int, val int) {
 	sc.Map[i][j] = sc.Map[i][j] + val
 }
 
-//Write tsv writes the non zero counts out into a three colum tsv containg i, j, and
+//Write tsv writes the non zero counts out into a three column tsv containing i, j, and
 //count in the columns.
 func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 	for i := range sc.Map {
@@ -59,9 +59,9 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 
 /*
 SampleFirstN ensures that the first n entries in the supplied
-deck are randomly drawn from all entries without replacment for use in selecting canidate
-features to split on. It accepts a pointer to the deck so that it can be used repeatedl on
-the same deck avoiding realocations.
+deck are randomly drawn from all entries without replacement for use in selecting candidate
+features to split on. It accepts a pointer to the deck so that it can be used repeatedly on
+the same deck avoiding reallocations.
 */
 func SampleFirstN(deck *[]int, n int) {
 	cards := *deck
@@ -78,7 +78,7 @@ func SampleFirstN(deck *[]int, n int) {
 }
 
 /*
-SampleWithReplacment samples nSamples random draws from [0,totalCases) with replacment
+SampleWithReplacment samples nSamples random draws from [0,totalCases) with replacement
 for use in selecting cases to grow a tree from.
 */
 func SampleWithReplacment(nSamples int, totalCases int) (cases []int) {

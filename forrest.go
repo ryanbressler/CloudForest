@@ -11,21 +11,21 @@ type Forest struct {
 
 /*
 GrowRandomForest grows a forest using Brieman and Cutler's method. For many cases it
-it will be quicker to reimplment this method to write trees directelly to disk or grow
-trees in parralel. See the growforest comand line utility for an example of this.
+it will yield better performance to re-implment this method to write trees directly to disk or grow
+trees in parallel. See the grow forest command line utility for an example of this.
 
 target is the feature to predict.
 
-nSamples is the number of cases to sample (with replacment) for each tree.
+nSamples is the number of cases to sample (with replacement) for each tree.
 
-mTry is the number of canidate features to evaluate at each node.
+mTry is the number of candidate features to evaluate at each node.
 
 nTrees is the number of trees to grow.
 
 leafSize is the minimum number of cases that should end up on a leaf.
 
-itter indicates weather to use iterative spliting for all catagorical features or only those
-with more then 6 catagories.
+itter indicates weather to use iterative splitting for all categorical features or only those
+with more then 6 categories.
 */
 
 func GrowRandomForest(fm *FeatureMatrix,
@@ -34,22 +34,21 @@ func GrowRandomForest(fm *FeatureMatrix,
 	mTry int,
 	nTrees int,
 	leafSize int,
-	itter bool,
 	splitmissing bool,
 	importance *[]RunningMean) (f *Forest) {
 
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
 
-	//start with all features but the target as canidates
-	canidates := make([]int, 0, len(fm.Data))
+	//start with all features but the target as candidates
+	candidates := make([]int, 0, len(fm.Data))
 	targeti := fm.Map[target.Name]
 	for i := 0; i < len(fm.Data); i++ {
 		if i != targeti {
-			canidates = append(canidates, i)
+			candidates = append(candidates, i)
 		}
 	}
 
-	//Slices for reuse during search for best spliter.
+	//Slices for reuse during search for best splitter.
 	allocs := NewBestSplitAllocs(nSamples, target)
 
 	for i := 0; i < nTrees; i++ {
@@ -57,7 +56,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())
-		f.Trees[i].Grow(fm, target, cases, canidates, mTry, leafSize, itter, splitmissing, importance, allocs)
+		f.Trees[i].Grow(fm, target, cases, candidates, mTry, leafSize, splitmissing, importance, allocs)
 	}
 	return
 }

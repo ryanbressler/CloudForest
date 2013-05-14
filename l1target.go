@@ -5,7 +5,7 @@ import (
 )
 
 /*
-L1Target wraps a numerical feature as a target for us in l1 norm regresion.
+L1Target wraps a numerical feature as a target for us in l1 norm regression.
 */
 type L1Target struct {
 	*Feature
@@ -33,8 +33,8 @@ func (target *L1Target) Impurity(cases *[]int, counter *[]int) (e float64) {
 
 }
 
-//L1Target.MeanL1Error returns the  Mean L1 norm error of the cases specifed vs the predicted
-//value. Only non missing casses are considered.
+//L1Target.MeanL1Error returns the  Mean L1 norm error of the cases specified vs the predicted
+//value. Only non missing cases are considered.
 func (target *L1Target) MeanL1Error(cases *[]int, predicted float64) (e float64) {
 	e = 0.0
 	n := 0

@@ -23,30 +23,30 @@ func main() {
 	imp := flag.String("importance",
 		"", "File name to output importance.")
 	costs := flag.String("cost",
-		"", "For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.")
+		"", "For categorical targets, a json string to float map of the cost of falsely identifying each category.")
 
 	var nCores int
 	flag.IntVar(&nCores, "nCores", 1, "The number of cores to use.")
 
 	var nSamples int
-	flag.IntVar(&nSamples, "nSamples", 0, "The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases")
+	flag.IntVar(&nSamples, "nSamples", 0, "The number of cases to sample (with replacement) for each tree grow. If <=0 set to total number of cases")
 
 	var leafSize int
-	flag.IntVar(&leafSize, "leafSize", 0, "The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.")
+	flag.IntVar(&leafSize, "leafSize", 0, "The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.")
 
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
 
 	var mTry int
-	flag.IntVar(&mTry, "mTry", 0, "Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.")
+	flag.IntVar(&mTry, "mTry", 0, "Number of candidate features for each split. Inferred to ceil(swrt(nFeatures)) if <=0.")
 
 	var nContrasts int
-	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artifical contrast features to include in the feature matrix.")
+	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artificial contrast features to include in the feature matrix.")
 
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 	var contrastAll bool
-	flag.BoolVar(&contrastAll, "contrastall", false, "Include a shuffled artifical contrast copy of every feature.")
+	flag.BoolVar(&contrastAll, "contrastall", false, "Include a shuffled artificial contrast copy of every feature.")
 
 	var impute bool
 	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode instead of filtering them out when splitting.")
@@ -54,14 +54,11 @@ func main() {
 	var splitmissing bool
 	flag.BoolVar(&splitmissing, "splitmissing", false, "Split missing values onto a third branch at each node (experimental).")
 
-	var itter bool
-	flag.BoolVar(&itter, "itterative", true, "Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.")
-
 	var l1 bool
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
 	var entropy bool
-	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be catagorical).")
+	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
 
 	flag.Parse()
 
@@ -121,10 +118,10 @@ func main() {
 	targetf := data.Data[targeti]
 	if leafSize <= 0 {
 		if targetf.NCats() == 0 {
-			//regresion
+			//regression
 			leafSize = 4
 		} else {
-			//clasification
+			//classification
 			leafSize = 1
 		}
 	}
@@ -189,14 +186,14 @@ func main() {
 			cases := make([]int, 0, nSamples)
 			allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
 			for i := 0; i < nTrees; i++ {
-				//sample nCases case with replacment
+				//sample nCases case with replacement
 				cases = cases[0:0]
 				nCases := len(data.Data[0].Missing)
 				for j := 0; j < nSamples; j++ {
 					cases = append(cases, rand.Intn(nCases))
 				}
 
-				tree.Grow(data, target, cases, canidates, mTry, leafSize, itter, splitmissing, imppnt, allocs)
+				tree.Grow(data, target, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
 				treechan <- tree
 				tree = <-treechan
 			}

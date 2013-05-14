@@ -8,8 +8,8 @@ import (
 
 /*
 ForestWriter wraps an io writer with functionality to write forests either with one
-call to WriteForest or incrimentally using WriteForestHeader and WriteTree.
-ForestWriter save's a forest in .sf format; see the package doc's in doc.go for
+call to WriteForest or incrementally using WriteForestHeader and WriteTree.
+ForestWriter saves a forest in .sf format; see the package doc's in doc.go for
 full format details.
 It won't include fields that are not use by CloudForest.
 */
@@ -46,8 +46,8 @@ func (fw *ForestWriter) WriteTreeHeader(ntree int) {
 	fmt.Fprintf(fw.w, "TREE=%v\n", ntree)
 }
 
-//WriteNodeAndChildren recursivelly writes out the target node and all of its chilldren.
-//WriteTree is prefered for most use cases.
+//WriteNodeAndChildren recursively writes out the target node and all of its children.
+//WriteTree is preferred for most use cases.
 func (fw *ForestWriter) WriteNodeAndChildren(n *Node, path string) {
 
 	fw.WriteNode(n, path)
@@ -64,7 +64,7 @@ func (fw *ForestWriter) WriteNodeAndChildren(n *Node, path string) {
 }
 
 //WriteNode writes a single node but not it's children. WriteTree will be used more
-//often but WriteNode can be used to grow a large tree directelly to disk without
+//often but WriteNode can be used to grow a large tree directly to disk without
 //storing it in memory.
 func (fw *ForestWriter) WriteNode(n *Node, path string) {
 	node := fmt.Sprintf("NODE=%v", path)
@@ -85,7 +85,7 @@ func (fw *ForestWriter) WriteNode(n *Node, path string) {
 	fmt.Fprintln(fw.w, node)
 }
 
-//DescribeMap serialzes the "left" map of a catagorical splitter.
+//DescribeMap serializes the "left" map of a categorical splitter.
 func (fw *ForestWriter) DescribeMap(input map[string]bool) string {
 	keys := make([]string, 0)
 	for k := range input {

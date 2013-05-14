@@ -4,7 +4,7 @@ import ()
 
 //Keeps track of votes by trees.
 //Not thread safe....could be made so or abstracted to an
-//interface to support diffrent implementations.
+//interface to support different implementations.
 type CatBallotBox struct {
 	*CatMap
 	box []map[int]int
@@ -23,7 +23,7 @@ func NewCatBallotBox(size int) *CatBallotBox {
 }
 
 //Vote registers a vote that case "casei" should be predicted to be the
-//catagory "pred".
+//category "pred".
 func (bb *CatBallotBox) Vote(casei int, pred string) {
 	predn := bb.CatToNum(pred)
 	if _, ok := bb.box[casei][predn]; !ok {
@@ -33,7 +33,7 @@ func (bb *CatBallotBox) Vote(casei int, pred string) {
 }
 
 //TallyCatagorical tallies the votes for the case specified by i as
-//if it is a Catagorical or boolean feature. Ie it returns the mode
+//if it is a Categorical or boolean feature. Ie it returns the mode
 //(the most frequent value) of all votes.
 func (bb *CatBallotBox) Tally(i int) (predicted string) {
 	predictedn := 0
@@ -52,7 +52,7 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 }
 
 /*
-Tally error returns the balanced clasification error for catagorical features.
+Tally error returns the balanced classification error for categorical features.
 
 1 - sum((sum(Y(xi)=Y'(xi))/|xi|))
 
@@ -61,7 +61,7 @@ Y are the labels
 Y' are the estimated labels
 xi is the set of samples with the ith actual label
 
-Case for which the true catagory is not known are ignored.
+Case for which the true category is not known are ignored.
 
 */
 func (bb *CatBallotBox) TallyError(feature *Feature) (e float64) {

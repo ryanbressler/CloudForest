@@ -1,13 +1,17 @@
 /*
-Package CloudForest implements ensembles of decision trees for machine learning in pure Go (golang.org).
-It includes implementations of Breiman and Cutler's Random Forest for clasiffication and regression
-on heterogenous numerical/catagorical data with missing values and several related algorythems
-including entropy and cost driven classification, L1 regression and feature selection with
-artifical contrasts.
+Package CloudForest implements ensembles of decision trees for machine
+learning in pure Go (golang.org). It includes implementations of Breiman
+and Cutler's Random Forest for classification and regression on heterogeneous
+numerical/categorical data with missing values and several related algorithms
+including entropy and cost driven classification, L1 regression and feature
+selection with artificial contrasts and hooks for modifying the algorithms
+for your needs.
 
-Comand line utilities to grow, apply and analize forests are provided in sub directories.
+Command line utilities to grow, apply and canalize forests are provided in sub
+directories.
 
-CloudForest is being developed in the Shumelivich Lab at the Institute for Systems Biology.
+CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
+Biology.
 
 
 Documentation has been generated with godoc and can be viewed live at:
@@ -19,46 +23,41 @@ https://github.com/ryanbressler/CloudForest
 
 Goals
 
-CloudForest is intended to provide fast, comprehensible building blocks that can be used
-to implement ensembels of decision trees. CloudForest is written in Go to allow a data
-scientist to develop and scale new models and analysis quickly instead of having to
-modify complex legacy code.
+CloudForest is intended to provide fast, comprehensible building blocks that can
+be used to implement ensembles of decision trees. CloudForest is written in Go to
+allow a data scientist to develop and scale new models and analysis quickly instead
+of having to modify complex legacy code.
 
-Datastructures and file formats are chosen to balance speed and comprehensibility
-with use in multi threaded and cluster enviroments in mind.
+Data structures and file formats are chosen with use in multi threaded and cluster
+environments in mind.
 
 
 Working with Trees
 
 Go's support for function types is used to provide a interface to run code as data
 is percolated through a tree. This method is flexible enough that it can extend the tree being
-analised. Growing a decision tree using Breiman and Cutler's method can be done in an anonymous
+analyzed. Growing a decision tree using Breiman and Cutler's method can be done in an anonymous
 function/closure passed to a tree's root node's Recurse method:
 
-	tree.Root.Recurse(func(n *Node, innercases []int) {
+	t.Root.Recurse(func(n *Node, innercases []int) {
 
 		if (2 * leafSize) <= len(innercases) {
-			SampleFirstN(&canidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, canidates[:mTry], itter, allocs)
+			SampleFirstN(&candidates, mTry)
+			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
 			if best != nil && impDec > minImp {
-				//not a leaf node so define the spliter and left and right nodes
+				//not a leaf node so define the splitter and left and right nodes
 				//so recursion will continue
 				n.Splitter = best
 				n.Pred = ""
 				n.Left = new(Node)
 				n.Right = new(Node)
+
 				return
 			}
 		}
 
-		//Leaf node so find the predictive value and set it in n.Pred
-		n.Splitter = nil
-		n.Pred = target.FindPredicted(innercases)
-
-	}, featurematrix, cases)
-
-This allows a researcher to include whatever additional analaysis they need (importance scores,
-proximity etc) in tree growth. The same Recurse method can also be used to analize existing forests
+This allows a researcher to include whatever additional analysis they need (importance scores,
+proximity etc) in tree growth. The same Recurse method can also be used to analyze existing forests
 to tabulate scores or extract structure. Utilities like leafcount and errorrate use this
 method to tabulate data about the tree in collection objects.
 
@@ -66,23 +65,23 @@ method to tabulate data about the tree in collection objects.
 Alternative Impurities
 
 Decision tree's are grown with the goal of reducing "Impurity" which is usually defined as Gini
-Impurity for catagorical targets or mean squared error for numerical targets. CloudForest grows
+Impurity for categorical targets or mean squared error for numerical targets. CloudForest grows
 trees against the Target interface which allows for alternative definitions of impurity. CloudForest
 includes several alternative targets:
 
  EntropyTarget : For use in entropy minimizing classification
- RegretTarget  : For use in classification driven by differing costs in miscatagorization.
- L1Target      : For use in L1 norm error regression (which may be less sensative to outliers).
+ RegretTarget  : For use in classification driven by differing costs in miscategorization.
+ L1Target      : For use in L1 norm error regression (which may be less sensitive to outliers).
 
 
-Effichent Splitting
+Efficient Splitting
 
-Repeatedly spliting the data and searching for the best split at each node of a decision tree
+Repeatedly splitting the data and searching for the best split at each node of a decision tree
 are the most computationally intensive parts of decision tree learning and CloudForest includes
 optimized code to perform these tasks.
 
-Go's slices are used extensivelly in CloudForest to make it simple to interact with optimized code.
-Many previous imlementations of Random Forest have avoided reallocation by reordering data in
+Go's slices are used extensively in CloudForest to make it simple to interact with optimized code.
+Many previous implementations of Random Forest have avoided reallocation by reordering data in
 place and keeping track of start and end indexes. In go, slices pointing at the same underlying
 arrays make this sort of optimization transparent. For example a function like:
 
@@ -92,38 +91,34 @@ can return left and right slices that point to the same underlying array as the 
 slice of cases but these slices should not have their values changed.
 
 Functions used while searching for the best split also accepts pointers to reusable slices and
-structs to makimize speed by keeping memory allocations to a minimum. BestSplitAllocs contains
+structs to maximize speed by keeping memory allocations to a minimum. BestSplitAllocs contains
 pointers to these items and its use can be seen in functions like:
 
 	func (fm *FeatureMatrix) BestSplitter(target Target,
 		cases []int,
-		canidates []int,
-		itter bool,
-		splitmissing bool,
+		candidates []int,
 		allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64)
 
 	func (f *Feature) BestSplit(target Target,
 		cases *[]int,
 		parentImp float64,
-		itter bool,
-		splitmissing bool,
 		allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64)
 
 
-For catagorical predictors, BestSplit will also attempt to inteligently choose between 4
-diffrent implementations depending on user input and the number of catagories.
-These include exahustive, random, and iterative searches for the best combinaton of catagories
-implemented with bitwise oporations against int and big.Int. See BestCatSplit, BestCatSplitIter,
+For categorical predictors, BestSplit will also attempt to intelligently choose between 4
+different implementations depending on user input and the number of categories.
+These include exhaustive, random, and iterative searches for the best combination of categories
+implemented with bitwise operations against int and big.Int. See BestCatSplit, BestCatSplitIter,
 BestCatSplitBig and BestCatSplitIterBig.
 
 All numerical predictors are handled by BestNumSplit which
-reliest on go's sorting package.
+relies on go's sorting package.
 
 
 Missing Values
 
 By default cloud forest uses a fast heuristic for missing values. When proposing a split on a feature
-with missing data the missing cases are removed and the impuirty value is corrected to use three way impurity
+with missing data the missing cases are removed and the impurity value is corrected to use three way impurity
 which reduces the bias towards features with lots of missing data:
 
 								I(split) = p(l)I(l)+p(r)I(r)+p(m)I(m)
@@ -136,7 +131,7 @@ Optionally, feature.ImputeMissing or featurematrixImputeMissing can be called be
 to impute missing values to the feature mean/mode which Brieman [2] suggests as a fast method for
 imputing values.
 
-This forest could also be analized for proximity (using leafcount or tree.GetLeaves) to do the
+This forest could also be analyzed for proximity (using leafcount or tree.GetLeaves) to do the
 more accurate proximity weighted imputation Brieman describes.
 
 Experimental support is provided for 3 way splitting which splits missing cases onto a third branch.
@@ -164,18 +159,18 @@ Main Structures
 
 In CloudForest data is stored using the FeatureMatrix struct which contains Features.
 
-The Feature struct  implments storage and methods for both catagorical and numerical data and
+The Feature struct  implements storage and methods for both categorical and numerical data and
 calculations of impurity etc and the search for the best split.
 
 The Target interface abstracts the methods of Feature that are needed for a feature to be predictable.
-This allows for the implementatiion of alternative types of regression and classification.
+This allows for the implementation of alternative types of regression and classification.
 
 Trees are built from Nodes and Splitters and stored within a Forest. Tree has a Grow
 implements Brieman and Cutler's method (see extract above) for growing a tree. A GrowForest
-method is also provided that implments the rest of the method including sampeling cases
+method is also provided that implements the rest of the method including sampling cases
 but it may be faster to grow the forest to disk as in the growforest utility.
 
-Prediction and Voteing is done using Tree.Vote and CatBallotBox and NumBallotBox which impliment the
+Prediction and Voting is done using Tree.Vote and CatBallotBox and NumBallotBox which implement the
 VoteTallyer interface.
 
 
@@ -183,32 +178,33 @@ Speed
 
 When compiled with go1.1 CloudForest achieves running times similar to implementations in
 other languages. Using gccgo (4.8.0 at least) results in longer running times and is not
-recomended untill full go1.1 support is implemented in gc 4.8.1.
+recommended until full go1.1 support is implemented in gcc 4.8.1.
 
 
 Growforest Utility
 
-"growforest" trains a forest using the following paramaters which can be listed with -h
+"growforest" trains a forest using the following parameters which can be listed with -h
 
 	Usage of growforest:
-	  -contrastall=false: Include a shuffled artifical contrast copy of every feature.
-	  -cost="": For catagorical targets, a json string to float map of the cost of falsely identifying each catagory.
+	  -contrastall=false: Include a shuffled artificial contrast copy of every feature.
+	  -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
 	  -cpuprofile="": write cpu profile to file
-	  -entropy=false: Use entropy minimizing classification (target must be catagorical).
+	  -entropy=false: Use entropy minimizing classification (target must be categorical).
 	  -importance="": File name to output importance.
 	  -impute=false: Impute missing values to feature mean/mode instead of filtering them out when splitting.
-	  -itterative=true: Use an iterative search for large (n>5) catagorical fearures instead of exahustive/random.
 	  -l1=false: Use l1 norm regression (target must be numeric).
-	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be infered to 1 for clasification 4 for regression.
-	  -mTry=0: Number of canidate features for each split. Infered to ceil(swrt(nFeatures)) if <=0.
-	  -nContrasts=0: The number of randomized artifical contrast features to include in the feature matrix.
+	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.
+	  -mTry=0: Number of candidate features for each split. Inferred to ceil(swrt(nFeatures)) if <=0.
+	  -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
 	  -nCores=1: The number of cores to use.
-	  -nSamples=0: The number of cases to sample (with replacment) for each tree grow. If <=0 set to total number of cases
+	  -nSamples=0: The number of cases to sample (with replacement) for each tree grow. If <=0 set to total number of cases
 	  -nTrees=100: Number of trees to grow in the predictor.
 	  -rfpred="rface.sf": File name to output predictor forest in sf format.
 	  -splitmissing=false: Split missing values onto a third branch at each node (experimental).
 	  -target="": The row header of the target in the feature matrix.
 	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+
+
 
 
 
@@ -235,52 +231,52 @@ errorrate calculates the error of a forest vs a testing data set and reports it 
 
 Leafcount Utility
 
-leafcount outputs counts of case case coocurence on leaf nodes (Brieman's proximity) and counts of the
+leafcount outputs counts of case case co-occurrence on leaf nodes (Brieman's proximity) and counts of the
 number of times a feature is used to split a node containing each case (a measure of relative/local
 importance).
 
 	Usage of leafcount:
-	  -branches="branches.tsv": a case by feature sparse matrix of leaf cooccurance in tsv format
+	  -branches="branches.tsv": a case by feature sparse matrix of leaf co-occurance in tsv format
 	  -fm="featurematrix.afm": AFM formated feature matrix to use.
-	  -leaves="leaves.tsv": a case by case sparse matrix of leaf cooccurance in tsv format
+	  -leaves="leaves.tsv": a case by case sparse matrix of leaf co-occurance in tsv format
 	  -rfpred="rface.sf": A predictor forest.
 
 
 Feature Matrix Files
 
-CloudForest borrows the anotated feature matrix (.afm) and stoicastic forest (.sf) file formats
+CloudForest borrows the annotated feature matrix (.afm) and stoicastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
 
-An anotated feature matrix (.afm) file is a tab deliminated file with column and row headers. Columns represent cases and rows
+An annotated feature matrix (.afm) file is a tab delineated file with column and row headers. Columns represent cases and rows
 represent features. A row header/feature id includes a prefix to specify the feature type
 
 	"N:" Prefix for numerical feature id.
-	"C:" Prefix for catagorical feature id.
+	"C:" Prefix for categorical feature id.
 	"B:" Prefix for boolean feature id.
 
-Catagorical and boolean features use strings for their catagorie labels. Missing values are represented
-by "?","nan","na", or "null" (case insensative). A short example:
+Categorical and boolean features use strings for their category labels. Missing values are represented
+by "?","nan","na", or "null" (case insensitive). A short example:
 
 	featureid	case1	case2	case3
 	N:NumF1	0.0	.1	na
 	C:CatF2 red	red	green
 
 
-Stoichastic Forest Files
+Stochastic Forest Files
 
-A stoichastic forest (.sf) file contains a forest of decision trees. The main advantage of this
-format as opposed to an established format like json is that an sf file can be written iterativelly
+A stochastic forest (.sf) file contains a forest of decision trees. The main advantage of this
+format as opposed to an established format like json is that an sf file can be written iteratively
 tree by tree and multiple .sf files can be combined with minimal logic required allowing for
-massivelly parralel growth of forests with low memory use.
+massively parallel growth of forests with low memory use.
 
-An .sf fileconsists of lines each of which is a comma seperated list of key value pairs. Lines can
+An .sf file consists of lines each of which is a comma separated list of key value pairs. Lines can
 designate either a FOREST, TREE, or NODE. Each tree belongs to the preceding forest and each node to
-the preciding tree. Nodes must be written in order of increasing depth.
+the preceding tree. Nodes must be written in order of increasing depth.
 
-CloudForest generates fiewer fields then rf-ace but requires the following. Other fields will be
+CloudForest generates fewer fields then rf-ace but requires the following. Other fields will be
 ignored
 
-Forest requires forest type (allways RF currently), target and ntrees:
+Forest requires forest type (only RF currently), target and ntrees:
 
 	FOREST=RF|GBT|..,TARGET="$feature_id",NTREES=int
 
@@ -291,10 +287,10 @@ Tree requires only an int and the value is  ignored though the line is needed to
 Node requires a path encoded so that the root node is specified by "*" and each split left or right as "L" or "R".
 Leaf nodes should also define PRED such as "PRED=1.5" or "PRED=red". Splitter nodes should define SPLITTER with
 a feature id inside of double quotes, SPLITTERTYPE=[CATEGORICAL|NUMERICAL] and a LVALUE term which can be either
-a float inside of double quotes representing the highest value sent left or a ":" seperated list of catagorical
+a float inside of double quotes representing the highest value sent left or a ":" separated list of categorical
 values sent left.
 
-	NODE=$path,PRED=[float|string],SPLITTER="$feature_id",SPLITTERTYPE=[CATEGORICAL|NUMERICAL] LVALUES="[float|: seperated list"
+	NODE=$path,PRED=[float|string],SPLITTER="$feature_id",SPLITTERTYPE=[CATEGORICAL|NUMERICAL] LVALUES="[float|: separated list"
 
 An example .sf file:
 
@@ -307,26 +303,26 @@ An example .sf file:
 Cloud forest can parse and apply .sf files generated by at least some versions of rf-ace.
 
 
-Refrences
+References
 
-The idea for (and trademakr of the term) Random Forests originated with Leo Brieman and
+The idea for (and trademark of the term) Random Forests originated with Leo Brieman and
 Adele Cuttler. Their code and paper's can be found at:
 
 http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm
 
-All code in CloudForest is origional but some ideas for methods and optimizations were inspired by
+All code in CloudForest is original but some ideas for methods and optimizations were inspired by
 Timo Erkilla's rf-ace and Andy Liaw and Matthew Wiener randomForest R package based on Brieman and
 Cuttler's code:
 
 https://code.google.com/p/rf-ace/
 http://cran.r-project.org/web/packages/randomForest/index.html
 
-The idea for Artifical Contrasts was found in:
+The idea for Artificial Contrasts was found in:
 Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
 Ensembles, Artificial Variables, and Redundancy Elimination"
 http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
 
-The idea for growing trees to minmize catagorical entropy comes from Ross Quinlan's ID3:
+The idea for growing trees to minimize categorical entropy comes from Ross Quinlan's ID3:
 http://en.wikipedia.org/wiki/ID3_algorithm
 
 "The Elements of Statistical Learning" 2nd edition by Trevor Hastie, Robert Tibshirani and Jerome Friedman

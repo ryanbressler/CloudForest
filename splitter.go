@@ -4,7 +4,7 @@ import ()
 
 //Splitter contains fields that can be used to cases by a single feature. The split
 //can be either numerical in which case it is defined by the Value field or
-//catagorical in which case it is defined by the Left and Right fields.
+//categorical in which case it is defined by the Left and Right fields.
 type Splitter struct {
 	Feature   string
 	Numerical bool
@@ -16,7 +16,7 @@ type Splitter struct {
 
 /*
 Splitter.Split splits a slice of cases into left, right and missing slices without allocating
-a new underlying array by sorting cases into left,missing,right order and returning
+a new underlying array by sorting cases into left, missing, right order and returning
 slices that point to the left and right cases.
 */
 func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int, m []int) {

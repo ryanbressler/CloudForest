@@ -2,21 +2,21 @@ package CloudForest
 
 import ()
 
-/*CatMap is for mapping catagorical values to integers.
+/*CatMap is for mapping categorical values to integers.
 It contains:
 
-	Map  : a map of ints by the string used fot the catagory
+	Map  : a map of ints by the string used for the category
 	Back : a slice of strings by the int that represents them
 
-And is embeded by Feature and CatBallotBox.
+And is embedded by Feature and CatBallotBox.
 */
 type CatMap struct {
 	Map  map[string]int //map categories from string to Num
 	Back []string       // map categories from Num to string
 }
 
-//CatToNum provides the Num equivelent of the provided catagorical value
-//if it allready exists or adds it to the map and returns the new value if
+//CatToNum provides the int equivalent of the provided categorical value
+//if it already exists or adds it to the map and returns the new value if
 //it doesn't.
 func (cm *CatMap) CatToNum(value string) (numericv int) {
 	numericv, exsists := cm.Map[value]

@@ -3,9 +3,9 @@ package CloudForest
 import ()
 
 /*
-RegretTarget wraps a catagorical feature for use in regret driven classification.
+RegretTarget wraps a categorical feature for use in regret driven classification.
 The ith entry in costs should contain the cost of misclassifying a case that actually
-has the ith catagory.
+has the ith category.
 */
 type RegretTarget struct {
 	*Feature
@@ -39,8 +39,8 @@ func (target *RegretTarget) SplitImpurity(l []int, r []int, counter *[]int) (imp
 	return
 }
 
-//RegretTarget.Impurity implements a simple regret functon that finds the average cost of
-//a set using the misclasiffication costs in RegretTarget.Costs.
+//RegretTarget.Impurity implements a simple regret function that finds the average cost of
+//a set using the misclassification costs in RegretTarget.Costs.
 func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	m := target.Modei(cases)
 	t := 0

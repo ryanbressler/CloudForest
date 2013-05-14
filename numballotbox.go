@@ -8,7 +8,7 @@ import (
 
 //Keeps track of votes by trees.
 //Not thread safe....could be made so or abstracted to an
-//interface to support diffrent implementations.
+//interface to support different implementations.
 type NumBallotBox struct {
 	box []map[float64]int
 }
@@ -61,12 +61,12 @@ func (bb *NumBallotBox) Tally(i int) (predicted string) {
 }
 
 //Tally error returns the error of the votes vs the provided feature.
-//For catagorical features it returns the error rate
+//For categorical features it returns the error rate
 //For numerical features it returns mean squared error.
 //The provided feature must use the same index as the feature matrix
 //the ballot box was constructed with.
 //Missing values are ignored.
-//Gini imurity is not used so this is not for use in rf implementations.
+//Gini impurity is not used so this is not for use in rf implementations.
 func (bb *NumBallotBox) TallyError(feature *Feature) (e float64) {
 	e = 0.0
 

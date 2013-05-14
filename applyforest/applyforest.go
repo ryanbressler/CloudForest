@@ -55,7 +55,7 @@ func main() {
 		tree.Vote(data, bb)
 	}
 
-	fmt.Printf("Outputing Predictions to %v\n", *predfn)
+	fmt.Printf("Outputting Predictions to %v\n", *predfn)
 	for i, l := range data.CaseLabels {
 		fmt.Fprintf(predfile, "%v\t%v\n", l, bb.Tally(i))
 	}

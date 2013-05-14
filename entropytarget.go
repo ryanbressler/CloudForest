@@ -5,8 +5,8 @@ import (
 )
 
 /*
-EntropyTarget wraps a catagorical feature for use in entropy driven classification
-as in Ross Quinlan's ID3 (Iterative Dichotomiser 3).
+EntropyTarget wraps a categorical feature for use in entropy driven classification
+as in Ross Quinlan's ID3 (Iterative Dichotomizer 3).
 */
 type EntropyTarget struct {
 	*Feature
@@ -31,8 +31,8 @@ func (target *EntropyTarget) SplitImpurity(l []int, r []int, counter *[]int) (im
 	return
 }
 
-//EntropyTarget.Impurity implements catagorical entropy as sum(pj*log2(pj)) where pj
-//is the number of cases with the j'th catagory over the total number of cases.
+//EntropyTarget.Impurity implements categorical entropy as sum(pj*log2(pj)) where pj
+//is the number of cases with the j'th category over the total number of cases.
 func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64) {
 	total := 0
 	counter := *counts

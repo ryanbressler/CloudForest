@@ -10,8 +10,8 @@ import (
 func main() {
 	fm := flag.String("fm", "featurematrix.afm", "AFM formated feature matrix to use.")
 	rf := flag.String("rfpred", "rface.sf", "A predictor forest.")
-	outf := flag.String("leaves", "leaves.tsv", "a case by case sparse matrix of leaf cooccurance in tsv format")
-	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of leaf cooccurance in tsv format")
+	outf := flag.String("leaves", "leaves.tsv", "a case by case sparse matrix of leaf co-occurrence in tsv format")
+	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of leaf co-occurrence in tsv format")
 
 	flag.Parse()
 
@@ -52,7 +52,7 @@ func main() {
 
 	}
 
-	log.Print("Outputing Case Case  Cocurance Counts")
+	log.Print("Outputting Case Case  Co-Occurrence Counts")
 	outfile, err := os.Create(*outf) // For read access.
 	if err != nil {
 		log.Fatal(err)
@@ -60,7 +60,7 @@ func main() {
 	defer outfile.Close()
 	counts.WriteTsv(outfile)
 
-	log.Print("Outputing Case Feature Cocurance Counts")
+	log.Print("Outputting Case Feature Co-Occurrence Counts")
 	boutfile, err := os.Create(*boutf) // For read access.
 	if err != nil {
 		log.Fatal(err)

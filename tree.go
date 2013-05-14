@@ -13,10 +13,10 @@ func NewTree() *Tree {
 	return &Tree{new(Node), ""}
 }
 
-//AddNode adds a node a the specified path with the specivied pred value and/or
+//AddNode adds a node a the specified path with the specified pred value and/or
 //Splitter. Paths are specified in the same format as in rf-aces sf files, as a
 //string of 'L' and 'R'. Nodes must be added from the root up as the case where
-//the path specifies a node whose parent does not allready exist in the tree is
+//the path specifies a node whose parent does not already exist in the tree is
 //not handled well.
 func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 	n := new(Node)
@@ -52,7 +52,7 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 }
 
 /*
-tree.Grow grows the reciever tree through recursion. It uses impurity decrease to selct spliters at
+tree.Grow grows the receiver tree through recursion. It uses impurity decrease to select splitters at
 each node as in Brieman's Random Forest. It should be called on a tree with only a root node defined.
 
 fm is a feature matrix of training data.
@@ -60,19 +60,18 @@ fm is a feature matrix of training data.
 target is the feature to predict via regression or classification as determined by feature type.
 
 cases specifies the cases to calculate impurity decrease over and can contain repeated values
-to allow for sampeling of cases with replacment as in RF.
+to allow for sampling of cases with replacement as in RF.
 
-mTry specifies the number of canidate features to evaluate for each split.
+mTry specifies the number of candidate features to evaluate for each split.
 
 leafSize specifies the minimum number of cases at a leafNode.
 */
 func (t *Tree) Grow(fm *FeatureMatrix,
 	target Target,
 	cases []int,
-	canidates []int,
+	candidates []int,
 	mTry int,
 	leafSize int,
-	itter bool,
 	splitmissing bool,
 	importance *[]RunningMean,
 	allocs *BestSplitAllocs) {
@@ -84,13 +83,13 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	t.Root.Recurse(func(n *Node, innercases []int) {
 
 		if (2 * leafSize) <= len(innercases) {
-			SampleFirstN(&canidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, canidates[:mTry], itter, splitmissing, allocs)
+			SampleFirstN(&candidates, mTry)
+			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
 			if best != nil && impDec > minImp {
 				if importance != nil {
 					rm[fm.Map[best.Feature]].Add(impDec)
 				}
-				//not a leaf node so define the spliter and left and right nodes
+				//not a leaf node so define the splitter and left and right nodes
 				//so recursion will continue
 				n.Splitter = best
 				n.Pred = ""
@@ -110,7 +109,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	}, fm, cases)
 }
 
-//GetSplits returns the arrays of all Numeric spliters of a tree.
+//GetSplits returns the arrays of all Numeric splitters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
 	ncases := len(fm.Data[0].Missing) // grab the number of samples for the first feature
@@ -184,7 +183,7 @@ type Leaf struct {
 
 //Tree.Vote casts a vote for the predicted value of each case in fm *FeatureMatrix.
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
-//into the same BallotBox in parralel.
+//into the same BallotBox in parallel.
 func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
 	ncases := len(fm.Data[0].Missing)
 	cases := make([]int, 0, ncases)
