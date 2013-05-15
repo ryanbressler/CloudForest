@@ -73,13 +73,9 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	mTry int,
 	leafSize int,
 	splitmissing bool,
-	importance *[]RunningMean,
+	importance *[]*RunningMean,
 	allocs *BestSplitAllocs) {
 
-	var rm []RunningMean
-	if importance != nil {
-		rm = *importance
-	}
 	t.Root.Recurse(func(n *Node, innercases []int) {
 
 		if (2 * leafSize) <= len(innercases) {
@@ -87,7 +83,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
 			if best != nil && impDec > minImp {
 				if importance != nil {
-					rm[fm.Map[best.Feature]].Add(impDec)
+					(*importance)[fm.Map[best.Feature]].Add(impDec)
 				}
 				//not a leaf node so define the splitter and left and right nodes
 				//so recursion will continue

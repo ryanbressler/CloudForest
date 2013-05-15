@@ -35,7 +35,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 	nTrees int,
 	leafSize int,
 	splitmissing bool,
-	importance *[]RunningMean) (f *Forest) {
+	importance *[]*RunningMean) (f *Forest) {
 
 	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
 

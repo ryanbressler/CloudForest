@@ -164,11 +164,11 @@ func main() {
 
 	//****************** Needed Collections and vars ******************//
 
-	var imppnt *[]CloudForest.RunningMean
+	var imppnt *[]*CloudForest.RunningMean
 	if *imp != "" {
 		fmt.Println("Recording Importance Scores.")
-		importance := make([]CloudForest.RunningMean, len(data.Data))
-		imppnt = &importance
+
+		imppnt = CloudForest.NewRunningMeans(len(data.Data))
 	}
 
 	treechan := make(chan *CloudForest.Tree, 0)
@@ -217,7 +217,8 @@ func main() {
 		}
 		defer impfile.Close()
 		for i, v := range *imppnt {
-			fmt.Fprintf(impfile, "%v\t%v\t%v\n", data.Data[i].Name, v.Mean, v.Count)
+			mean, count := v.Read()
+			fmt.Fprintf(impfile, "%v\t%v\t%v\n", data.Data[i].Name, mean, count)
 
 		}
 	}

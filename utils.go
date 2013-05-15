@@ -11,17 +11,36 @@ import (
 //RunningMean is a thread safe strut for keeping track of running means as used in
 //importance calculations. (TODO: could this be made lock free?)
 type RunningMean struct {
-	*sync.Mutex
+	mutex sync.Mutex
 	Mean  float64
 	Count int
 }
 
 //RunningMean.Add add's the specified value to the running mean in a thread safe way.
 func (rm *RunningMean) Add(val float64) {
-	rm.Lock()
+	rm.mutex.Lock()
 	rm.Mean = (rm.Mean*float64(rm.Count) + val) / (float64(rm.Count) + 1.0)
 	rm.Count += 1
-	rm.Unlock()
+	rm.mutex.Unlock()
+}
+
+//RunningMean.Read reads the mean and count
+func (rm *RunningMean) Read() (mean float64, count int) {
+	rm.mutex.Lock()
+	mean = rm.Mean
+	count = rm.Count
+	rm.mutex.Unlock()
+	return
+}
+
+func NewRunningMeans(size int) *[]*RunningMean {
+	importance := make([]*RunningMean, 0, size)
+	for i := 0; i < size; i++ {
+		rm := new(RunningMean)
+		importance = append(importance, rm)
+	}
+	return &importance
+
 }
 
 //Sparse counter uses maps to track sparse integer counts in large matrix.
