@@ -7,18 +7,17 @@ import (
 )
 
 //Keeps track of votes by trees.
-//Not thread safe....could be made so or abstracted to an
-//interface to support different implementations.
+//Voteing is thread safe.
 type NumBallotBox struct {
-	box []map[float64]int
+	box []*RunningMean
 }
 
 //Build a new ballot box for the number of cases specified by "size".
 func NewNumBallotBox(size int) *NumBallotBox {
 	bb := NumBallotBox{
-		make([]map[float64]int, 0, size)}
+		make([]*RunningMean, 0, size)}
 	for i := 0; i < size; i++ {
-		bb.box = append(bb.box, make(map[float64]int, 0))
+		bb.box = append(bb.box, new(RunningMean))
 	}
 	return &bb
 }
@@ -35,24 +34,13 @@ func (bb *NumBallotBox) Vote(casei int, pred string) {
 //VoteNum registers a vote that case "casei" should be predicted to have the
 //numerical value "vote."
 func (bb *NumBallotBox) VoteNum(casei int, pred float64) {
-
-	if _, ok := bb.box[casei][pred]; !ok {
-		bb.box[casei][pred] = 0
-	}
-	bb.box[casei][pred] = bb.box[casei][pred] + 1
+	bb.box[casei].Add(pred)
 }
 
 //TallyNumerical tallies the votes for the case specified by i as
 //if it is a Numerical feature. Ie it returns the mean of all votes.
 func (bb *NumBallotBox) TallyNum(i int) (predicted float64) {
-	predicted = 0.0
-	votes := 0
-	for k, v := range bb.box[i] {
-		predicted += float64(k) * float64(v)
-		votes += v
-
-	}
-	predicted = predicted / float64(votes)
+	predicted, _ = bb.box[i].Read()
 	return
 }
 

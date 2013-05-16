@@ -1,13 +1,27 @@
 package CloudForest
 
-import ()
+import (
+	"sync"
+)
 
-//Keeps track of votes by trees.
-//Not thread safe....could be made so or abstracted to an
-//interface to support different implementations.
+//Cat ballot is used insideof CatBallotBox to record catagorical votes in a thread safe
+//manner.
+type CatBallot struct {
+	Mutex sync.Mutex
+	Map   map[int]int
+}
+
+//NewCatBallot returns a pointer to an initalized CatBallot with a 0 size Map.
+func NewCatBallot() (cb *CatBallot) {
+	cb = new(CatBallot)
+	cb.Map = make(map[int]int, 0)
+	return
+}
+
+//Keeps track of votes by trees in a thread safe manner.
 type CatBallotBox struct {
 	*CatMap
-	box []map[int]int
+	box []*CatBallot
 }
 
 //Build a new ballot box for the number of cases specified by "size".
@@ -15,9 +29,9 @@ func NewCatBallotBox(size int) *CatBallotBox {
 	bb := CatBallotBox{
 		&CatMap{make(map[string]int),
 			make([]string, 0, 0)},
-		make([]map[int]int, 0, size)}
+		make([]*CatBallot, 0, size)}
 	for i := 0; i < size; i++ {
-		bb.box = append(bb.box, make(map[int]int, 0))
+		bb.box = append(bb.box, NewCatBallot())
 	}
 	return &bb
 }
@@ -26,10 +40,12 @@ func NewCatBallotBox(size int) *CatBallotBox {
 //category "pred".
 func (bb *CatBallotBox) Vote(casei int, pred string) {
 	predn := bb.CatToNum(pred)
-	if _, ok := bb.box[casei][predn]; !ok {
-		bb.box[casei][predn] = 0
+	bb.box[casei].Mutex.Lock()
+	if _, ok := bb.box[casei].Map[predn]; !ok {
+		bb.box[casei].Map[predn] = 0
 	}
-	bb.box[casei][predn] = bb.box[casei][predn] + 1
+	bb.box[casei].Map[predn] = bb.box[casei].Map[predn] + 1
+	bb.box[casei].Mutex.Unlock()
 }
 
 //TallyCatagorical tallies the votes for the case specified by i as
@@ -38,7 +54,8 @@ func (bb *CatBallotBox) Vote(casei int, pred string) {
 func (bb *CatBallotBox) Tally(i int) (predicted string) {
 	predictedn := 0
 	votes := 0
-	for k, v := range bb.box[i] {
+	bb.box[i].Mutex.Lock()
+	for k, v := range bb.box[i].Map {
 		if v > votes {
 			predictedn = k
 			votes = v
@@ -46,6 +63,7 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 		}
 
 	}
+	bb.box[i].Mutex.Unlock()
 	predicted = bb.Back[predictedn]
 	return
 
