@@ -160,7 +160,7 @@ func main() {
 	}
 	defer forestfile.Close()
 	forestwriter := CloudForest.NewForestWriter(forestfile)
-	forestwriter.WriteForestHeader(*targetname, nTrees)
+	//forestwriter.WriteForestHeader(*targetname, nTrees)
 
 	//****************** Needed Collections and vars ******************//
 
@@ -183,6 +183,7 @@ func main() {
 				}
 			}
 			tree := CloudForest.NewTree()
+			tree.Target = targetf.Name
 			cases := make([]int, 0, nSamples)
 			allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
 			for i := 0; i < nTrees; i++ {
