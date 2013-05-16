@@ -114,6 +114,27 @@ BestCatSplitBig and BestCatSplitIterBig.
 All numerical predictors are handled by BestNumSplit which
 relies on go's sorting package.
 
+Parallelism and Scaling
+
+Training a Random forest is an inherently parallel process and CloudForest is designed
+to allow parallel implementations that can tackle large problems while keeping memory
+usage low by writing and using data structures directly to/from disk.
+
+Trees can be grown in separate go routines. The growforest utility provides an example
+of this that uses go routines and channels to grow trees in parallel and write trees
+to disk as the are finished by the "worker" go routines. The few summary statistics
+like mean impurity decrease per feature (importance) can be calculated using thread
+safe data structures like RunningMean.
+
+Trees can also be grown on separate machines. The .sf stochastic forest format
+allows several small forests to be combined by concatenation and the ForestReader
+and ForestWriter structs allow these forests to be accessed tree by tree (or even node
+by node) from disk.
+
+For data sets that are too big to fit in memory on a single machine Tree.Grow and
+FeatureMatrix.BestSplitter can be reimplemented to load candidate features from disk,
+distributed database etc.
+
 
 Missing Values
 
@@ -174,11 +195,32 @@ Prediction and Voting is done using Tree.Vote and CatBallotBox and NumBallotBox 
 VoteTallyer interface.
 
 
-Speed
+Compiling for Speed
 
 When compiled with go1.1 CloudForest achieves running times similar to implementations in
 other languages. Using gccgo (4.8.0 at least) results in longer running times and is not
 recommended until full go1.1 support is implemented in gcc 4.8.1.
+
+Roadmap
+
+Development of CloudForest is being driven by our needs as we analyze large biomedical data sets.
+As such new and modified analysis will be added as needed. The basic functionality has stabilized
+but we have discussed several possible changes that may require additional abstraction and/or
+changes in the api. These include:
+
+Allow additional types of candidate features. Some multidimensional data types
+may not be best served by decomposition into categorical and numerical features. It would be possible
+to allow arbitrary feature types by adding CanidateFeature (which should expose BestSplit), CodedSplitter
+and Splitter abstraction.
+
+Allowing data to reside anywhere. This would involve abstracting FeatureMatrix to allow database etc
+driven implementations.
+
+
+
+
+
+
 
 
 Growforest Utility
