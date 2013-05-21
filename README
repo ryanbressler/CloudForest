@@ -1,5 +1,5 @@
 Package CloudForest implements ensembles of decision trees for machine
-learning in pure Go (golang.org). It includes implementations of Breiman
+learning in pure Go (golang). It includes implementations of Breiman
 and Cutler's Random Forest for classification and regression on heterogeneous
 numerical/categorical data with missing values and several related algorithms
 including entropy and cost driven classification, L1 regression and feature
