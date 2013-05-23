@@ -6,7 +6,7 @@ import ()
 //down stream node of a tree as Node.Recurse recurses up the tree. The function should
 //have two parameters, the current node and an array of ints specifying the cases that
 //have not been split away.
-type Recursable func(*Node, []int)
+type Recursable func(*Node, []int, int)
 
 //A node of a decision tree.
 //Pred is a string containing either the category or a representation of a float
@@ -32,14 +32,15 @@ type Node struct {
 //			}
 //		}
 //	}, fm, cases)
-func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int) {
-	r(n, cases)
+func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int, depth int) {
+	r(n, cases, depth)
+	depth++
 	if n.Splitter != nil {
 		ls, rs, ms := n.Splitter.Split(fm, cases)
-		n.Left.Recurse(r, fm, ls)
-		n.Right.Recurse(r, fm, rs)
+		n.Left.Recurse(r, fm, ls, depth)
+		n.Right.Recurse(r, fm, rs, depth)
 		if len(ms) > 0 && n.Missing != nil {
-			n.Missing.Recurse(r, fm, ms)
+			n.Missing.Recurse(r, fm, ms, depth)
 		}
 	}
 }

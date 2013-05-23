@@ -76,7 +76,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	importance *[]*RunningMean,
 	allocs *BestSplitAllocs) {
 
-	t.Root.Recurse(func(n *Node, innercases []int) {
+	t.Root.Recurse(func(n *Node, innercases []int, depth int) {
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&candidates, mTry)
@@ -102,7 +102,46 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 		n.Splitter = nil
 		n.Pred = target.FindPredicted(innercases)
 
-	}, fm, cases)
+	}, fm, cases, 0)
+}
+
+/*
+tree.Boost grows a tree using the paramaters most frequentlly used with gradiant tree
+boosting and uses the leaves to update the residuals.
+
+BUG(ryan): Not yet tested.
+*/
+func (t *Tree) Boost(fm *FeatureMatrix,
+	target BoostingTarget,
+	cases []int,
+	candidates []int,
+	mTry int,
+	learnRate float64,
+	maxDepth int,
+	allocs *BestSplitAllocs) {
+
+	t.Root.Recurse(func(n *Node, innercases []int, depth int) {
+
+		if depth <= maxDepth {
+			SampleFirstN(&candidates, mTry)
+			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
+			if best != nil && impDec > minImp {
+				//not a leaf node so define the splitter and left and right nodes
+				//so recursion will continue
+				n.Splitter = best
+				n.Pred = ""
+				n.Left = new(Node)
+				n.Right = new(Node)
+				return
+			}
+		}
+
+		//Leaf node so find the predictive value and set it in n.Pred
+		n.Splitter = nil
+		n.Pred = target.FindPredicted(innercases)
+		target.UpdateToResiduals(&innercases, learnRate)
+
+	}, fm, cases, 0)
 }
 
 //GetSplits returns the arrays of all Numeric splitters of a tree.
@@ -114,7 +153,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 		cases[i] = i
 	}
 
-	t.Root.Recurse(func(n *Node, cases []int) {
+	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		//if we're on a splitting node
 		if fbycase != nil && n.Splitter != nil && n.Splitter.Numerical == true {
 			//add this splitter to the list
@@ -138,7 +177,7 @@ func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSpli
 				}
 			}
 		}
-	}, fm, cases)
+	}, fm, cases, 0)
 	return splitters //return the array of all splitters from the tree
 
 }
@@ -155,7 +194,7 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 		cases = append(cases, i)
 	}
 
-	t.Root.Recurse(func(n *Node, cases []int) {
+	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil { // I'm in a leaf node
 			leaves = append(leaves, Leaf{cases, n.Pred})
 		}
@@ -165,7 +204,7 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 			}
 		}
 
-	}, fm, cases)
+	}, fm, cases, 0)
 	return leaves
 
 }
@@ -187,12 +226,12 @@ func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
 		cases = append(cases, i)
 	}
 
-	t.Root.Recurse(func(n *Node, cases []int) {
+	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil {
 			// I'm in a leaf node
 			for i := 0; i < len(cases); i++ {
 				bb.Vote(cases[i], n.Pred)
 			}
 		}
-	}, fm, cases)
+	}, fm, cases, 0)
 }

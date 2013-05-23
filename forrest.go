@@ -60,3 +60,39 @@ func GrowRandomForest(fm *FeatureMatrix,
 	}
 	return
 }
+
+func GrowBoostingTrees(fm *FeatureMatrix,
+	target *Feature,
+	nSamples int,
+	mTry int,
+	nTrees int,
+	learningRate float64,
+	maxDepth int) (f *Forest) {
+
+	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
+
+	//start with all features but the target as candidates
+	candidates := make([]int, 0, len(fm.Data))
+	targeti := fm.Map[target.Name]
+	for i := 0; i < len(fm.Data); i++ {
+		if i != targeti {
+			candidates = append(candidates, i)
+		}
+	}
+
+	//Slices for reuse during search for best splitter.
+	allocs := NewBestSplitAllocs(nSamples, target)
+	nCases := len(fm.Data[0].Missing)
+	cases := make([]int, 0, nCases)
+	for i := 0; i < nCases; i++ {
+		cases = append(cases, i)
+	}
+
+	for i := 0; i < nTrees; i++ {
+		//Sample without replacment
+		SampleFirstN(&cases, nSamples)
+		f.Trees = append(f.Trees, NewTree())
+		f.Trees[i].Boost(fm, target, cases[:nSamples], candidates, mTry, learningRate, maxDepth, allocs)
+	}
+	return
+}
