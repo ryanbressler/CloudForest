@@ -7,11 +7,12 @@ including entropy and cost driven classification, L1 regression and feature
 selection with artificial contrasts and hooks for modifying the algorithms
 for your needs.
 
-Command line utilities to grow, apply and canalize forests are provided in sub
+Command line utilities to grow, apply and analyze forests are provided in sub
 directories.
 
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
-Biology.
+Biology for use on genomic/biomedical data with partial support from The Cancer Genome
+Atlas and the Inova Translational Medicine Institute.
 
 
 Documentation has been generated with godoc and can be viewed live at:
