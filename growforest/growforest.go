@@ -96,11 +96,6 @@ func main() {
 	}
 	fmt.Printf("nSamples : %v\n", nSamples)
 
-	if mTry <= 0 {
-		mTry = int(math.Ceil(math.Sqrt(float64(len(data.Data)))))
-	}
-	fmt.Printf("mTry : %v\n", mTry)
-
 	if nContrasts > 0 {
 		fmt.Printf("Adding %v Random Contrasts\n", nContrasts)
 		data.AddContrasts(nContrasts)
@@ -110,6 +105,7 @@ func main() {
 		data.ContrastAll()
 	}
 
+	blacklisted := 0
 	blacklistis := make([]bool, len(data.Data))
 	if *blacklist != "" {
 		blackfile, err := os.Open(*blacklist)
@@ -125,11 +121,21 @@ func main() {
 			} else if err != nil {
 				log.Fatal(err)
 			}
-			blacklistis[data.Map[id[0]]] = true
+			i := data.Map[id[0]]
+			if !blacklistis[i] {
+				blacklisted += 1
+				blacklistis[i] = true
+			}
+
 		}
 		blackfile.Close()
 
 	}
+
+	if mTry <= 0 {
+		mTry = int(math.Ceil(math.Sqrt(float64(len(data.Data) - blacklisted))))
+	}
+	fmt.Printf("mTry : %v\n", mTry)
 
 	if impute {
 		fmt.Println("Imputing missing values to feature mean/mode.")
