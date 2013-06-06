@@ -1,10 +1,12 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/ryanbressler/CloudForest"
+	"io"
 	"log"
 	"math"
 	"math/rand"
@@ -24,6 +26,9 @@ func main() {
 		"", "File name to output importance.")
 	costs := flag.String("cost",
 		"", "For categorical targets, a json string to float map of the cost of falsely identifying each category.")
+
+	blacklist := flag.String("blacklist",
+		"", "A list of feature id's to exclude from the set of predictors.")
 
 	var nCores int
 	flag.IntVar(&nCores, "nCores", 1, "The number of cores to use.")
@@ -104,6 +109,28 @@ func main() {
 		fmt.Printf("Adding Random Contrasts for All Features.\n")
 		data.ContrastAll()
 	}
+
+	blacklistis := make([]bool, len(data.Data))
+	if *blacklist != "" {
+		blackfile, err := os.Open(*blacklist)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tsv := csv.NewReader(blackfile)
+		tsv.Comma = '\t'
+		for {
+			id, err := tsv.Read()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Fatal(err)
+			}
+			blacklistis[data.Map[id[0]]] = true
+		}
+		blackfile.Close()
+
+	}
+
 	if impute {
 		fmt.Println("Imputing missing values to feature mean/mode.")
 		data.ImputeMissing()
@@ -178,7 +205,7 @@ func main() {
 		go func() {
 			canidates := make([]int, 0, len(data.Data))
 			for i := 0; i < len(data.Data); i++ {
-				if i != targeti {
+				if i != targeti && !blacklistis[i] {
 					canidates = append(canidates, i)
 				}
 			}
