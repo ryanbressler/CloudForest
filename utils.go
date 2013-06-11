@@ -13,19 +13,24 @@ import (
 type RunningMean struct {
 	mutex sync.Mutex
 	Mean  float64
-	Count int
+	Count float64
 }
 
 //RunningMean.Add add's the specified value to the running mean in a thread safe way.
 func (rm *RunningMean) Add(val float64) {
+	rm.WeightedAdd(val, 1.0)
+}
+
+//RunningMean.Add add's the specified value to the running mean in a thread safe way.
+func (rm *RunningMean) WeightedAdd(val float64, weight float64) {
 	rm.mutex.Lock()
-	rm.Mean = (rm.Mean*float64(rm.Count) + val) / (float64(rm.Count) + 1.0)
-	rm.Count += 1
+	rm.Mean = (rm.Mean*rm.Count + weight*val) / (rm.Count + weight)
+	rm.Count += weight
 	rm.mutex.Unlock()
 }
 
 //RunningMean.Read reads the mean and count
-func (rm *RunningMean) Read() (mean float64, count int) {
+func (rm *RunningMean) Read() (mean float64, count float64) {
 	rm.mutex.Lock()
 	mean = rm.Mean
 	count = rm.Count

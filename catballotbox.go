@@ -8,13 +8,13 @@ import (
 //manner.
 type CatBallot struct {
 	Mutex sync.Mutex
-	Map   map[int]int
+	Map   map[int]float64
 }
 
 //NewCatBallot returns a pointer to an initalized CatBallot with a 0 size Map.
 func NewCatBallot() (cb *CatBallot) {
 	cb = new(CatBallot)
-	cb.Map = make(map[int]int, 0)
+	cb.Map = make(map[int]float64, 0)
 	return
 }
 
@@ -38,13 +38,13 @@ func NewCatBallotBox(size int) *CatBallotBox {
 
 //Vote registers a vote that case "casei" should be predicted to be the
 //category "pred".
-func (bb *CatBallotBox) Vote(casei int, pred string) {
+func (bb *CatBallotBox) Vote(casei int, pred string, weight float64) {
 	predn := bb.CatToNum(pred)
 	bb.box[casei].Mutex.Lock()
 	if _, ok := bb.box[casei].Map[predn]; !ok {
 		bb.box[casei].Map[predn] = 0
 	}
-	bb.box[casei].Map[predn] = bb.box[casei].Map[predn] + 1
+	bb.box[casei].Map[predn] = bb.box[casei].Map[predn] + weight
 	bb.box[casei].Mutex.Unlock()
 }
 
@@ -53,7 +53,7 @@ func (bb *CatBallotBox) Vote(casei int, pred string) {
 //(the most frequent value) of all votes.
 func (bb *CatBallotBox) Tally(i int) (predicted string) {
 	predictedn := 0
-	votes := 0
+	votes := 0.0
 	bb.box[i].Mutex.Lock()
 	for k, v := range bb.box[i].Map {
 		if v > votes {

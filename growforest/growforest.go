@@ -43,7 +43,7 @@ func main() {
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
 
 	var mTry int
-	flag.IntVar(&mTry, "mTry", 0, "Number of candidate features for each split. Inferred to ceil(swrt(nFeatures)) if <=0.")
+	flag.IntVar(&mTry, "mTry", 0, "Number of candidate features for each split. Inferred to ceil(sqrt(nFeatures)) if <=0.")
 
 	var nContrasts int
 	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artificial contrast features to include in the feature matrix.")
@@ -54,7 +54,7 @@ func main() {
 	flag.BoolVar(&contrastAll, "contrastall", false, "Include a shuffled artificial contrast copy of every feature.")
 
 	var impute bool
-	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode instead of filtering them out when splitting.")
+	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode before growth.")
 
 	var splitmissing bool
 	flag.BoolVar(&splitmissing, "splitmissing", false, "Split missing values onto a third branch at each node (experimental).")
@@ -68,9 +68,13 @@ func main() {
 	var oob bool
 	flag.BoolVar(&oob, "oob", false, "Calculte and report oob error.")
 
-	flag.Parse()
+	var boost bool
+	flag.BoolVar(&boost, "boost", false, "Use Gradiant/Ada boosting for regresion/classification. Prevents multithreading. (experimental)")
 
-	fmt.Printf("nTrees : %v\n", nTrees)
+	var nobag bool
+	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
+
+	flag.Parse()
 
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
@@ -81,9 +85,18 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	if boost {
+		nCores = 1
+		oob = false
+		*imp = ""
+	}
+
 	if nCores > 1 {
+
 		runtime.GOMAXPROCS(nCores)
 	}
+	fmt.Printf("Threads : %v\n", nCores)
+	fmt.Printf("nTrees : %v\n", nTrees)
 	//Parse Data
 	datafile, err := os.Open(*fm)
 	if err != nil {
@@ -140,8 +153,11 @@ func main() {
 
 	}
 
+	nFeatures := len(data.Data) - blacklisted
+	fmt.Printf("nFeatures : %v\n", nFeatures)
 	if mTry <= 0 {
-		mTry = int(math.Ceil(math.Sqrt(float64(len(data.Data) - blacklisted))))
+
+		mTry = int(math.Ceil(math.Sqrt(float64(nFeatures))))
 	}
 	fmt.Printf("mTry : %v\n", mTry)
 
@@ -158,7 +174,9 @@ func main() {
 
 	targetf := data.Data[targeti]
 	if leafSize <= 0 {
-		if targetf.NCats() == 0 {
+		if boost {
+			leafSize = len(targetf.Missing) / 3
+		} else if targetf.NCats() == 0 {
 			//regression
 			leafSize = 4
 		} else {
@@ -182,8 +200,18 @@ func main() {
 
 	//****** Set up Target for Alternative Impurity  if needed *******//
 	var target CloudForest.Target
+	var btarget CloudForest.BoostingTarget
 
 	switch {
+	case boost:
+		if targetf.NCats() == 0 {
+			fmt.Println("Using Gradian Boosting for regression.")
+			btarget = &CloudForest.GradBoostTarget{&targetf, .1}
+		} else {
+			fmt.Println("Using Adaptive Boosting for classification.")
+			btarget = CloudForest.NewAdaBoostTarget(&targetf)
+		}
+		target = btarget
 	case l1:
 		fmt.Println("Using l1 regression.")
 		target = &CloudForest.L1Target{&targetf}
@@ -238,13 +266,22 @@ func main() {
 			tree := CloudForest.NewTree()
 			tree.Target = targetf.Name
 			cases := make([]int, 0, nSamples)
+			if nobag {
+				for i := 0; i < nSamples; i++ {
+					cases = append(cases, i)
+				}
+			}
+
 			allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
-			for i := 0; i < nTrees; i++ {
-				//sample nCases case with replacement
-				cases = cases[0:0]
+			for {
 				nCases := len(data.Data[0].Missing)
-				for j := 0; j < nSamples; j++ {
-					cases = append(cases, rand.Intn(nCases))
+				//sample nCases case with replacement
+				if !nobag {
+					cases = cases[0:0]
+
+					for j := 0; j < nSamples; j++ {
+						cases = append(cases, rand.Intn(nCases))
+					}
 				}
 
 				tree.Grow(data, target, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
@@ -262,6 +299,19 @@ func main() {
 
 					tree.VoteCases(data, oobVotes, cases)
 				}
+				if boost {
+					weight := btarget.Boost(tree.Partition(data))
+					if weight == math.Inf(1) {
+						fmt.Printf("Boosting Reached Terminal Weight of %v", weight)
+						close(treechan)
+						break
+					}
+
+					if weight == 0.0 {
+						continue
+					}
+					tree.Weight = weight
+				}
 				treechan <- tree
 				tree = <-treechan
 			}
@@ -271,6 +321,9 @@ func main() {
 
 	for i := 0; i < nTrees; i++ {
 		tree := <-treechan
+		if tree == nil {
+			break
+		}
 		forestwriter.WriteTree(tree, i)
 		if i < nTrees-1 {
 			treechan <- tree

@@ -96,6 +96,16 @@ func (fr *ForestReader) ReadTree() (tree *Tree, forest *Forest, err error) {
 			intree = true
 			tree = new(Tree)
 			tree.Target = parsed["TARGET"]
+			weights, ok := parsed["WEIGHT"]
+			if ok {
+				weight, err := strconv.ParseFloat(weights, 64)
+				if err != nil {
+					log.Print("Error parsing weight value ", err)
+				}
+				tree.Weight = weight
+			} else {
+				tree.Weight = -1.0
+			}
 
 		case strings.HasPrefix(line, "NODE"):
 			if intree == false {
