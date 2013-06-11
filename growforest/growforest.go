@@ -322,6 +322,7 @@ func main() {
 			break
 		}
 		if tree.Weight == 0.0 {
+			treechan <- tree
 			continue
 		}
 		forestwriter.WriteTree(tree, i)
