@@ -98,6 +98,7 @@ func main() {
 	fmt.Printf("Threads : %v\n", nCores)
 	fmt.Printf("nTrees : %v\n", nTrees)
 	//Parse Data
+	fmt.Printf("Loading data from: %v\n", *fm)
 	datafile, err := os.Open(*fm)
 	if err != nil {
 		log.Fatal(err)
