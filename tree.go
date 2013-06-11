@@ -226,6 +226,14 @@ func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
 		cases = append(cases, i)
 	}
 
+	t.VoteCases(fm, bb, cases)
+}
+
+//Tree.VoteCases casts a vote for the predicted value of each case in fm *FeatureMatrix.
+//into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
+//into the same BallotBox in parallel.
+func (t *Tree) VoteCases(fm *FeatureMatrix, bb VoteTallyer, cases []int) {
+
 	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil {
 			// I'm in a leaf node

@@ -65,6 +65,9 @@ func main() {
 	var entropy bool
 	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
 
+	var oob bool
+	flag.BoolVar(&oob, "oob", false, "Calculte and report oob error.")
+
 	flag.Parse()
 
 	fmt.Printf("nTrees : %v\n", nTrees)
@@ -108,6 +111,7 @@ func main() {
 	blacklisted := 0
 	blacklistis := make([]bool, len(data.Data))
 	if *blacklist != "" {
+		fmt.Printf("Loading blacklist from: %v\n", *blacklist)
 		blackfile, err := os.Open(*blacklist)
 		if err != nil {
 			log.Fatal(err)
@@ -121,7 +125,11 @@ func main() {
 			} else if err != nil {
 				log.Fatal(err)
 			}
-			i := data.Map[id[0]]
+			i, ok := data.Map[id[0]]
+			if !ok {
+				fmt.Printf("Ignoring blacklist feature not found in data: %v\n", id[0])
+				continue
+			}
 			if !blacklistis[i] {
 				blacklisted += 1
 				blacklistis[i] = true
@@ -159,6 +167,18 @@ func main() {
 		}
 	}
 	fmt.Printf("leafSize : %v\n", leafSize)
+
+	var oobVotes CloudForest.VoteTallyer
+	if oob {
+		fmt.Println("Recording oob error.")
+		if targetf.NCats() == 0 {
+			//regression
+			oobVotes = CloudForest.NewNumBallotBox(len(data.Data[0].Missing))
+		} else {
+			//classification
+			oobVotes = CloudForest.NewCatBallotBox(len(data.Data[0].Missing))
+		}
+	}
 
 	//****** Set up Target for Alternative Impurity  if needed *******//
 	var target CloudForest.Target
@@ -228,6 +248,20 @@ func main() {
 				}
 
 				tree.Grow(data, target, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
+				if oob {
+					ibcases := make([]bool, nCases)
+					for _, v := range cases {
+						ibcases[v] = true
+					}
+					cases = cases[0:0]
+					for i, v := range ibcases {
+						if !v {
+							cases = append(cases, i)
+						}
+					}
+
+					tree.VoteCases(data, oobVotes, cases)
+				}
 				treechan <- tree
 				tree = <-treechan
 			}
@@ -243,6 +277,9 @@ func main() {
 		}
 
 	}
+	if oob {
+		fmt.Printf("Oib Error : %v\n", oobVotes.TallyError(&targetf))
+	}
 
 	if *imp != "" {
 		impfile, err := os.Create(*imp)
@@ -252,7 +289,7 @@ func main() {
 		defer impfile.Close()
 		for i, v := range *imppnt {
 			mean, count := v.Read()
-			fmt.Fprintf(impfile, "%v\t%v\t%v\n", data.Data[i].Name, mean, count)
+			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].Name, mean, count, mean*float64(count))
 
 		}
 	}
