@@ -289,7 +289,7 @@ func main() {
 		defer impfile.Close()
 		for i, v := range *imppnt {
 			mean, count := v.Read()
-			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].Name, mean, count, mean*float64(count)/nTrees)
+			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].Name, mean, count, mean*float64(count)/float64(nTrees))
 
 		}
 	}
