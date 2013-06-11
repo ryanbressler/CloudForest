@@ -307,9 +307,6 @@ func main() {
 						break
 					}
 
-					if weight == 0.0 {
-						continue
-					}
 					tree.Weight = weight
 				}
 				treechan <- tree
@@ -323,6 +320,9 @@ func main() {
 		tree := <-treechan
 		if tree == nil {
 			break
+		}
+		if tree.Weight == 0.0 {
+			continue
 		}
 		forestwriter.WriteTree(tree, i)
 		if i < nTrees-1 {
