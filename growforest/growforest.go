@@ -278,7 +278,7 @@ func main() {
 
 	}
 	if oob {
-		fmt.Printf("Oib Error : %v\n", oobVotes.TallyError(&targetf))
+		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(&targetf))
 	}
 
 	if *imp != "" {
@@ -289,7 +289,7 @@ func main() {
 		defer impfile.Close()
 		for i, v := range *imppnt {
 			mean, count := v.Read()
-			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].Name, mean, count, mean*float64(count))
+			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].Name, mean, count, mean*float64(count)/nTrees)
 
 		}
 	}
