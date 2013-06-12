@@ -7,10 +7,11 @@ type Tree struct {
 	//Tree int
 	Root   *Node
 	Target string
+	Weight float64
 }
 
 func NewTree() *Tree {
-	return &Tree{new(Node), ""}
+	return &Tree{new(Node), "", -1.0}
 }
 
 //AddNode adds a node a the specified path with the specified pred value and/or
@@ -105,45 +106,6 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	}, fm, cases, 0)
 }
 
-/*
-tree.Boost grows a tree using the paramaters most frequentlly used with gradiant tree
-boosting and uses the leaves to update the residuals.
-
-BUG(ryan): Not yet tested.
-*/
-func (t *Tree) Boost(fm *FeatureMatrix,
-	target BoostingTarget,
-	cases []int,
-	candidates []int,
-	mTry int,
-	learnRate float64,
-	maxDepth int,
-	allocs *BestSplitAllocs) {
-
-	t.Root.Recurse(func(n *Node, innercases []int, depth int) {
-
-		if depth <= maxDepth {
-			SampleFirstN(&candidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
-			if best != nil && impDec > minImp {
-				//not a leaf node so define the splitter and left and right nodes
-				//so recursion will continue
-				n.Splitter = best
-				n.Pred = ""
-				n.Left = new(Node)
-				n.Right = new(Node)
-				return
-			}
-		}
-
-		//Leaf node so find the predictive value and set it in n.Pred
-		n.Splitter = nil
-		n.Pred = target.FindPredicted(innercases)
-		target.UpdateToResiduals(&innercases, learnRate)
-
-	}, fm, cases, 0)
-}
-
 //GetSplits returns the arrays of all Numeric splitters of a tree.
 func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
 	splitters := make([]Splitter, 0)
@@ -209,6 +171,24 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 
 }
 
+func (t *Tree) Partition(fm *FeatureMatrix) *[][]int {
+	leaves := make([][]int, 0)
+	ncases := len(fm.Data[0].Missing)
+	cases := make([]int, 0, ncases)
+	for i := 0; i < ncases; i++ {
+		cases = append(cases, i)
+	}
+
+	t.Root.Recurse(func(n *Node, cases []int, depth int) {
+		if n.Left == nil && n.Right == nil { // I'm in a leaf node
+			leaves = append(leaves, cases)
+		}
+
+	}, fm, cases, 0)
+	return &leaves
+
+}
+
 //Leaf is a struct for storing the index of the cases at a terminal "Leaf" node
 //along with the Numeric predicted value.
 type Leaf struct {
@@ -234,11 +214,16 @@ func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
 //into the same BallotBox in parallel.
 func (t *Tree) VoteCases(fm *FeatureMatrix, bb VoteTallyer, cases []int) {
 
+	weight := 1.0
+	if t.Weight >= 0.0 {
+		weight = t.Weight
+	}
+
 	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil {
 			// I'm in a leaf node
 			for i := 0; i < len(cases); i++ {
-				bb.Vote(cases[i], n.Pred)
+				bb.Vote(cases[i], n.Pred, weight)
 			}
 		}
 	}, fm, cases, 0)

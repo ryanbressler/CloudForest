@@ -23,18 +23,12 @@ func NewNumBallotBox(size int) *NumBallotBox {
 }
 
 //Vote parses the float in the string and votes for it
-func (bb *NumBallotBox) Vote(casei int, pred string) {
+func (bb *NumBallotBox) Vote(casei int, pred string, weight float64) {
 	v, err := strconv.ParseFloat(pred, 64)
 	if err == nil {
-		bb.VoteNum(casei, v)
+		bb.box[casei].WeightedAdd(v, weight)
 	}
 
-}
-
-//VoteNum registers a vote that case "casei" should be predicted to have the
-//numerical value "vote."
-func (bb *NumBallotBox) VoteNum(casei int, pred float64) {
-	bb.box[casei].Add(pred)
 }
 
 //TallyNumerical tallies the votes for the case specified by i as

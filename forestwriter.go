@@ -32,7 +32,7 @@ func (fw *ForestWriter) WriteForest(forest *Forest) {
 
 //WriteTree writes an entire Tree including the header.
 func (fw *ForestWriter) WriteTree(tree *Tree, ntree int) {
-	fw.WriteTreeHeader(ntree, tree.Target)
+	fw.WriteTreeHeader(ntree, tree.Target, tree.Weight)
 	fw.WriteNodeAndChildren(tree.Root, "*")
 }
 
@@ -42,8 +42,12 @@ func (fw *ForestWriter) WriteForestHeader(target string, ntrees int) {
 }
 
 //WrieTreeHeader writes only the header line for a tree.
-func (fw *ForestWriter) WriteTreeHeader(ntree int, target string) {
-	fmt.Fprintf(fw.w, "TREE=%v,TARGET=\"%v\"\n", ntree, target)
+func (fw *ForestWriter) WriteTreeHeader(ntree int, target string, weight float64) {
+	weightterm := ""
+	if weight >= 0.0 {
+		weightterm = fmt.Sprintf(",WEIGHT=%v", weight)
+	}
+	fmt.Fprintf(fw.w, "TREE=%v,TARGET=\"%v\"%v\n", ntree, target, weightterm)
 }
 
 //WriteNodeAndChildren recursively writes out the target node and all of its children.

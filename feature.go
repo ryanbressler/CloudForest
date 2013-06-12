@@ -667,15 +667,6 @@ func (target *Feature) Mean(cases *[]int) (m float64) {
 
 }
 
-//UpdateToResiduals updates the underlying numeric data by subtracting the mean*weight of the
-//specified cases from the value for those cases.
-func (f *Feature) UpdateToResiduals(cases *[]int, weight float64) {
-	m := f.Mean(cases)
-	for v, _ := range *cases {
-		f.NumData[v] -= weight * m
-	}
-}
-
 //Mode returns the mode category feature for the cases specified
 func (f *Feature) Mode(cases *[]int) (m string) {
 	m = f.Back[f.Modei(cases)]
