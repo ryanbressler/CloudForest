@@ -694,6 +694,26 @@ func (f *Feature) Modei(cases *[]int) (m int) {
 
 }
 
+//Mode returns the mode category feature for the cases specified
+func (f *Feature) NumMode(cases *[]int) (m float64) {
+	counts := make(map[float64]int)
+	for _, i := range *cases {
+		if !f.Missing[i] {
+			counts[f.NumData[i]] += 1
+		}
+
+	}
+	max := 0
+	for k, v := range counts {
+		if v > max {
+			m = k
+			max = v
+		}
+	}
+	return
+
+}
+
 //Find predicted takes the indexes of a set of cases and returns the
 //predicted value. For categorical features this is a string containing the
 //most common category and for numerical it is the mean of the values.
