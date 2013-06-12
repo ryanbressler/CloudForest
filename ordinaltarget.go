@@ -8,7 +8,7 @@ import (
 OrdinalTarget wraps a numerical feature as a target for us in l1 norm regression.
 */
 type OrdinalTarget struct {
-	*Feature
+	NumFeature
 }
 
 /*
@@ -27,12 +27,12 @@ func (target *OrdinalTarget) SplitImpurity(l []int, r []int, counter *[]int) (im
 
 //OrdinalTarget.Impurity is an ordinal version of impurity using Mode instead of Mean for prediction.
 func (target *OrdinalTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
-	m := target.NumMode(cases)
+	m := target.Mode(cases)
 	e = target.MeanSquaredError(cases, m)
 	return
 
 }
 
 func (target *OrdinalTarget) FindPredicted(cases []int) (pred string) {
-	return fmt.Sprintf("%v", target.NumMode(&cases))
+	return fmt.Sprintf("%v", target.Mode(&cases))
 }

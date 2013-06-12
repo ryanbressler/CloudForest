@@ -106,51 +106,13 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	}, fm, cases, 0)
 }
 
-//GetSplits returns the arrays of all Numeric splitters of a tree.
-func (t *Tree) GetSplits(fm *FeatureMatrix, fbycase *SparseCounter, relativeSplitCount *SparseCounter) []Splitter {
-	splitters := make([]Splitter, 0)
-	ncases := len(fm.Data[0].Missing) // grab the number of samples for the first feature
-	cases := make([]int, ncases)      //make an array that large
-	for i, _ := range cases {
-		cases[i] = i
-	}
-
-	t.Root.Recurse(func(n *Node, cases []int, depth int) {
-		//if we're on a splitting node
-		if fbycase != nil && n.Splitter != nil && n.Splitter.Numerical == true {
-			//add this splitter to the list
-			splitters = append(splitters, Splitter{n.Splitter.Feature,
-				n.Splitter.Numerical,
-				n.Splitter.Value,
-				n.Splitter.Left})
-			f_id := n.Splitter.Feature               //get the feature at this splitter
-			f := fm.Data[fm.Map[n.Splitter.Feature]] //get the feature at this splitter
-			for _, c := range cases {                //for each case
-
-				if f.Missing[c] == false { //if there isa value for this case
-					fbycase.Add(c, fm.Map[f_id], 1) //count the number of times each case is present for a split by a feature
-
-					switch f.NumData[c] <= n.Splitter.Value {
-					case true: //if the value was split to the left
-						relativeSplitCount.Add(c, fm.Map[f_id], -1) //subtract one
-					case false:
-						relativeSplitCount.Add(c, fm.Map[f_id], 1) //add one
-					}
-				}
-			}
-		}
-	}, fm, cases, 0)
-	return splitters //return the array of all splitters from the tree
-
-}
-
 //GetLeaves is called by the leaf count utility to
 //gather statistics about the nodes of a tree including the sets of cases at
 //"leaf" nodes that aren't split further and the number of times each feature
 //is used to split away each case.
 func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
-	ncases := len(fm.Data[0].Missing)
+	ncases := fm.Data[0].Length()
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
 		cases = append(cases, i)
@@ -173,7 +135,7 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 
 func (t *Tree) Partition(fm *FeatureMatrix) *[][]int {
 	leaves := make([][]int, 0)
-	ncases := len(fm.Data[0].Missing)
+	ncases := fm.Data[0].Length()
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
 		cases = append(cases, i)
@@ -200,7 +162,7 @@ type Leaf struct {
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
 //into the same BallotBox in parallel.
 func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
-	ncases := len(fm.Data[0].Missing)
+	ncases := fm.Data[0].Length()
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
 		cases = append(cases, i)

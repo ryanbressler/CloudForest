@@ -209,19 +209,19 @@ func main() {
 	switch {
 	case ordinal:
 		fmt.Println("Using Ordinal regression.")
-		target = &CloudForest.OrdinalTarget{&targetf}
+		target = &CloudForest.OrdinalTarget{targetf.(CloudForest.NumFeature)}
 	case boost:
 		if targetf.NCats() == 0 {
 			fmt.Println("Using Gradian Boosting for regression.")
-			btarget = &CloudForest.GradBoostTarget{&targetf, .1}
+			btarget = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), .1}
 		} else {
 			fmt.Println("Using Adaptive Boosting for classification.")
-			btarget = CloudForest.NewAdaBoostTarget(&targetf)
+			btarget = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
 		}
 		target = btarget
 	case l1:
 		fmt.Println("Using l1 regression.")
-		target = &CloudForest.L1Target{&targetf}
+		target = &CloudForest.L1Target{targetf.(CloudForest.NumFeature)}
 	case *costs != "":
 		fmt.Println("Using cost weighted classification: ", *costs)
 		costmap := make(map[string]float64)
@@ -230,16 +230,16 @@ func main() {
 			log.Fatal(err)
 		}
 
-		regTarg := CloudForest.NewRegretTarget(&targetf)
+		regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
 		regTarg.SetCosts(costmap)
 		target = regTarg
 
 	case entropy:
 		fmt.Println("Using entropy minimizing classification.")
-		target = &CloudForest.EntropyTarget{&targetf}
+		target = &CloudForest.EntropyTarget{targetf.(CloudForest.CatFeature)}
 
 	default:
-		target = &targetf
+		target = targetf
 	}
 
 	forestfile, err := os.Create(*rf)
@@ -271,7 +271,7 @@ func main() {
 				}
 			}
 			tree := CloudForest.NewTree()
-			tree.Target = targetf.Name
+			tree.Target = *targetname
 			cases := make([]int, 0, nSamples)
 			if nobag {
 				for i := 0; i < nSamples; i++ {
@@ -336,7 +336,7 @@ func main() {
 
 	}
 	if oob {
-		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(&targetf))
+		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(targetf))
 	}
 
 	if *imp != "" {
@@ -347,7 +347,7 @@ func main() {
 		defer impfile.Close()
 		for i, v := range *imppnt {
 			mean, count := v.Read()
-			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].Name, mean, count, mean*float64(count)/float64(nTrees))
+			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].GetName(), mean, count, mean*float64(count)/float64(nTrees))
 
 		}
 	}

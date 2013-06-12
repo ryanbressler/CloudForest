@@ -8,12 +8,12 @@ import (
 AdaBoostTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
 */
 type AdaBoostTarget struct {
-	*Feature
+	CatFeature
 	Weights []float64
 }
 
-func NewAdaBoostTarget(f *Feature) (abt *AdaBoostTarget) {
-	nCases := len(f.CatData)
+func NewAdaBoostTarget(f CatFeature) (abt *AdaBoostTarget) {
+	nCases := f.Length()
 	abt = &AdaBoostTarget{f, make([]float64, nCases)}
 	for i, _ := range abt.Weights {
 		abt.Weights[i] = 1 / float64(nCases)
@@ -40,8 +40,8 @@ func (target *AdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64)
 	e = 0.0
 	m := target.Modei(cases)
 	for _, c := range *cases {
-		if target.Missing[c] == false {
-			cat := target.CatData[c]
+		if target.IsMissing(c) == false {
+			cat := target.Geti(c)
 			if cat != m {
 				e += target.Weights[c]
 			}
@@ -64,8 +64,8 @@ func (t *AdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	for _, cases := range *leaves {
 		m := t.Modei(&cases)
 		for _, c := range cases {
-			if t.Missing[c] == false {
-				cat := t.CatData[c]
+			if t.IsMissing(c) == false {
+				cat := t.Geti(c)
 				if cat != m {
 					t.Weights[c] = t.Weights[c] * math.Exp(weight)
 				} else {

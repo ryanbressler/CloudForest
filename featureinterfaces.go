@@ -10,10 +10,11 @@ const maxNonBigCats = 30
 const minImp = 1e-12
 
 //FeatureI
-type FeatureI interface {
+type Feature interface {
 	NCats() (n int)
 	Length() (l int)
 	IsMissing(i int) bool
+	GoesLeft(i int, splitter *Splitter) bool
 	PutMissing(i int)
 	SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
 	Impurity(cases *[]int, counter *[]int) (impurity float64)
@@ -22,12 +23,14 @@ type FeatureI interface {
 		cases *[]int,
 		parentImp float64,
 		allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64)
-	ShuffledCopy() (fake *Feature)
+	DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter)
+	ShuffledCopy() (fake Feature)
 	ImputeMissing()
+	GetName() string
 }
 
 type NumFeature interface {
-	FeatureI
+	Feature
 	Get(i int) float64
 	Put(i int, v float64)
 	Mean(cases *[]int) float64
@@ -36,14 +39,16 @@ type NumFeature interface {
 }
 
 type CatFeature interface {
-	FeatureI
+	Feature
+	CatToNum(value string) (numericv int)
+	NumToCat(i int) (value string)
 	Geti(i int) int
 	Puti(i int, v int)
 	Modei(cases *[]int) int
 	Get(i int) string
 	Put(i int, v string)
 	Mode(cases *[]int) string
-	Gini(cases *[]int)
+	Gini(cases *[]int) float64
 	GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64)
 }
 

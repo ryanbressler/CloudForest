@@ -9,11 +9,11 @@ EntropyTarget wraps a categorical feature for use in entropy driven classificati
 as in Ross Quinlan's ID3 (Iterative Dichotomizer 3).
 */
 type EntropyTarget struct {
-	*Feature
+	CatFeature
 }
 
 //NewEntropyTarget creates a RefretTarget and initializes EntropyTarget.Costs to the proper length.
-func NewEntropyTarget(f *Feature) *EntropyTarget {
+func NewEntropyTarget(f CatFeature) *EntropyTarget {
 	return &EntropyTarget{f}
 }
 
@@ -40,8 +40,8 @@ func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64) {
 		counter[i] = 0
 	}
 	for _, i := range *cases {
-		if !target.Missing[i] {
-			counter[target.CatData[i]] += 1
+		if !target.IsMissing(i) {
+			counter[target.Geti(i)] += 1
 			total += 1
 		}
 	}

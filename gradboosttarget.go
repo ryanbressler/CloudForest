@@ -6,7 +6,7 @@ import ()
 GradBoostTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
 */
 type GradBoostTarget struct {
-	*Feature
+	NumFeature
 	LearnRate float64
 }
 
@@ -23,7 +23,9 @@ func (f *GradBoostTarget) Boost(leaves *[][]int) (weight float64) {
 //specified cases from the value for those cases.
 func (f *GradBoostTarget) Update(cases *[]int) {
 	m := f.Mean(cases)
-	for v, _ := range *cases {
-		f.NumData[v] -= f.LearnRate * m
+	for _, i := range *cases {
+		if !f.IsMissing(i) {
+			f.Put(i, f.Get(i)-f.LearnRate*m)
+		}
 	}
 }

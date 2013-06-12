@@ -45,7 +45,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	for _, i := range candidates {
 		f = &fm.Data[i]
-		num, cat, bigCat, inerImp = f.BestSplit(target, &cases, parentImp, allocs)
+		num, cat, bigCat, inerImp = (*f).BestSplit(target, &cases, parentImp, allocs)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f
@@ -57,7 +57,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	}
 	if impurityDecrease > minImp {
-		s = bestF.DecodeSplit(bestNum, bestCat, bestBigCat)
+		s = (*bestF).DecodeSplit(bestNum, bestCat, bestBigCat)
 	}
 	return
 }
@@ -78,9 +78,9 @@ func (fm *FeatureMatrix) AddContrasts(n int) {
 		orig := fm.Data[rand.Intn(nrealfeatures)]
 		fake := orig.ShuffledCopy()
 
-		fm.Map[fake.Name] = len(fm.Data)
+		fm.Map[fake.GetName()] = len(fm.Data)
 
-		fm.Data = append(fm.Data, *fake)
+		fm.Data = append(fm.Data, fake)
 
 	}
 }
@@ -100,9 +100,9 @@ func (fm *FeatureMatrix) ContrastAll() {
 
 		fake := fm.Data[i].ShuffledCopy()
 
-		fm.Map[fake.Name] = len(fm.Data)
+		fm.Map[fake.GetName()] = len(fm.Data)
 
-		fm.Data = append(fm.Data, *fake)
+		fm.Data = append(fm.Data, fake)
 
 	}
 }
@@ -158,21 +158,14 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 //"N:"" indicating numerical, anything else (usually "C:" and "B:") for categorical
 func ParseFeature(record []string) Feature {
 	capacity := len(record)
-	f := Feature{
-		&CatMap{make(map[string]int, 0),
-			make([]string, 0, 0)},
-		nil,
-		nil,
-		make([]bool, 0, capacity),
-		false,
-		record[0],
-		false}
-
 	switch record[0][0:2] {
 	case "N:":
+		f := &DenseNumFeature{
+			nil,
+			make([]bool, 0, capacity),
+			record[0]}
 		f.NumData = make([]float64, 0, capacity)
-		//Numerical
-		f.Numerical = true
+
 		for i := 1; i < len(record); i++ {
 			v, err := strconv.ParseFloat(record[i], 64)
 			if err != nil {
@@ -184,11 +177,17 @@ func ParseFeature(record []string) Feature {
 			f.Missing = append(f.Missing, false)
 
 		}
+		return f
 
 	default:
+		f := &DenseCatFeature{
+			&CatMap{make(map[string]int, 0),
+				make([]string, 0, 0)},
+			nil,
+			make([]bool, 0, capacity),
+			record[0],
+			false}
 		f.CatData = make([]int, 0, capacity)
-		//Assume Catagorical
-		f.Numerical = false
 		for i := 1; i < len(record); i++ {
 			v := record[i]
 			norm := strings.ToLower(v)
@@ -202,8 +201,7 @@ func ParseFeature(record []string) Feature {
 			f.Missing = append(f.Missing, false)
 
 		}
-
+		return f
 	}
-	return f
 
 }

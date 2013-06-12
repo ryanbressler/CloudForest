@@ -31,11 +31,10 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int, m []
 	//Move left cases to the start and right cases to the end so that missing cases end up
 	//in between.
 	for i := 0; i < lastright; i++ {
-		if f.Missing[cases[i]] {
+		if f.IsMissing(cases[i]) {
 			continue
 		}
-		if (s.Numerical && f.NumData[cases[i]] <= s.Value) ||
-			(!s.Numerical && s.Left[f.Back[f.CatData[cases[i]]]]) {
+		if f.GoesLeft(cases[i], s) {
 			//Left
 			if i != lastleft+1 {
 				lastleft += 1

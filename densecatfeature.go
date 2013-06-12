@@ -25,6 +25,10 @@ func (f *DenseCatFeature) Length() int {
 	return len(f.Missing)
 }
 
+func (f *DenseCatFeature) GetName() string {
+	return f.Name
+}
+
 func (f *DenseCatFeature) IsMissing(i int) bool {
 	return f.Missing[i]
 }
@@ -50,6 +54,10 @@ func (f *DenseCatFeature) Put(i int, v string) {
 	vi := f.CatToNum(v)
 	f.CatData[i] = vi
 	f.Missing[i] = false
+}
+
+func (f *DenseCatFeature) GoesLeft(i int, splitter *Splitter) bool {
+	return splitter.Left[f.Back[f.CatData[i]]]
 }
 
 /*
@@ -622,9 +630,9 @@ func (f *DenseCatFeature) FindPredicted(cases []int) (pred string) {
 
 /*ShuffledCopy returns a shuffled version of f for use as an artificial contrast in evaluation of
 importance scores. The new feature will be named featurename:SHUFFLED*/
-func (f *DenseCatFeature) ShuffledCopy() (fake *DenseCatFeature) {
+func (f *DenseCatFeature) ShuffledCopy() Feature {
 	capacity := len(f.Missing)
-	fake = &DenseCatFeature{
+	fake := &DenseCatFeature{
 		&CatMap{f.Map,
 			f.Back},
 		nil,
@@ -649,7 +657,7 @@ func (f *DenseCatFeature) ShuffledCopy() (fake *DenseCatFeature) {
 		fake.CatData[sourcei] = data
 
 	}
-	return
+	return fake
 
 }
 

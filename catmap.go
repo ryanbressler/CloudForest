@@ -29,6 +29,10 @@ func (cm *CatMap) CatToNum(value string) (numericv int) {
 	return
 }
 
+func (cm *CatMap) NumToCat(i int) (value string) {
+	return cm.Back[i]
+}
+
 func (cm *CatMap) NCats() (n int) {
 	if cm.Back == nil {
 		n = 0

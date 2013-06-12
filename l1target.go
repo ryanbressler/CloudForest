@@ -8,7 +8,7 @@ import (
 L1Target wraps a numerical feature as a target for us in l1 norm regression.
 */
 type L1Target struct {
-	*Feature
+	NumFeature
 }
 
 /*
@@ -39,8 +39,8 @@ func (target *L1Target) MeanL1Error(cases *[]int, predicted float64) (e float64)
 	e = 0.0
 	n := 0
 	for _, i := range *cases {
-		if !target.Missing[i] {
-			e += math.Abs(predicted - target.NumData[i])
+		if !target.IsMissing(i) {
+			e += math.Abs(predicted - target.Get(i))
 			n += 1
 		}
 

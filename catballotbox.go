@@ -82,18 +82,20 @@ xi is the set of samples with the ith actual label
 Case for which the true category is not known are ignored.
 
 */
-func (bb *CatBallotBox) TallyError(feature *Feature) (e float64) {
-	ncats := feature.NCats()
+func (bb *CatBallotBox) TallyError(feature Feature) (e float64) {
+	catfeature := feature.(CatFeature)
+	ncats := catfeature.NCats()
 	correct := make([]int, ncats)
 	total := make([]int, ncats)
 	e = 0.0
 
-	for i, value := range feature.CatData {
+	for i := 0; i < feature.Length(); i++ {
+		value := catfeature.Geti(i)
 
 		predicted := bb.Tally(i)
-		if !feature.Missing[i] {
+		if !feature.IsMissing(i) {
 			total[value] += 1
-			if feature.Back[value] == predicted {
+			if catfeature.NumToCat(value) == predicted {
 				correct[value] += 1
 			}
 

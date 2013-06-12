@@ -29,7 +29,7 @@ with more then 6 categories.
 */
 
 func GrowRandomForest(fm *FeatureMatrix,
-	target *Feature,
+	target Feature,
 	nSamples int,
 	mTry int,
 	nTrees int,
@@ -37,11 +37,11 @@ func GrowRandomForest(fm *FeatureMatrix,
 	splitmissing bool,
 	importance *[]*RunningMean) (f *Forest) {
 
-	f = &Forest{target.Name, make([]*Tree, 0, nTrees)}
+	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees)}
 
 	//start with all features but the target as candidates
 	candidates := make([]int, 0, len(fm.Data))
-	targeti := fm.Map[target.Name]
+	targeti := fm.Map[f.Target]
 	for i := 0; i < len(fm.Data); i++ {
 		if i != targeti {
 			candidates = append(candidates, i)
@@ -52,7 +52,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 	allocs := NewBestSplitAllocs(nSamples, target)
 
 	for i := 0; i < nTrees; i++ {
-		nCases := len(fm.Data[0].Missing)
+		nCases := fm.Data[0].Length()
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())

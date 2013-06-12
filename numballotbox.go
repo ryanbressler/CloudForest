@@ -49,15 +49,17 @@ func (bb *NumBallotBox) Tally(i int) (predicted string) {
 //the ballot box was constructed with.
 //Missing values are ignored.
 //Gini impurity is not used so this is not for use in rf implementations.
-func (bb *NumBallotBox) TallyError(feature *Feature) (e float64) {
+func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
 	e = 0.0
 
 	// Numerical feature. Calculate mean squared
 	d := 0.0
 	c := 0
-	for i, value := range feature.NumData {
+	for i := 0; i < feature.Length(); i++ {
 		predicted := bb.TallyNum(i)
-		if !feature.Missing[i] && !math.IsNaN(predicted) {
+		if !feature.IsMissing(i) && !math.IsNaN(predicted) {
+			value := feature.(NumFeature).Get(i)
+
 			d = float64(value) - predicted
 			e += d * d
 			c += 1

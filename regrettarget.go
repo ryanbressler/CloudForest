@@ -8,19 +8,20 @@ The ith entry in costs should contain the cost of misclassifying a case that act
 has the ith category.
 */
 type RegretTarget struct {
-	*Feature
+	CatFeature
 	Costs []float64
 }
 
 //NewRegretTarget creates a RefretTarget and initializes RegretTarget.Costs to the proper length.
-func NewRegretTarget(f *Feature) *RegretTarget {
+func NewRegretTarget(f CatFeature) *RegretTarget {
 	return &RegretTarget{f, make([]float64, f.NCats())}
 }
 
 /*RegretTarget.SetCosts puts costs in a map[string]float64 by feature name into the proper
 entries in RegretTarget.Costs.*/
 func (target *RegretTarget) SetCosts(costmap map[string]float64) {
-	for i, c := range target.Back {
+	for i := 0; i < target.NCats(); i++ {
+		c := target.NumToCat(i)
 		target.Costs[i] = costmap[c]
 	}
 }
@@ -45,9 +46,9 @@ func (target *RegretTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	m := target.Modei(cases)
 	t := 0
 	for _, c := range *cases {
-		if target.Missing[c] == false {
+		if target.IsMissing(c) == false {
 			t += 1
-			cat := target.CatData[c]
+			cat := target.Geti(c)
 			if cat != m {
 				e += target.Costs[cat]
 			}

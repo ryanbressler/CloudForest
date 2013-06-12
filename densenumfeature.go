@@ -17,6 +17,10 @@ func (f *DenseNumFeature) NCats() int {
 	return 0
 }
 
+func (f *DenseNumFeature) GetName() string {
+	return f.Name
+}
+
 func (f *DenseNumFeature) Length() int {
 	return len(f.Missing)
 }
@@ -36,6 +40,10 @@ func (f *DenseNumFeature) Get(i int) float64 {
 func (f *DenseNumFeature) Put(i int, v float64) {
 	f.NumData[i] = v
 	f.Missing[i] = false
+}
+
+func (f *DenseNumFeature) GoesLeft(i int, splitter *Splitter) bool {
+	return f.NumData[i] <= splitter.Value
 }
 
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
@@ -114,8 +122,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	bestSplit = 0.0
 
 	sorter := allocs.Sorter
-	//BUG(ryan):sorter needs to be reworked to work with num features.
-	//sorter.Feature = f
+	sorter.Feature = f
 	sorter.Cases = *cases
 	sort.Sort(sorter)
 
@@ -264,9 +271,9 @@ func (f *DenseNumFeature) FindPredicted(cases []int) (pred string) {
 
 /*ShuffledCopy returns a shuffled version of f for use as an artificial contrast in evaluation of
 importance scores. The new feature will be named featurename:SHUFFLED*/
-func (f *DenseNumFeature) ShuffledCopy() (fake *DenseNumFeature) {
+func (f *DenseNumFeature) ShuffledCopy() Feature {
 	capacity := len(f.Missing)
-	fake = &DenseNumFeature{
+	fake := &DenseNumFeature{
 		nil,
 		make([]bool, capacity),
 		f.Name + ":SHUFFLED"}
@@ -288,7 +295,7 @@ func (f *DenseNumFeature) ShuffledCopy() (fake *DenseNumFeature) {
 		fake.NumData[sourcei] = data
 
 	}
-	return
+	return fake
 
 }
 
