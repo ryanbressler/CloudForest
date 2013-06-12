@@ -45,9 +45,9 @@ func main() {
 	var bb CloudForest.VoteTallyer
 	switch strings.HasPrefix(forest.Target, "N") {
 	case true:
-		bb = CloudForest.NewNumBallotBox(len(data.Data[0].Missing))
+		bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
 	case false:
-		bb = CloudForest.NewCatBallotBox(len(data.Data[0].Missing))
+		bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
 
 	}
 
@@ -62,7 +62,7 @@ func main() {
 
 	targeti, hasTarget := data.Map[forest.Target]
 	if hasTarget {
-		er := bb.TallyError(&data.Data[targeti])
+		er := bb.TallyError(data.Data[targeti])
 		fmt.Printf("Error Rate: %v\n", er)
 	}
 
