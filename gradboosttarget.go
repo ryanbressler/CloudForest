@@ -10,6 +10,7 @@ type GradBoostTarget struct {
 	LearnRate float64
 }
 
+//BUG(ryan) does GradBoostingTarget need seperate residuals and values?
 func (f *GradBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	for _, cases := range *leaves {
 		f.Update(&cases)

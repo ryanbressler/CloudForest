@@ -1,19 +1,29 @@
 /*
 Package CloudForest implements ensembles of decision trees for machine
-learning in pure Go (golang). It includes implementations of Breiman
-and Cutler's Random Forest for classification and regression on heterogeneous
-numerical/categorical data with missing values and several related algorithms
-including entropy and cost driven classification, L1 regression and feature
-selection with artificial contrasts and hooks for modifying the algorithms
-for your needs.
+learning in pure Go (golang). It implementations a number of related algorithms
+for classification, regression, feature selection and structure analysis on heterogeneous
+numerical/categorical data with missing values. These include:
 
-Command line utilities to grow, apply and analyze forests are provided in sub
-directories.
+Breiman and Cutler's Random Forest for Classification and Regression
 
-CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
-Biology for use on genomic/biomedical data with partial support from The Cancer Genome
-Atlas and the Inova Translational Medicine Institute.
+Adaptive Boosting (AdaBoost) Classification
 
+Gradient Boosting Tree Regression
+
+Entropy and Cost driven classification
+
+L1 regression
+
+Feature selection with artificial contrasts
+
+Proximity and model structure analysis
+
+CloudForest can be imported and coded against or Command line utilities to grow, apply and analyze
+forests are provided in sub directories and document below.
+
+CloudForest was created by Ryan Bressler and is being developed in the Shumelivich Lab at
+the Institute for Systems Biology for use on genomic/biomedical data with partial support
+from The Cancer Genome Atlas and the Inova Translational Medicine Institute.
 
 Documentation has been generated with godoc and can be viewed live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
