@@ -74,6 +74,9 @@ func main() {
 	var nobag bool
 	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
 
+	var ordinal bool
+	flag.BoolVar(&ordinal, "ordinal", false, "Use ordinal regression (target must be numeric).")
+
 	flag.Parse()
 
 	if *cpuprofile != "" {
@@ -109,7 +112,7 @@ func main() {
 
 	//infer nSamples and mTry from data if they are 0
 	if nSamples <= 0 {
-		nSamples = len(data.Data[0].Missing)
+		nSamples = data.Data[0].Length()
 	}
 	fmt.Printf("nSamples : %v\n", nSamples)
 
@@ -176,7 +179,7 @@ func main() {
 	targetf := data.Data[targeti]
 	if leafSize <= 0 {
 		if boost {
-			leafSize = len(targetf.Missing) / 3
+			leafSize = targetf.Length() / 3
 		} else if targetf.NCats() == 0 {
 			//regression
 			leafSize = 4
@@ -192,10 +195,10 @@ func main() {
 		fmt.Println("Recording oob error.")
 		if targetf.NCats() == 0 {
 			//regression
-			oobVotes = CloudForest.NewNumBallotBox(len(data.Data[0].Missing))
+			oobVotes = CloudForest.NewNumBallotBox(data.Data[0].Length())
 		} else {
 			//classification
-			oobVotes = CloudForest.NewCatBallotBox(len(data.Data[0].Missing))
+			oobVotes = CloudForest.NewCatBallotBox(data.Data[0].Length())
 		}
 	}
 
@@ -204,6 +207,9 @@ func main() {
 	var btarget CloudForest.BoostingTarget
 
 	switch {
+	case ordinal:
+		fmt.Println("Using Ordinal regression.")
+		target = &CloudForest.OrdinalTarget{&targetf}
 	case boost:
 		if targetf.NCats() == 0 {
 			fmt.Println("Using Gradian Boosting for regression.")
@@ -275,7 +281,7 @@ func main() {
 
 			allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
 			for {
-				nCases := len(data.Data[0].Missing)
+				nCases := data.Data[0].Length()
 				//sample nCases case with replacement
 				if !nobag {
 					cases = cases[0:0]

@@ -7,11 +7,6 @@ import (
 	"sort"
 )
 
-const maxExhaustiveCats = 5
-const maxNonRandomExahustive = 10
-const maxNonBigCats = 30
-const minImp = 1e-12
-
 /*Feature is a structure representing a single feature in a feature matrix.
 It contains:
 An embedded CatMap (may only be instantiated for cat data)
@@ -28,6 +23,10 @@ type Feature struct {
 	Numerical    bool
 	Name         string
 	RandomSearch bool
+}
+
+func (f *Feature) Length() int {
+	return len(f.Missing)
 }
 
 /*

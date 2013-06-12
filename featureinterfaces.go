@@ -4,6 +4,11 @@ import (
 	"math/big"
 )
 
+const maxExhaustiveCats = 5
+const maxNonRandomExahustive = 10
+const maxNonBigCats = 30
+const minImp = 1e-12
+
 //FeatureI
 type FeatureI interface {
 	NCats() (n int)
@@ -40,4 +45,22 @@ type CatFeature interface {
 	Mode(cases *[]int) string
 	Gini(cases *[]int)
 	GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64)
+}
+
+//Target abstracts the methods needed for a feature to be predictable
+//as either a catagroical or numerical feature in a random forest.
+type Target interface {
+	NCats() (n int)
+	SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+	Impurity(cases *[]int, counter *[]int) (impurity float64)
+	FindPredicted(cases []int) (pred string)
+}
+
+//BoostingTarget
+type BoostingTarget interface {
+	NCats() (n int)
+	SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64)
+	Impurity(cases *[]int, counter *[]int) (impurity float64)
+	Boost(partition *[][]int) (weight float64)
+	FindPredicted(cases []int) (pred string)
 }
