@@ -34,13 +34,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	target := &data.Data[data.Map[forest.Target]]
+	target := data.Data[data.Map[forest.Target]]
 	var bb CloudForest.VoteTallyer
-	switch target.Numerical {
-	case true:
-		bb = CloudForest.NewNumBallotBox(len(data.Data[0].Missing))
-	case false:
-		bb = CloudForest.NewCatBallotBox(len(data.Data[0].Missing))
+	if target.NCats() == 0 {
+		bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
+	} else {
+		bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
 
 	}
 
