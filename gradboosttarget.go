@@ -22,6 +22,7 @@ func (f *GradBoostTarget) Boost(leaves *[][]int) (weight float64) {
 //Update updates the underlying numeric data by subtracting the mean*weight of the
 //specified cases from the value for those cases.
 func (f *GradBoostTarget) Update(cases *[]int) {
+	//BUG(ryan): gradiant boostign should use mode when doing ordinal regression.
 	m := f.Mean(cases)
 	for _, i := range *cases {
 		if !f.IsMissing(i) {

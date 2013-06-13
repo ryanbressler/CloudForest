@@ -28,7 +28,7 @@ func (target *OrdinalTarget) SplitImpurity(l []int, r []int, counter *[]int) (im
 //OrdinalTarget.Impurity is an ordinal version of impurity using Mode instead of Mean for prediction.
 func (target *OrdinalTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	m := target.Mode(cases)
-	e = target.MeanSquaredError(cases, m)
+	e = target.Error(cases, m)
 	return
 
 }

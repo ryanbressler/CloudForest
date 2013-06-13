@@ -46,11 +46,14 @@ func (f *DenseCatFeature) Puti(i int, v int) {
 	f.Missing[i] = false
 }
 
-func (f *DenseCatFeature) Get(i int) string {
+func (f *DenseCatFeature) GetStr(i int) string {
+	if f.Missing[i] {
+		return "NA"
+	}
 	return f.Back[f.CatData[i]]
 }
 
-func (f *DenseCatFeature) Put(i int, v string) {
+func (f *DenseCatFeature) PutStr(i int, v string) {
 	vi := f.CatToNum(v)
 	f.CatData[i] = vi
 	f.Missing[i] = false

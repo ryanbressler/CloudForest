@@ -36,6 +36,13 @@ func (f *DenseNumFeature) Get(i int) float64 {
 	return f.NumData[i]
 }
 
+func (f *DenseNumFeature) GetStr(i int) (value string) {
+	if f.Missing[i] {
+		return "NA"
+	}
+	return fmt.Sprintf("%v", f.NumData[i])
+}
+
 func (f *DenseNumFeature) Put(i int, v float64) {
 	f.NumData[i] = v
 	f.Missing[i] = false
@@ -177,8 +184,8 @@ func (target *DenseNumFeature) SplitImpurity(l []int, r []int, counter *[]int) (
 	nl := float64(len(l))
 	nr := float64(len(r))
 
-	impurityDecrease = nl * target.NumImp(&l)
-	impurityDecrease += nr * target.NumImp(&r)
+	impurityDecrease = nl * target.Impurity(&l, nil)
+	impurityDecrease += nr * target.Impurity(&r, nil)
 
 	impurityDecrease /= nl + nr
 	return
@@ -188,24 +195,17 @@ func (target *DenseNumFeature) SplitImpurity(l []int, r []int, counter *[]int) (
 //depending on weather the feature is categorical or numerical
 func (target *DenseNumFeature) Impurity(cases *[]int, counter *[]int) (e float64) {
 
-	e = target.NumImp(cases)
-
-	return
-
-}
-
-//Numerical Impurity returns the mean squared error vs the mean calculated with a two pass algorythem.
-func (target *DenseNumFeature) NumImp(cases *[]int) (e float64) {
-	//TODO: benchmark regression with single pass computatioanl formula for sum of squares sum(xi^2)-sum(xi)^2/N
-	//and/or with on-line algorithm http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
 	m := target.Mean(cases)
-	e = target.MeanSquaredError(cases, m)
+	e = target.Error(cases, m)
 	return
+
+	return
+
 }
 
-//MeanSquaredError returns the  Mean Squared error of the cases specified vs the predicted
+//Error returns the  Mean Squared error of the cases specified vs the predicted
 //value. Only non missing cases are considered.
-func (target *DenseNumFeature) MeanSquaredError(cases *[]int, predicted float64) (e float64) {
+func (target *DenseNumFeature) Error(cases *[]int, predicted float64) (e float64) {
 	e = 0.0
 	n := 0
 	for _, i := range *cases {

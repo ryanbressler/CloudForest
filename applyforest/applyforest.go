@@ -55,15 +55,19 @@ func main() {
 		tree.Vote(data, bb)
 	}
 
-	fmt.Printf("Outputting Predictions to %v\n", *predfn)
-	for i, l := range data.CaseLabels {
-		fmt.Fprintf(predfile, "%v\t%v\n", l, bb.Tally(i))
-	}
-
 	targeti, hasTarget := data.Map[forest.Target]
 	if hasTarget {
 		er := bb.TallyError(data.Data[targeti])
 		fmt.Printf("Error Rate: %v\n", er)
+	}
+
+	fmt.Printf("Outputting label\tpredicted\tactual to %v\n", *predfn)
+	for i, l := range data.CaseLabels {
+		actual := "NA"
+		if hasTarget {
+			actual = data.Data[targeti].GetStr(i)
+		}
+		fmt.Fprintf(predfile, "%v\t%v\t%v\n", l, bb.Tally(i), actual)
 	}
 
 }

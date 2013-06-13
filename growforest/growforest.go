@@ -90,7 +90,6 @@ func main() {
 
 	if boost {
 		nCores = 1
-		oob = false
 		*imp = ""
 	}
 
@@ -203,43 +202,50 @@ func main() {
 	}
 
 	//****** Set up Target for Alternative Impurity  if needed *******//
-	var target CloudForest.Target
-	var btarget CloudForest.BoostingTarget
 
-	switch {
-	case ordinal:
-		fmt.Println("Using Ordinal regression.")
-		target = &CloudForest.OrdinalTarget{targetf.(CloudForest.NumFeature)}
-	case boost:
-		if targetf.NCats() == 0 {
-			fmt.Println("Using Gradian Boosting for regression.")
-			btarget = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), .1}
-		} else {
-			fmt.Println("Using Adaptive Boosting for classification.")
-			btarget = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
+	switch targetf.(type) {
+	case CloudForest.NumFeature:
+		//BUG(ryan): test if these targets actually stack.
+		if l1 {
+			fmt.Println("Using l1/absolute deviance error.")
+			targetf = &CloudForest.L1Target{targetf.(CloudForest.NumFeature)}
 		}
-		target = btarget
-	case l1:
-		fmt.Println("Using l1 regression.")
-		target = &CloudForest.L1Target{targetf.(CloudForest.NumFeature)}
-	case *costs != "":
-		fmt.Println("Using cost weighted classification: ", *costs)
-		costmap := make(map[string]float64)
-		err := json.Unmarshal([]byte(*costs), &costmap)
-		if err != nil {
-			log.Fatal(err)
+		if ordinal {
+			fmt.Println("Using Ordinal (mode) prediction.")
+			targetf = &CloudForest.OrdinalTarget{targetf.(CloudForest.NumFeature)}
+		}
+		if boost {
+			fmt.Println("Using Gradian Boosting.")
+			//BUG(ryan): gradiant boostign should expose learning rate.
+			targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), .1}
 		}
 
-		regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
-		regTarg.SetCosts(costmap)
-		target = regTarg
+	case CloudForest.CatFeature:
+		fmt.Println("Performing classification.")
+		switch {
+		case *costs != "":
+			fmt.Println("Using missclasification costs: ", *costs)
+			costmap := make(map[string]float64)
+			err := json.Unmarshal([]byte(*costs), &costmap)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-	case entropy:
-		fmt.Println("Using entropy minimizing classification.")
-		target = &CloudForest.EntropyTarget{targetf.(CloudForest.CatFeature)}
+			regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
+			regTarg.SetCosts(costmap)
+			targetf = regTarg
 
-	default:
-		target = targetf
+		case entropy:
+			fmt.Println("Using entropy minimization.")
+			targetf = &CloudForest.EntropyTarget{targetf.(CloudForest.CatFeature)}
+
+		case boost:
+
+			fmt.Println("Using Adaptive Boosting.")
+			targetf = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
+
+		}
+
 	}
 
 	forestfile, err := os.Create(*rf)
@@ -264,6 +270,7 @@ func main() {
 	//****************** Good Stuff Stars Here ;) ******************//
 	for core := 0; core < nCores; core++ {
 		go func() {
+			weight := -1.0
 			canidates := make([]int, 0, len(data.Data))
 			for i := 0; i < len(data.Data); i++ {
 				if i != targeti && !blacklistis[i] {
@@ -279,7 +286,7 @@ func main() {
 				}
 			}
 
-			allocs := CloudForest.NewBestSplitAllocs(nSamples, target)
+			allocs := CloudForest.NewBestSplitAllocs(nSamples, targetf)
 			for {
 				nCases := data.Data[0].Length()
 				//sample nCases case with replacement
@@ -291,7 +298,19 @@ func main() {
 					}
 				}
 
-				tree.Grow(data, target, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
+				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
+
+				if boost {
+					weight = targetf.(CloudForest.BoostingTarget).Boost(tree.Partition(data))
+					if weight == math.Inf(1) {
+						fmt.Printf("Boosting Reached Terminal Weight of %v\n", weight)
+						close(treechan)
+						break
+					}
+
+					tree.Weight = weight
+				}
+
 				if oob {
 					ibcases := make([]bool, nCases)
 					for _, v := range cases {
@@ -306,16 +325,7 @@ func main() {
 
 					tree.VoteCases(data, oobVotes, cases)
 				}
-				if boost {
-					weight := btarget.Boost(tree.Partition(data))
-					if weight == math.Inf(1) {
-						fmt.Printf("Boosting Reached Terminal Weight of %v", weight)
-						close(treechan)
-						break
-					}
 
-					tree.Weight = weight
-				}
 				treechan <- tree
 				tree = <-treechan
 			}
