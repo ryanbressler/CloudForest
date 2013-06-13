@@ -13,6 +13,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"sync"
 )
 
 func main() {
@@ -68,8 +69,14 @@ func main() {
 	var oob bool
 	flag.BoolVar(&oob, "oob", false, "Calculte and report oob error.")
 
-	var boost bool
-	flag.BoolVar(&boost, "boost", false, "Use Gradiant/Ada boosting for regresion/classification. Prevents multithreading. (experimental)")
+	var adaboost bool
+	flag.BoolVar(&adaboost, "adaboost", false, "Use Adaptive boosting for regresion/classification.")
+
+	var gradboost float64
+	flag.Float64Var(&gradboost, "gradboost", 0.0, "Use gradiant boosting with the specified learning rate.")
+
+	var multiboost bool
+	flag.BoolVar(&multiboost, "multiboost", false, "Allow multithreaded boosting which msy have unexpected results. (highly experimental)")
 
 	var nobag bool
 	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
@@ -88,9 +95,10 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	if boost {
+	var boostMutex sync.Mutex
+	boost := (adaboost || gradboost != 0.0)
+	if boost && !multiboost {
 		nCores = 1
-		*imp = ""
 	}
 
 	if nCores > 1 {
@@ -214,10 +222,18 @@ func main() {
 			fmt.Println("Using Ordinal (mode) prediction.")
 			targetf = &CloudForest.OrdinalTarget{targetf.(CloudForest.NumFeature)}
 		}
-		if boost {
-			fmt.Println("Using Gradian Boosting.")
+		switch {
+		case gradboost != 0.0:
+			if !ordinal {
+				fmt.Println("Using Gradiant Boosting.")
+				targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
+			} else {
+				fmt.Println("Gradiant boosting does not work with ordinal regression.")
+			}
+		case gradboost != 0.0:
+			fmt.Println("Using Numeric Adaptive Boosting.")
 			//BUG(ryan): gradiant boostign should expose learning rate.
-			targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), .1}
+			targetf = CloudForest.NewNumAdaBoostTarget(targetf.(CloudForest.NumFeature))
 		}
 
 	case CloudForest.CatFeature:
@@ -301,11 +317,12 @@ func main() {
 				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
 
 				if boost {
+					boostMutex.Lock()
 					weight = targetf.(CloudForest.BoostingTarget).Boost(tree.Partition(data))
+					boostMutex.Unlock()
 					if weight == math.Inf(1) {
 						fmt.Printf("Boosting Reached Terminal Weight of %v\n", weight)
 						close(treechan)
-						break
 					}
 
 					tree.Weight = weight

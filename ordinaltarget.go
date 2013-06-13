@@ -25,14 +25,19 @@ func (target *OrdinalTarget) SplitImpurity(l []int, r []int, counter *[]int) (im
 	return
 }
 
+func (f *OrdinalTarget) Predicted(cases *[]int) float64 {
+	return f.Mode(cases)
+}
+
 //OrdinalTarget.Impurity is an ordinal version of impurity using Mode instead of Mean for prediction.
 func (target *OrdinalTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
-	m := target.Mode(cases)
+	m := target.Predicted(cases)
 	e = target.Error(cases, m)
 	return
 
 }
 
 func (target *OrdinalTarget) FindPredicted(cases []int) (pred string) {
-	return fmt.Sprintf("%v", target.Mode(&cases))
+	fmt.Println("Ordinal")
+	return fmt.Sprintf("%v", target.Predicted(&cases))
 }

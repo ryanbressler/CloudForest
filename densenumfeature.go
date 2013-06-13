@@ -52,6 +52,10 @@ func (f *DenseNumFeature) GoesLeft(i int, splitter *Splitter) bool {
 	return f.NumData[i] <= splitter.Value
 }
 
+func (f *DenseNumFeature) Predicted(cases *[]int) float64 {
+	return f.Mean(cases)
+}
+
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.
@@ -261,7 +265,6 @@ func (f *DenseNumFeature) Mode(cases *[]int) (m float64) {
 //predicted value. For categorical features this is a string containing the
 //most common category and for numerical it is the mean of the values.
 func (f *DenseNumFeature) FindPredicted(cases []int) (pred string) {
-
 	pred = fmt.Sprintf("%v", f.Mean(&cases))
 
 	return

@@ -16,6 +16,10 @@ func main() {
 		"rface.sf", "A predictor forest.")
 	predfn := flag.String("preds",
 		"predictions.tsv", "The name of a file to write the predictions into.")
+	var num bool
+	flag.BoolVar(&num, "mean", false, "Force numeric (mean) voteing.")
+	var cat bool
+	flag.BoolVar(&cat, "mode", false, "Force catagorical (mode) voteing.")
 
 	flag.Parse()
 
@@ -43,10 +47,9 @@ func main() {
 	}
 
 	var bb CloudForest.VoteTallyer
-	switch strings.HasPrefix(forest.Target, "N") {
-	case true:
+	if !cat && (num || strings.HasPrefix(forest.Target, "N")) {
 		bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
-	case false:
+	} else {
 		bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
 
 	}
@@ -61,7 +64,7 @@ func main() {
 		fmt.Printf("Error Rate: %v\n", er)
 	}
 
-	fmt.Printf("Outputting label\tpredicted\tactual to %v\n", *predfn)
+	fmt.Printf("Outputting label predicted actual tsv o %v\n", *predfn)
 	for i, l := range data.CaseLabels {
 		actual := "NA"
 		if hasTarget {

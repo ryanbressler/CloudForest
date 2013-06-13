@@ -35,6 +35,7 @@ type NumFeature interface {
 	Feature
 	Get(i int) float64
 	Put(i int, v float64)
+	Predicted(cases *[]int) float64
 	Mean(cases *[]int) float64
 	Mode(cases *[]int) float64
 	Error(cases *[]int, predicted float64) (e float64)
