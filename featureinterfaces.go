@@ -1,8 +1,6 @@
 package CloudForest
 
-import (
-	"math/big"
-)
+import ()
 
 const maxExhaustiveCats = 5
 const maxNonRandomExahustive = 10
@@ -22,8 +20,8 @@ type Feature interface {
 	BestSplit(target Target,
 		cases *[]int,
 		parentImp float64,
-		allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64)
-	DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter)
+		allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64)
+	DecodeSplit(codedSplit interface{}) (s *Splitter)
 	ShuffledCopy() (fake Feature)
 	ImputeMissing()
 	GetName() string

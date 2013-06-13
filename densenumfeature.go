@@ -2,7 +2,6 @@ package CloudForest
 
 import (
 	"fmt"
-	"math/big"
 	"math/rand"
 	"sort"
 )
@@ -49,9 +48,9 @@ func (f *DenseNumFeature) GoesLeft(i int, splitter *Splitter) bool {
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.
-func (f *DenseNumFeature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter) {
+func (f *DenseNumFeature) DecodeSplit(codedSplit interface{}) (s *Splitter) {
 
-	s = &Splitter{f.Name, true, num, nil}
+	s = &Splitter{f.Name, true, codedSplit.(float64), nil}
 
 	return
 }
@@ -66,7 +65,7 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (f *DenseNumFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
-	allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
 	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
 	*allocs.Right = (*allocs.Right)[0:0]
@@ -92,7 +91,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 		missingimp = target.Impurity(allocs.Right, allocs.Counter)
 	}
 
-	bestNum, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, allocs)
+	codedSplit, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, allocs)
 
 	if nmissing > 0 {
 		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
@@ -116,10 +115,10 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (f *DenseNumFeature) BestNumSplit(target Target,
 	cases *[]int,
 	parentImp float64,
-	allocs *BestSplitAllocs) (bestSplit float64, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
 	impurityDecrease = minImp
-	bestSplit = 0.0
+	codedSplit = 0.0
 
 	sorter := allocs.Sorter
 	sorter.Feature = f
@@ -143,7 +142,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 		if innerimp > impurityDecrease {
 			impurityDecrease = innerimp
-			bestSplit = f.NumData[c]
+			codedSplit = f.NumData[c]
 
 		}
 

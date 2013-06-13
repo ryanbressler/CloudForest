@@ -70,7 +70,7 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (f *DenseCatFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
-	allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
 	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
 	*allocs.Right = (*allocs.Right)[0:0]
@@ -98,13 +98,13 @@ func (f *DenseCatFeature) BestSplit(target Target,
 
 	nCats := f.NCats()
 	if f.RandomSearch == false && nCats > maxNonBigCats {
-		bestBigCat, impurityDecrease = f.BestCatSplitIterBig(target, allocs.NonMissing, nonmissingparentImp, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplitIterBig(target, allocs.NonMissing, nonmissingparentImp, allocs)
 	} else if f.RandomSearch == false && nCats > maxExhaustiveCats {
-		bestCat, impurityDecrease = f.BestCatSplitIter(target, allocs.NonMissing, nonmissingparentImp, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplitIter(target, allocs.NonMissing, nonmissingparentImp, allocs)
 	} else if nCats > maxNonBigCats {
-		bestBigCat, impurityDecrease = f.BestCatSplitBig(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplitBig(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
 	} else {
-		bestCat, impurityDecrease = f.BestCatSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
 	}
 
 	if nmissing > 0 {
@@ -117,19 +117,21 @@ func (f *DenseCatFeature) BestSplit(target Target,
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.
-func (f *DenseCatFeature) DecodeSplit(num float64, cat int, bigCat *big.Int) (s *Splitter) {
+func (f *DenseCatFeature) DecodeSplit(codedSplit interface{}) (s *Splitter) {
 
 	nCats := f.NCats()
 	s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
 
-	if nCats > maxNonBigCats {
+	switch codedSplit.(type) {
+	case *big.Int:
+		bigCat := codedSplit.(*big.Int)
 		for j := 0; j < nCats; j++ {
 			if 0 != bigCat.Bit(j) {
 				s.Left[f.Back[j]] = true
 			}
-
 		}
-	} else {
+	case int:
+		cat := codedSplit.(int)
 		for j := 0; j < nCats; j++ {
 
 			if 0 != (cat & (1 << uint(j))) {

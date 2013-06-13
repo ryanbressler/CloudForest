@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"io"
 	"log"
-	"math/big"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -37,27 +36,24 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	impurityDecrease = minImp
 
 	var f, bestF *Feature
-	var num, bestNum, inerImp float64
-	var cat, bestCat int
-	var bigCat, bestBigCat *big.Int
+	var inerImp float64
+	var split, bestSplit interface{}
 
 	parentImp := target.Impurity(&cases, allocs.Counter)
 
 	for _, i := range candidates {
 		f = &fm.Data[i]
-		num, cat, bigCat, inerImp = (*f).BestSplit(target, &cases, parentImp, allocs)
+		split, inerImp = (*f).BestSplit(target, &cases, parentImp, allocs)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f
 			impurityDecrease = inerImp
-			bestNum = num
-			bestCat = cat
-			bestBigCat = bigCat
+			bestSplit = split
 		}
 
 	}
 	if impurityDecrease > minImp {
-		s = (*bestF).DecodeSplit(bestNum, bestCat, bestBigCat)
+		s = (*bestF).DecodeSplit(bestSplit)
 	}
 	return
 }
