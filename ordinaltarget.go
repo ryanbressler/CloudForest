@@ -12,6 +12,23 @@ embeded NumFeature.
 */
 type OrdinalTarget struct {
 	NumFeature
+	nClass int
+}
+
+/*
+NewOrdinalTarget creates a categorical adaptive boosting target and initializes its weights.
+*/
+func NewOrdinalTarget(f NumFeature) (abt *OrdinalTarget) {
+	nCases := f.Length()
+	abt = &OrdinalTarget{f, 0}
+	for i := 0; i < nCases; i++ {
+		v := int(f.Get(i))
+		if v > abt.nClass {
+			abt.nClass = v
+		}
+	}
+	abt.nClass += 1
+	return
 }
 
 /*
@@ -33,7 +50,7 @@ func (f *OrdinalTarget) Predicted(cases *[]int) float64 {
 }
 
 func (f *OrdinalTarget) Mode(cases *[]int) (m float64) {
-	counts := make(map[int]int)
+	counts := make([]int, f.nClass)
 	for _, i := range *cases {
 		if !f.IsMissing(i) {
 			counts[int(math.Floor(f.Get(i)+.5))] += 1

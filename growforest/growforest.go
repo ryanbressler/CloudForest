@@ -220,7 +220,7 @@ func main() {
 		}
 		if ordinal {
 			fmt.Println("Using Ordinal (mode) prediction.")
-			targetf = &CloudForest.OrdinalTarget{targetf.(CloudForest.NumFeature)}
+			targetf = CloudForest.NewOrdinalTarget(targetf.(CloudForest.NumFeature))
 		}
 		switch {
 		case gradboost != 0.0:
