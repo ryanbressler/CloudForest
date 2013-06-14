@@ -319,7 +319,8 @@ func main() {
 					boostMutex.Unlock()
 					if weight == math.Inf(1) {
 						fmt.Printf("Boosting Reached Weight of %v\n", weight)
-						continue
+						close(treechan)
+						break
 					}
 
 					tree.Weight = weight
