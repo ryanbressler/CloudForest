@@ -41,7 +41,7 @@ type NumFeature interface {
 	Error(cases *[]int, predicted float64) (e float64)
 }
 
-//CatFeatyre contains the methods of Feature plus methods needed to implement
+//CatFeature contains the methods of Feature plus methods needed to implement
 //diffrent types of classification. It is usually embeded by classification targets to
 //provide access to the underlying data.
 type CatFeature interface {

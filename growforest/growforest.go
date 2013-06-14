@@ -224,13 +224,10 @@ func main() {
 		}
 		switch {
 		case gradboost != 0.0:
-			if !ordinal {
-				fmt.Println("Using Gradiant Boosting.")
-				targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
-			} else {
-				fmt.Println("Gradiant boosting does not work with ordinal regression.")
-			}
-		case gradboost != 0.0:
+			fmt.Println("Using Gradiant Boosting.")
+			targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
+
+		case adaboost:
 			fmt.Println("Using Numeric Adaptive Boosting.")
 			//BUG(ryan): gradiant boostign should expose learning rate.
 			targetf = CloudForest.NewNumAdaBoostTarget(targetf.(CloudForest.NumFeature))
@@ -321,8 +318,8 @@ func main() {
 					weight = targetf.(CloudForest.BoostingTarget).Boost(tree.Partition(data))
 					boostMutex.Unlock()
 					if weight == math.Inf(1) {
-						fmt.Printf("Boosting Reached Terminal Weight of %v\n", weight)
-						close(treechan)
+						fmt.Printf("Boosting Reached Weight of %v\n", weight)
+						continue
 					}
 
 					tree.Weight = weight

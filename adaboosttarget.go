@@ -12,6 +12,9 @@ type AdaBoostTarget struct {
 	Weights []float64
 }
 
+/*
+NewAdaBoostTarget creates a categorical adaptive boosting target and initializes its weights.
+*/
 func NewAdaBoostTarget(f CatFeature) (abt *AdaBoostTarget) {
 	nCases := f.Length()
 	abt = &AdaBoostTarget{f, make([]float64, nCases)}
@@ -51,6 +54,8 @@ func (target *AdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64)
 	return
 }
 
+//AdaBoostTarget.Boost performs categorical adaptive boosting using the specified partition and
+//returns the weight that tree that generated the partition should be given.
 func (t *AdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	weight = 0.0
 	for _, cases := range *leaves {

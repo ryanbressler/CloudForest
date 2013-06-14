@@ -243,7 +243,7 @@ func (target *DenseNumFeature) Mean(cases *[]int) (m float64) {
 
 //Mode returns the mode category feature for the cases specified
 func (f *DenseNumFeature) Mode(cases *[]int) (m float64) {
-	counts := make(map[float64]int)
+	counts := make(map[float64]int, 4)
 	for _, i := range *cases {
 		if !f.Missing[i] {
 			counts[f.NumData[i]] += 1

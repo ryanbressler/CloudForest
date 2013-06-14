@@ -5,19 +5,24 @@ import (
 )
 
 /*
-NumNumAdaBoostTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
+NumNumAdaBoostTarget wraps a numerical feature as a target for us in (Experimental) Adaptive Boosting
+Regression.
 */
 type NumAdaBoostTarget struct {
 	NumFeature
-	Weights []float64
+	Weights    []float64
+	NormFactor float64
 }
 
 func NewNumAdaBoostTarget(f NumFeature) (abt *NumAdaBoostTarget) {
 	nCases := f.Length()
-	abt = &NumAdaBoostTarget{f, make([]float64, nCases)}
+	abt = &NumAdaBoostTarget{f, make([]float64, nCases), 0.0}
+	cases := make([]int, nCases)
 	for i, _ := range abt.Weights {
 		abt.Weights[i] = 1 / float64(nCases)
+		cases[i] = i
 	}
+	abt.NormFactor = abt.Impurity(&cases, nil) * float64(nCases)
 	return
 }
 
@@ -39,10 +44,11 @@ func (target *NumAdaBoostTarget) SplitImpurity(l []int, r []int, counter *[]int)
 func (target *NumAdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	e = 0.0
 	m := target.Predicted(cases)
-	for _, c := range *cases {
+	singlecase := (*cases)[0:0]
+	for i, c := range *cases {
 		if target.IsMissing(c) == false {
-
-			e += target.Weights[c] * target.Error(&[]int{c}, m)
+			singlecase = (*cases)[i : i+1]
+			e += target.Weights[c] * target.Error(&singlecase, m)
 
 		}
 
@@ -50,21 +56,35 @@ func (target *NumAdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float
 	return
 }
 
+//AdaBoostTarget.Boost performs numerical adaptive boosting using the specified partition and
+//returns the weight that tree that generated the partition should be given.
+//Trees with error greater then the impurity of the total feature (NormFactor) times the number
+//of partions are given zero weight. Other trees have tree weight set to:
+//
+// weight = math.Log(1 / norm)
+//
+//and weights updated to:
+//
+// t.Weights[c] = t.Weights[c] * math.Exp(t.Error(&[]int{c}, m)*weight)
+//
+//These functions are chosen to provide a rough analog to catagorical adaptive boosting for
+//numerical data with unbounded error.
 func (t *NumAdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	weight = 0.0
 	for _, cases := range *leaves {
 		weight += t.Impurity(&cases, nil)
 	}
-	if weight >= .5 {
+	norm := t.NormFactor
+	if weight > norm {
 		return 0.0
 	}
-	weight = .5 * math.Log((1-weight)/weight)
+	weight = math.Log(norm / weight)
 
 	for _, cases := range *leaves {
 		m := t.Predicted(&cases)
 		for _, c := range cases {
 			if t.IsMissing(c) == false {
-				t.Weights[c] = t.Weights[c] * math.Exp(t.Error(&[]int{c}, m)*weight)
+				t.Weights[c] = t.Weights[c] * math.Exp(math.Log(t.Error(&[]int{c}, m))*weight)
 			}
 
 		}

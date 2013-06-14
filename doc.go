@@ -1,14 +1,14 @@
 /*
 Package CloudForest implements ensembles of decision trees for machine
-learning in pure Go (golang). It implementations a number of related algorithms
+learning in pure Go (golang tp search engines). It implementations a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
 numerical/categorical data with missing values. These include:
 
 Breiman and Cutler's Random Forest for Classification and Regression
 
-Adaptive Boosting (AdaBoost) Classification
+Adaptive Boosting (AdaBoost) Classification and Regression
 
-Gradient Boosting Tree Regression
+Gradiant Boosting Tree Regression
 
 Entropy and Cost driven classification
 
@@ -25,10 +25,13 @@ CloudForest was created by Ryan Bressler and is being developed in the Shumelivi
 the Institute for Systems Biology for use on genomic/biomedical data with partial support
 from The Cancer Genome Atlas and the Inova Translational Medicine Institute.
 
-Documentation has been generated with godoc and can be viewed live at:
+The API hasn't stabelized yet and may change rappidly. Tests and benchmarks have been performed
+only on propritary and unpublished data sets and cannont yet be released.
+
+Documentation is in code and can be viewed with godoc or live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
 
-Pull requests and bug reports are welcome; Code Repo and Issue tracker can be found at:
+Pull requests and bug reports are welcome; Development Code Repo and Issue tracker can be found at:
 https://github.com/ryanbressler/CloudForest
 
 
@@ -73,7 +76,7 @@ to tabulate scores or extract structure. Utilities like leafcount and errorrate 
 method to tabulate data about the tree in collection objects.
 
 
-Alternative Impurities
+Stackable Interfaces
 
 Decision tree's are grown with the goal of reducing "Impurity" which is usually defined as Gini
 Impurity for categorical targets or mean squared error for numerical targets. CloudForest grows
