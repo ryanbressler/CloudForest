@@ -73,14 +73,18 @@ func (t *NumAdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	if len(*leaves) == 0 {
 		return 0.0
 	}
-	weight = 0.0
+	imp := 0.0
+	//nCases := 0
 	for _, cases := range *leaves {
-		weight += t.Impurity(&cases, nil)
+		imp += t.Impurity(&cases, nil)
+		//nCases += len(cases)
 	}
 	norm := t.NormFactor
-	if weight > norm {
+	if imp > norm {
 		return 0.0
 	}
+
+	weight = math.Log(norm / imp)
 
 	for _, cases := range *leaves {
 		m := t.Predicted(&cases)
@@ -88,13 +92,12 @@ func (t *NumAdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 		for i, c := range cases {
 			if t.IsMissing(c) == false {
 				singlecase = (cases)[i : i+1]
-				t.Weights[c] = t.Weights[c] * math.Exp(t.Error(&singlecase, m)-weight)
+				t.Weights[c] = t.Weights[c] * math.Exp(weight*(t.Error(&singlecase, m)-imp))
 			}
 
 		}
 	}
 
-	weight = math.Log(norm / weight)
 	normfactor := 0.0
 	for _, v := range t.Weights {
 		normfactor += v

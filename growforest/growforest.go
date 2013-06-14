@@ -69,11 +69,14 @@ func main() {
 	var oob bool
 	flag.BoolVar(&oob, "oob", false, "Calculte and report oob error.")
 
+	var progress bool
+	flag.BoolVar(&progress, "progress", false, "Report tree number and running oob error.")
+
 	var adaboost bool
 	flag.BoolVar(&adaboost, "adaboost", false, "Use Adaptive boosting for regresion/classification.")
 
 	var gradboost float64
-	flag.Float64Var(&gradboost, "gradboost", 0.0, "Use gradiant boosting with the specified learning rate.")
+	flag.Float64Var(&gradboost, "gbt", 0.0, "Use gradiant boosting with the specified learning rate.")
 
 	var multiboost bool
 	flag.BoolVar(&multiboost, "multiboost", false, "Allow multithreaded boosting which msy have unexpected results. (highly experimental)")
@@ -360,6 +363,9 @@ func main() {
 		forestwriter.WriteTree(tree, i)
 		if i < nTrees-1 {
 			treechan <- tree
+		}
+		if progress {
+			fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(targetf))
 		}
 
 	}
