@@ -2,7 +2,6 @@ package CloudForest
 
 import (
 	"fmt"
-	"math"
 )
 
 /*
@@ -13,6 +12,7 @@ embeded NumFeature.
 type OrdinalTarget struct {
 	NumFeature
 	nClass int
+	max    float64
 }
 
 /*
@@ -20,14 +20,15 @@ NewOrdinalTarget creates a categorical adaptive boosting target and initializes 
 */
 func NewOrdinalTarget(f NumFeature) (abt *OrdinalTarget) {
 	nCases := f.Length()
-	abt = &OrdinalTarget{f, 0}
+	abt = &OrdinalTarget{f, 0, 0.0}
 	for i := 0; i < nCases; i++ {
-		v := int(f.Get(i))
-		if v > abt.nClass {
-			abt.nClass = v
+		v := f.Get(i)
+		if v > abt.max {
+			abt.max = v
 		}
 	}
-	abt.nClass += 1
+
+	abt.nClass = int(abt.max) + 1
 	return
 }
 
@@ -53,7 +54,7 @@ func (f *OrdinalTarget) Mode(cases *[]int) (m float64) {
 	counts := make([]int, f.nClass)
 	for _, i := range *cases {
 		if !f.IsMissing(i) {
-			counts[int(math.Floor(f.Get(i)+.5))] += 1
+			counts[int(f.Get(i))] += 1
 		}
 
 	}

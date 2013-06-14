@@ -95,6 +95,9 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	if multiboost {
+		fmt.Println("MULTIBOOST!!!!1!!!!1!!11 (things may break).")
+	}
 	var boostMutex sync.Mutex
 	boost := (adaboost || gradboost != 0.0)
 	if boost && !multiboost {

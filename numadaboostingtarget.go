@@ -70,6 +70,9 @@ func (target *NumAdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float
 //These functions are chosen to provide a rough analog to catagorical adaptive boosting for
 //numerical data with unbounded error.
 func (t *NumAdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
+	if len(*leaves) == 0 {
+		return 0.0
+	}
 	weight = 0.0
 	for _, cases := range *leaves {
 		weight += t.Impurity(&cases, nil)
@@ -78,17 +81,20 @@ func (t *NumAdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	if weight > norm {
 		return 0.0
 	}
-	weight = math.Log(norm / weight)
 
 	for _, cases := range *leaves {
 		m := t.Predicted(&cases)
-		for _, c := range cases {
+		singlecase := (cases)[0:0]
+		for i, c := range cases {
 			if t.IsMissing(c) == false {
-				t.Weights[c] = t.Weights[c] * math.Exp(math.Log(t.Error(&[]int{c}, m))*weight)
+				singlecase = (cases)[i : i+1]
+				t.Weights[c] = t.Weights[c] * math.Exp(t.Error(&singlecase, m)-weight)
 			}
 
 		}
 	}
+
+	weight = math.Log(norm / weight)
 	normfactor := 0.0
 	for _, v := range t.Weights {
 		normfactor += v
