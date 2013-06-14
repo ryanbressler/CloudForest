@@ -56,6 +56,11 @@ func (f *DenseNumFeature) Predicted(cases *[]int) float64 {
 	return f.Mean(cases)
 }
 
+func (f *DenseNumFeature) Norm(i int, v float64) float64 {
+	d := f.NumData[i] - v
+	return d * d
+}
+
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.

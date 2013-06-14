@@ -44,12 +44,9 @@ func (target *NumAdaBoostTarget) SplitImpurity(l []int, r []int, counter *[]int)
 func (target *NumAdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	e = 0.0
 	m := target.Predicted(cases)
-	singlecase := (*cases)[0:0]
-	for i, c := range *cases {
+	for _, c := range *cases {
 		if target.IsMissing(c) == false {
-			singlecase = (*cases)[i : i+1]
-			e += target.Weights[c] * target.Error(&singlecase, m)
-
+			e += target.Weights[c] * target.Norm(c, m)
 		}
 
 	}
@@ -88,11 +85,9 @@ func (t *NumAdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 
 	for _, cases := range *leaves {
 		m := t.Predicted(&cases)
-		singlecase := (cases)[0:0]
-		for i, c := range cases {
+		for _, c := range cases {
 			if t.IsMissing(c) == false {
-				singlecase = (cases)[i : i+1]
-				t.Weights[c] = t.Weights[c] * math.Exp(weight*(t.Error(&singlecase, m)-imp))
+				t.Weights[c] = t.Weights[c] * math.Exp(weight*(t.Norm(c, m)-imp))
 			}
 
 		}
