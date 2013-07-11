@@ -67,7 +67,7 @@ func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
 		}
 	}
 	if c == 0.0 {
-		log.Print("TallyError with 0 count!")
+		log.Fatal("TallyError with 0 count!")
 	}
 	e = e / float64(c)
 

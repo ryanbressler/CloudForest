@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"math/rand"
 	"sync"
 )
@@ -30,6 +31,10 @@ func (rm *RunningMean) WeightedAdd(val float64, weight float64) {
 		if rm.Count == 0 {
 			log.Print("WeightedAdd reached 0 count!.")
 		}
+		if math.IsNaN(rm.Mean) || math.IsNaN(rm.Count) {
+			log.Print("Weighted add reached nan after adding ", val, weight)
+		}
+
 		rm.mutex.Unlock()
 	}
 
