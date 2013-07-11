@@ -31,6 +31,7 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases []int,
 	candidates []int,
+	leafSize int,
 	allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64) {
 
 	impurityDecrease = minImp
@@ -43,7 +44,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	for _, i := range candidates {
 		f = &fm.Data[i]
-		split, inerImp = (*f).BestSplit(target, &cases, parentImp, allocs)
+		split, inerImp = (*f).BestSplit(target, &cases, parentImp, leafSize, allocs)
 		//BUG more stringent cutoff in BestSplitter?
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f

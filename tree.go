@@ -81,7 +81,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&candidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
+			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], leafSize, allocs)
 			if best != nil && impDec > minImp {
 				if importance != nil {
 					(*importance)[fm.Map[best.Feature]].Add(impDec)

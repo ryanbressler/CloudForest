@@ -82,6 +82,7 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (f *DenseNumFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
+	leafSize int,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
 	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
@@ -108,7 +109,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 		missingimp = target.Impurity(allocs.Right, allocs.Counter)
 	}
 
-	codedSplit, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, allocs)
+	codedSplit, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
 
 	if nmissing > 0 && impurityDecrease > minImp {
 		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
@@ -132,6 +133,7 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (f *DenseNumFeature) BestNumSplit(target Target,
 	cases *[]int,
 	parentImp float64,
+	leafSize int,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
 	impurityDecrease = minImp
@@ -145,7 +147,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 	// repeated allocations
 
-	for i := 1; i < len(sorter.Cases)-1; i++ {
+	for i := leafSize; i < len(sorter.Cases)-1; leafSize++ {
 		c := sorter.Cases[i]
 		//skip cases where the next sorted case has the same value as these can't be split on
 		if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
@@ -273,9 +275,8 @@ func (f *DenseNumFeature) Mode(cases *[]int) (m float64) {
 func (f *DenseNumFeature) FindPredicted(cases []int) (pred string) {
 	pred = fmt.Sprintf("%v", f.Mean(&cases))
 	if pred == "NaN" {
-		log.Print("NaN predicted with cases ", len(cases), cases)
+		log.Print("NaN predicted with cases ", len(cases))
 	}
-
 	return
 
 }
