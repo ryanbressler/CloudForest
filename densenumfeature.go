@@ -110,7 +110,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 
 	codedSplit, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, allocs)
 
-	if nmissing > 0 {
+	if nmissing > 0 && impurityDecrease > minImp {
 		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
 	}
 	return

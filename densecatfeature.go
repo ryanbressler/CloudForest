@@ -110,7 +110,7 @@ func (f *DenseCatFeature) BestSplit(target Target,
 		codedSplit, impurityDecrease = f.BestCatSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, allocs)
 	}
 
-	if nmissing > 0 {
+	if nmissing > 0 && impurityDecrease > minImp {
 		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
 	}
 	return
