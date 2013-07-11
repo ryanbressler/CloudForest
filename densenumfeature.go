@@ -139,33 +139,37 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	impurityDecrease = minImp
 	codedSplit = 0.0
 
-	sorter := allocs.Sorter
-	sorter.Feature = f
-	sorter.Cases = *cases
-	sort.Sort(sorter)
+	if len(*cases) > 2*leafSize {
+		sorter := allocs.Sorter
+		sorter.Feature = f
+		sorter.Cases = *cases
+		sort.Sort(sorter)
 
-	// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
-	// repeated allocations
+		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
+		// repeated allocations
 
-	for i := leafSize; i < len(sorter.Cases)-1; leafSize++ {
-		c := sorter.Cases[i]
-		//skip cases where the next sorted case has the same value as these can't be split on
-		if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
-			continue
-		}
+		for i := leafSize; i < (len(sorter.Cases) - leafSize); i++ {
+			c := sorter.Cases[i]
+			//skip cases where the next sorted case has the same value as these can't be split on
+			if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
+				continue
+			}
 
-		/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
-				BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
-				but it was slower.  */
-		innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], allocs.Counter)
+			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
+					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
+					but it was slower.  */
+			innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], allocs.Counter)
 
-		if innerimp > impurityDecrease {
-			impurityDecrease = innerimp
-			codedSplit = f.NumData[c]
+			if innerimp > impurityDecrease {
+				impurityDecrease = innerimp
+				codedSplit = f.NumData[c]
+
+			}
 
 		}
 
 	}
+
 	return
 }
 

@@ -203,6 +203,9 @@ func main() {
 	}
 	fmt.Printf("leafSize : %v\n", leafSize)
 
+	if progress {
+		oob = true
+	}
 	var oobVotes CloudForest.VoteTallyer
 	if oob {
 		fmt.Println("Recording oob error.")
