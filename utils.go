@@ -26,6 +26,9 @@ func (rm *RunningMean) WeightedAdd(val float64, weight float64) {
 	rm.mutex.Lock()
 	rm.Mean = (rm.Mean*rm.Count + weight*val) / (rm.Count + weight)
 	rm.Count += weight
+	if rm.Count == 0 {
+		log.Print("WeightedAdd reached 0 count!.")
+	}
 	rm.mutex.Unlock()
 }
 

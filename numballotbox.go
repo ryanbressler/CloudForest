@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 )
@@ -64,6 +65,9 @@ func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
 			e += d * d
 			c += 1
 		}
+	}
+	if c == 0.0 {
+		log.Print("TallyError with 0 count!")
 	}
 	e = e / float64(c)
 
