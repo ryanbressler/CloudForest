@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"sort"
 )
@@ -271,6 +272,9 @@ func (f *DenseNumFeature) Mode(cases *[]int) (m float64) {
 //most common category and for numerical it is the mean of the values.
 func (f *DenseNumFeature) FindPredicted(cases []int) (pred string) {
 	pred = fmt.Sprintf("%v", f.Mean(&cases))
+	if pred == "NaN" {
+		log.Print("NaN predicted with cases ", len(cases), cases)
+	}
 
 	return
 
