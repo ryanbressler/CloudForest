@@ -123,12 +123,6 @@ func main() {
 	data := CloudForest.ParseAFM(datafile)
 	datafile.Close()
 
-	//infer nSamples and mTry from data if they are 0
-	if nSamples <= 0 {
-		nSamples = data.Data[0].Length()
-	}
-	fmt.Printf("nSamples : %v\n", nSamples)
-
 	if nContrasts > 0 {
 		fmt.Printf("Adding %v Random Contrasts\n", nContrasts)
 		data.AddContrasts(nContrasts)
@@ -184,15 +178,26 @@ func main() {
 	}
 
 	//find the target feature
+	fmt.Printf("Target : %v\n", *targetname)
 	targeti, ok := data.Map[*targetname]
 	if !ok {
 		log.Fatal("Target not found in data.")
 	}
 
 	targetf := data.Data[targeti]
+
+	nNonMissing := 0
+
+	for i := 0; i < targetf.Length(); i++ {
+		if !targetf.IsMissing(i) {
+			nNonMissing += 1
+		}
+
+	}
+
 	if leafSize <= 0 {
 		if boost {
-			leafSize = targetf.Length() / 3
+			leafSize = nNonMissing / 3
 		} else if targetf.NCats() == 0 {
 			//regression
 			leafSize = 4
@@ -202,6 +207,12 @@ func main() {
 		}
 	}
 	fmt.Printf("leafSize : %v\n", leafSize)
+
+	//infer nSamples and mTry from data if they are 0
+	if nSamples <= 0 {
+		nSamples = nNonMissing
+	}
+	fmt.Printf("nSamples : %v\n", nSamples)
 
 	if progress {
 		oob = true
@@ -315,8 +326,11 @@ func main() {
 				if !nobag {
 					cases = cases[0:0]
 
-					for j := 0; j < nSamples; j++ {
-						cases = append(cases, rand.Intn(nCases))
+					for j := 0; len(cases) < nSamples; j++ {
+						r := rand.Intn(nCases)
+						if !targetf.IsMissing(r) {
+							cases = append(cases, r)
+						}
 					}
 				}
 
