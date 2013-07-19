@@ -64,7 +64,12 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 
 	}
 	bb.box[i].Mutex.Unlock()
-	predicted = bb.Back[predictedn]
+	if votes > 0 {
+		predicted = bb.Back[predictedn]
+	} else {
+		predicted = "NA"
+	}
+
 	return
 
 }

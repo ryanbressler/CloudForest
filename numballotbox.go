@@ -40,7 +40,13 @@ func (bb *NumBallotBox) TallyNum(i int) (predicted float64) {
 }
 
 func (bb *NumBallotBox) Tally(i int) (predicted string) {
-	return fmt.Sprintf("%v", bb.TallyNum(i))
+	mean, count := bb.box[i].Read()
+	if count > 0 {
+		predicted = fmt.Sprintf("%v", mean)
+	} else {
+		predicted = "NA"
+	}
+	return
 }
 
 //Tally error returns the error of the votes vs the provided feature.
