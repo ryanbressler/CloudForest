@@ -69,6 +69,9 @@ func main() {
 	var oob bool
 	flag.BoolVar(&oob, "oob", false, "Calculte and report oob error.")
 
+	var caseoob string
+	flag.StringVar(&caseoob, "oobpreds", "", "Calculate and report oob predictions in the file specified.")
+
 	var progress bool
 	flag.BoolVar(&progress, "progress", false, "Report tree number and running oob error.")
 
@@ -215,6 +218,9 @@ func main() {
 	fmt.Printf("nSamples : %v\n", nSamples)
 
 	if progress {
+		oob = true
+	}
+	if caseoob != "" {
 		oob = true
 	}
 	var oobVotes CloudForest.VoteTallyer
@@ -388,6 +394,16 @@ func main() {
 	}
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(targetf))
+	}
+	if caseoob != "" {
+		caseoobfile, err := os.Create(caseoob)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer caseoobfile.Close()
+		for i := 0; i < targetf.Length(); i++ {
+			fmt.Fprintf(caseoobfile, "%v\t%v\t%v\n", data.CaseLabels[i], oobVotes.Tally(i), targetf.GetStr(i))
+		}
 	}
 
 	if *imp != "" {
