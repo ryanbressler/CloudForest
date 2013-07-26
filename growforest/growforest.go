@@ -40,8 +40,8 @@ func main() {
 	var StringmTry string
 	flag.StringVar(&StringmTry, "mTry", "0", "Number of candidate features for each split as a count (ex: 10) or portion of total (ex: .5). Ceil(sqrt(nFeatures)) if <=0.")
 
-	var leafSize int
-	flag.IntVar(&leafSize, "leafSize", 0, "The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.")
+	var StringleafSize string
+	flag.StringVar(&StringleafSize, "leafSize", "0", "The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.")
 
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
@@ -206,6 +206,9 @@ func main() {
 		}
 
 	}
+	fmt.Printf("non-missing cases: %v\n", nNonMissing)
+
+	leafSize := CloudForest.ParseAsIntOrFractionOfTotal(StringleafSize, nNonMissing)
 
 	if leafSize <= 0 {
 		if boost {
