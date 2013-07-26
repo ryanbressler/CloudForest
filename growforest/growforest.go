@@ -34,17 +34,17 @@ func main() {
 	var nCores int
 	flag.IntVar(&nCores, "nCores", 1, "The number of cores to use.")
 
-	var nSamples int
-	flag.IntVar(&nSamples, "nSamples", 0, "The number of cases to sample (with replacement) for each tree grow. If <=0 set to total number of cases")
+	var StringnSamples string
+	flag.StringVar(&StringnSamples, "nSamples", "0", "The number of cases to sample (with replacement) for each tree as a count (ex: 10) or portion of total (ex: .5). If <=0 set to total number of cases.")
+
+	var StringmTry string
+	flag.StringVar(&StringmTry, "mTry", "0", "Number of candidate features for each split as a count (ex: 10) or portion of total (ex: .5). Ceil(sqrt(nFeatures)) if <=0.")
 
 	var leafSize int
 	flag.IntVar(&leafSize, "leafSize", 0, "The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.")
 
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
-
-	var mTry int
-	flag.IntVar(&mTry, "mTry", 0, "Number of candidate features for each split. Inferred to ceil(sqrt(nFeatures)) if <=0.")
 
 	var nContrasts int
 	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artificial contrast features to include in the feature matrix.")
@@ -89,6 +89,9 @@ func main() {
 
 	var ordinal bool
 	flag.BoolVar(&ordinal, "ordinal", false, "Use ordinal regression (target must be numeric).")
+
+	var permutate bool
+	flag.BoolVar(&permutate, "permutate", false, "Permutate the target feature (to establish random predictive power).")
 
 	flag.Parse()
 
@@ -169,6 +172,8 @@ func main() {
 
 	nFeatures := len(data.Data) - blacklisted
 	fmt.Printf("nFeatures : %v\n", nFeatures)
+
+	mTry := CloudForest.ParseAsIntOrFractionOfTotal(StringmTry, nFeatures)
 	if mTry <= 0 {
 
 		mTry = int(math.Ceil(math.Sqrt(float64(nFeatures))))
@@ -187,7 +192,11 @@ func main() {
 		log.Fatal("Target not found in data.")
 	}
 
+	if permutate {
+		data.Data[targeti] = data.Data[targeti].ShuffledCopy()
+	}
 	targetf := data.Data[targeti]
+	unboostedTarget := targetf.Copy()
 
 	nNonMissing := 0
 
@@ -212,6 +221,7 @@ func main() {
 	fmt.Printf("leafSize : %v\n", leafSize)
 
 	//infer nSamples and mTry from data if they are 0
+	nSamples := CloudForest.ParseAsIntOrFractionOfTotal(StringnSamples, nNonMissing)
 	if nSamples <= 0 {
 		nSamples = nNonMissing
 	}
@@ -239,7 +249,6 @@ func main() {
 
 	switch targetf.(type) {
 	case CloudForest.NumFeature:
-		//BUG(ryan): test if these targets actually stack.
 		if l1 {
 			fmt.Println("Using l1/absolute deviance error.")
 			targetf = &CloudForest.L1Target{targetf.(CloudForest.NumFeature)}
@@ -388,12 +397,12 @@ func main() {
 			treechan <- tree
 		}
 		if progress {
-			fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(targetf))
+			fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(unboostedTarget))
 		}
 
 	}
 	if oob {
-		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(targetf))
+		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
 	}
 	if caseoob != "" {
 		caseoobfile, err := os.Create(caseoob)
@@ -401,8 +410,8 @@ func main() {
 			log.Fatal(err)
 		}
 		defer caseoobfile.Close()
-		for i := 0; i < targetf.Length(); i++ {
-			fmt.Fprintf(caseoobfile, "%v\t%v\t%v\n", data.CaseLabels[i], oobVotes.Tally(i), targetf.GetStr(i))
+		for i := 0; i < unboostedTarget.Length(); i++ {
+			fmt.Fprintf(caseoobfile, "%v\t%v\t%v\n", data.CaseLabels[i], oobVotes.Tally(i), unboostedTarget.GetStr(i))
 		}
 	}
 

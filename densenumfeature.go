@@ -315,6 +315,22 @@ func (f *DenseNumFeature) ShuffledCopy() Feature {
 
 }
 
+/*Copy returns a copy of f.*/
+func (f *DenseNumFeature) Copy() Feature {
+	capacity := len(f.Missing)
+	fake := &DenseNumFeature{
+		nil,
+		make([]bool, capacity),
+		f.Name}
+
+	copy(fake.Missing, f.Missing)
+
+	fake.NumData = make([]float64, capacity)
+	copy(fake.NumData, f.NumData)
+
+	return fake
+}
+
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
 func (f *DenseNumFeature) ImputeMissing() {
 	cases := make([]int, 0, len(f.Missing))

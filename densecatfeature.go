@@ -668,6 +668,26 @@ func (f *DenseCatFeature) ShuffledCopy() Feature {
 
 }
 
+/*Copy returns a copy of f.*/
+func (f *DenseCatFeature) Copy() Feature {
+	capacity := len(f.Missing)
+	fake := &DenseCatFeature{
+		&CatMap{f.Map,
+			f.Back},
+		nil,
+		make([]bool, capacity),
+		f.Name,
+		f.RandomSearch}
+
+	copy(fake.Missing, f.Missing)
+
+	fake.CatData = make([]int, capacity)
+	copy(fake.CatData, f.CatData)
+
+	return fake
+
+}
+
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
 func (f *DenseCatFeature) ImputeMissing() {
 	cases := make([]int, 0, len(f.Missing))

@@ -6,6 +6,8 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -120,6 +122,37 @@ func SampleWithReplacment(nSamples int, totalCases int) (cases []int) {
 	cases = make([]int, 0, nSamples)
 	for i := 0; i < nSamples; i++ {
 		cases = append(cases, rand.Intn(totalCases))
+	}
+	return
+}
+
+/*
+ParseAsIntOrFractionOfTotal parses strings that may specify an count or a percent of
+the total for use in specifying paramaters.
+It parses term as a float if it contains a "." and as an int otherwise. If term is parsed
+as a float frac it returns int(math.Ceil(frac * float64(total))).
+It returns zero if term == "" or if a parsing error occures.
+*/
+func ParseAsIntOrFractionOfTotal(term string, total int) (parsed int) {
+	if term == "" {
+		return 0
+	}
+
+	if strings.Contains(term, ".") {
+		frac, err := strconv.ParseFloat(term, 64)
+		if err == nil {
+			parsed = int(math.Ceil(frac * float64(total)))
+		} else {
+			parsed = 0
+		}
+	} else {
+		count, err := strconv.ParseInt(term, 0, 0)
+		if err != nil {
+			parsed = 0
+		} else {
+			parsed = int(count)
+		}
+
 	}
 	return
 }

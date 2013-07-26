@@ -25,6 +25,7 @@ type Feature interface {
 		allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64)
 	DecodeSplit(codedSplit interface{}) (s *Splitter)
 	ShuffledCopy() (fake Feature)
+	Copy() (copy Feature)
 	ImputeMissing()
 	GetName() string
 }
