@@ -26,6 +26,7 @@ type Feature interface {
 	DecodeSplit(codedSplit interface{}) (s *Splitter)
 	ShuffledCopy() (fake Feature)
 	Copy() (copy Feature)
+	Shuffle()
 	ImputeMissing()
 	GetName() string
 }

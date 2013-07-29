@@ -198,7 +198,7 @@ func main() {
 
 	if permutate {
 		fmt.Println("Permutating target feature.")
-		data.Data[targeti] = data.Data[targeti].ShuffledCopy()
+		data.Data[targeti].Shuffle()
 	}
 
 	if shuffleRE != "" {
@@ -206,7 +206,7 @@ func main() {
 		shuffled := 0
 		for i, feature := range data.Data {
 			if targeti != i && re.MatchString(feature.GetName()) {
-				data.Data[i] = data.Data[i].ShuffledCopy()
+				data.Data[i].Shuffle()
 				shuffled += 1
 
 			}

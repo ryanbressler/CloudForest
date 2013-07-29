@@ -285,32 +285,30 @@ func (f *DenseNumFeature) FindPredicted(cases []int) (pred string) {
 
 }
 
-/*ShuffledCopy returns a shuffled version of f for use as an artificial contrast in evaluation of
-importance scores. The new feature will be named featurename:SHUFFLED*/
-func (f *DenseNumFeature) ShuffledCopy() Feature {
+//Shuffle does an inflace shuffle of the specified feature
+func (f *DenseNumFeature) Shuffle() {
 	capacity := len(f.Missing)
-	fake := &DenseNumFeature{
-		nil,
-		make([]bool, capacity),
-		f.Name + ":SHUFFLED"}
-
-	copy(fake.Missing, f.Missing)
-
-	fake.NumData = make([]float64, capacity)
-	copy(fake.NumData, f.NumData)
-
 	//shuffle
 	for j := 0; j < capacity; j++ {
 		sourcei := j + rand.Intn(capacity-j)
-		missing := fake.Missing[j]
-		fake.Missing[j] = fake.Missing[sourcei]
-		fake.Missing[sourcei] = missing
+		missing := f.Missing[j]
+		f.Missing[j] = f.Missing[sourcei]
+		f.Missing[sourcei] = missing
 
-		data := fake.NumData[j]
-		fake.NumData[j] = fake.NumData[sourcei]
-		fake.NumData[sourcei] = data
+		data := f.NumData[j]
+		f.NumData[j] = f.NumData[sourcei]
+		f.NumData[sourcei] = data
 
 	}
+
+}
+
+/*ShuffledCopy returns a shuffled version of f for use as an artificial contrast in evaluation of
+importance scores. The new feature will be named featurename:SHUFFLED*/
+func (f *DenseNumFeature) ShuffledCopy() Feature {
+	fake := f.Copy()
+	fake.Shuffle()
+	fake.(*DenseNumFeature).Name += ":SHUFFLED"
 	return fake
 
 }
