@@ -11,6 +11,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"regexp"
 	"runtime"
 	"runtime/pprof"
 	"sync"
@@ -42,6 +43,9 @@ func main() {
 
 	var StringleafSize string
 	flag.StringVar(&StringleafSize, "leafSize", "0", "The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.")
+
+	var shuffleRE string
+	flag.StringVar(&shuffleRE, "shuffleRE", "", "A regular expression to identify features that should be shuffled.")
 
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
@@ -193,8 +197,24 @@ func main() {
 	}
 
 	if permutate {
+		fmt.Println("Permutating target feature.")
 		data.Data[targeti] = data.Data[targeti].ShuffledCopy()
 	}
+
+	if shuffleRE != "" {
+		re := regexp.MustCompile(shuffleRE)
+		shuffled := 0
+		for i, feature := range data.Data {
+			if targeti != i && re.MatchString(feature.GetName()) {
+				data.Data[i] = data.Data[i].ShuffledCopy()
+				shuffled += 1
+
+			}
+
+		}
+		fmt.Printf("Shuffled %v features matching %v\n", shuffled, shuffleRE)
+	}
+
 	targetf := data.Data[targeti]
 	unboostedTarget := targetf.Copy()
 
