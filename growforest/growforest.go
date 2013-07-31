@@ -91,6 +91,9 @@ func main() {
 	var nobag bool
 	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
 
+	var ballance bool
+	flag.BoolVar(&ballance, "ballance", false, "Ballance bagging of samples by target class for unbalanced classification.")
+
 	var ordinal bool
 	flag.BoolVar(&ordinal, "ordinal", false, "Use ordinal regression (target must be numeric).")
 
@@ -217,6 +220,11 @@ func main() {
 
 	targetf := data.Data[targeti]
 	unboostedTarget := targetf.Copy()
+
+	var bSampler *CloudForest.BalancedSampler
+	if ballance {
+		bSampler = CloudForest.NewBalancedSampler(targetf.(*CloudForest.DenseCatFeature))
+	}
 
 	nNonMissing := 0
 
@@ -364,12 +372,18 @@ func main() {
 				if !nobag {
 					cases = cases[0:0]
 
-					for j := 0; len(cases) < nSamples; j++ {
-						r := rand.Intn(nCases)
-						if !targetf.IsMissing(r) {
-							cases = append(cases, r)
+					if ballance {
+						bSampler.Sample(&cases, nSamples)
+
+					} else {
+						for j := 0; len(cases) < nSamples; j++ {
+							r := rand.Intn(nCases)
+							if !targetf.IsMissing(r) {
+								cases = append(cases, r)
+							}
 						}
 					}
+
 				}
 
 				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)

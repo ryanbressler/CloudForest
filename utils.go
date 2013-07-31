@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"math"
-	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
@@ -92,38 +91,6 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 			}
 		}
 	}
-}
-
-/*
-SampleFirstN ensures that the first n entries in the supplied
-deck are randomly drawn from all entries without replacement for use in selecting candidate
-features to split on. It accepts a pointer to the deck so that it can be used repeatedly on
-the same deck avoiding reallocations.
-*/
-func SampleFirstN(deck *[]int, n int) {
-	cards := *deck
-	length := len(cards)
-	old := 0
-	randi := 0
-	for i := 0; i < n; i++ {
-		old = cards[i]
-		randi = i + rand.Intn(length-i)
-		cards[i] = cards[randi]
-		cards[randi] = old
-
-	}
-}
-
-/*
-SampleWithReplacment samples nSamples random draws from [0,totalCases) with replacement
-for use in selecting cases to grow a tree from.
-*/
-func SampleWithReplacment(nSamples int, totalCases int) (cases []int) {
-	cases = make([]int, 0, nSamples)
-	for i := 0; i < nSamples; i++ {
-		cases = append(cases, rand.Intn(totalCases))
-	}
-	return
 }
 
 /*
