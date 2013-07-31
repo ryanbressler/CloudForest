@@ -4,10 +4,14 @@ import (
 	"math/rand"
 )
 
+//BalancedSampler provides for random sampelign of integers (usually case indexes)
+//in a way that ensures a balanced presence of classes.
 type BalancedSampler struct {
 	Cases [][]int
 }
 
+//NeaBalancedSampler initalizes a balanced sampler that will evenly balance cases
+//between the classes present in the provided DesnseeCatFeature.
 func NewBalancedSampler(catf *DenseCatFeature) (s *BalancedSampler) {
 	s = &BalancedSampler{make([][]int, catf.NCats())}
 
@@ -23,6 +27,7 @@ func NewBalancedSampler(catf *DenseCatFeature) (s *BalancedSampler) {
 	return
 }
 
+//Sample samples n integers in a balnced-with-replacment fashion into the provided array.
 func (s *BalancedSampler) Sample(samples *[]int, n int) {
 	(*samples) = (*samples)[0:0]
 	nCases := len(s.Cases)
