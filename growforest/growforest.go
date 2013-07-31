@@ -91,8 +91,8 @@ func main() {
 	var nobag bool
 	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
 
-	var ballance bool
-	flag.BoolVar(&ballance, "ballance", false, "Ballance bagging of samples by target class for unbalanced classification.")
+	var balance bool
+	flag.BoolVar(&balance, "balance", false, "Ballance bagging of samples by target class for unbalanced classification.")
 
 	var ordinal bool
 	flag.BoolVar(&ordinal, "ordinal", false, "Use ordinal regression (target must be numeric).")
@@ -222,7 +222,7 @@ func main() {
 	unboostedTarget := targetf.Copy()
 
 	var bSampler *CloudForest.BalancedSampler
-	if ballance {
+	if balance {
 		bSampler = CloudForest.NewBalancedSampler(targetf.(*CloudForest.DenseCatFeature))
 	}
 
@@ -372,7 +372,7 @@ func main() {
 				if !nobag {
 					cases = cases[0:0]
 
-					if ballance {
+					if balance {
 						bSampler.Sample(&cases, nSamples)
 
 					} else {
