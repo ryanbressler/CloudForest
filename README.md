@@ -1,5 +1,5 @@
 CloudForest
-============
+==============
 
 CloudForest implements fast, flexible ensembles of decision trees for machine
 learning in pure Go (golang). It includes implementations of Breiman
@@ -24,7 +24,7 @@ CloudForest is being developed in the Shumelivich Lab at the Institute for Syste
 Biology.
 
 Instalation
-===========
+-------------
 With go and go path set up:
 
 '''bash
@@ -36,7 +36,8 @@ go install github.com/ryanbressler/CloudForest/leafcount
 '''
 
 Quick Start
-===========
+-------------
+
 '''bash
 #grow a predictor forest with default pamaters and save it to forest.sf
 #run growforest -h for more options
@@ -65,9 +66,6 @@ errorrate -fm test.fm -rfpred forest.sf -preds predictions.tsv
 #Case Feature Count
 leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -brances branches.tsv
 '''
-
-Advanced Ussage
-===============
 
 Growforest Utility
 ------------------
