@@ -27,18 +27,18 @@ Instalation
 -------------
 With go and go path set up:
 
-'''bash
+```bash
 go get github.com/ryanbressler/CloudForest
 go install github.com/ryanbressler/CloudForest/growforest
 go install github.com/ryanbressler/CloudForest/errorrate
 go install github.com/ryanbressler/CloudForest/applyforest
 go install github.com/ryanbressler/CloudForest/leafcount
-'''
+```
 
 Quick Start
 -------------
 
-'''bash
+```bash
 #grow a predictor forest with default pamaters and save it to forest.sf
 #run growforest -h for more options
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName
@@ -65,14 +65,14 @@ errorrate -fm test.fm -rfpred forest.sf -preds predictions.tsv
 #Branches Are Reported as:
 #Case Feature Count
 leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -brances branches.tsv
-'''
+```
 
 Growforest Utility
 ------------------
 
 "growforest" trains a forest using the following parameters which can be listed with -h
 
-'''
+```
 Usage of growforest:
   -adaboost=false: Use Adaptive boosting for regresion/classification.
   -balance=false: Ballance bagging of samples by target class for unbalanced classification.
@@ -103,7 +103,7 @@ Usage of growforest:
   -splitmissing=false: Split missing values onto a third branch at each node (experimental).
   -target="": The row header of the target in the feature matrix.
   -train="featurematrix.afm": AFM formated feature matrix containing training data.
- '''
+ ```
 
 
 
@@ -115,14 +115,14 @@ Applyforrest Utility
 "applyforest" applies a forest to the specified feature matrix and outputs predictions as a two column
 (caselabel	predictedvalue) tsv.
 
-'''
+```
 Usage of applyforest:
   -fm="featurematrix.afm": AFM formated feature matrix containing data.
   -mean=false: Force numeric (mean) voteing.
   -mode=false: Force catagorical (mode) voteing.
   -preds="predictions.tsv": The name of a file to write the predictions into.
   -rfpred="rface.sf": A predictor forest.
-'''
+```
 
 
 
@@ -131,12 +131,12 @@ Errorrate Utility
 
 errorrate calculates the error of a forest vs a testing data set and reports it to standard out
 
-'''
+```
 Usage of errorrate:
   -fm="featurematrix.afm": AFM formated feature matrix containing test data.
   -rfpred="rface.sf": A predictor forest.
 
-'''
+```
 
 
 Leafcount Utility
@@ -146,13 +146,13 @@ leafcount outputs counts of case case co-occurrence on leaf nodes (Brieman's pro
 number of times a feature is used to split a node containing each case (a measure of relative/local
 importance).
 
-'''
+```
 Usage of leafcount:
   -branches="branches.tsv": a case by feature sparse matrix of leaf co-occurrence in tsv format
   -fm="featurematrix.afm": AFM formated feature matrix to use.
   -leaves="leaves.tsv": a case by case sparse matrix of leaf co-occurrence in tsv format
   -rfpred="rface.sf": A predictor forest.
-'''
+```
 
 
 Feature Matrix Files
@@ -164,20 +164,20 @@ from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ac
 An annotated feature matrix (.afm) file is a tab delineated file with column and row headers. Columns represent cases and rows
 represent features. A row header/feature id includes a prefix to specify the feature type
 
-'''
+```
 "N:" Prefix for numerical feature id.
 "C:" Prefix for categorical feature id.
 "B:" Prefix for boolean feature id.
-'''
+```
 
 Categorical and boolean features use strings for their category labels. Missing values are represented
 by "?","nan","na", or "null" (case insensitive). A short example:
 
-'''
+```
 featureid	case1	case2	case3
 N:NumF1	0.0	.1	na
 C:CatF2 red	red	green
-'''
+```
 
 
 Stochastic Forest Files
