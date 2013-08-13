@@ -1,6 +1,6 @@
 /*
 Package CloudForest implements ensembles of decision trees for machine
-learning in pure Go (golang tp search engines). It implementations a number of related algorithms
+learning in pure Go (golang tp search engines). It allows for a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
 numerical/categorical data with missing values. These include:
 
@@ -181,14 +181,6 @@ as described in [3]
 
 [3] http://projecteuclid.org/DPubS?verb=Display&version=1.0&service=UI&handle=euclid.aoas/1223908043&page=record
 
-Importance and Contrasts
-
-Variable Importance in CloudForest is calculated as the mean decrease in impurity over all of
-the splits made using a feature.
-
-To provide a baseline for evaluating importance, artificial contrast features can be used by
-including shuffled copies of existing features.
-
 
 Main Structures
 
@@ -230,159 +222,6 @@ and Splitter abstraction.
 Allowing data to reside anywhere. This would involve abstracting FeatureMatrix to allow database etc
 driven implementations.
 
-
-
-
-
-
-
-
-Growforest Utility
-
-"growforest" trains a forest using the following parameters which can be listed with -h
-
-	Usage of growforest:
-	  -contrastall=false: Include a shuffled artificial contrast copy of every feature.
-	  -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
-	  -cpuprofile="": write cpu profile to file
-	  -entropy=false: Use entropy minimizing classification (target must be categorical).
-	  -importance="": File name to output importance.
-	  -impute=false: Impute missing values to feature mean/mode instead of filtering them out when splitting.
-	  -l1=false: Use l1 norm regression (target must be numeric).
-	  -leafSize=0: The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.
-	  -mTry=0: Number of candidate features for each split. Inferred to ceil(swrt(nFeatures)) if <=0.
-	  -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
-	  -nCores=1: The number of cores to use.
-	  -nSamples=0: The number of cases to sample (with replacement) for each tree grow. If <=0 set to total number of cases
-	  -nTrees=100: Number of trees to grow in the predictor.
-	  -rfpred="rface.sf": File name to output predictor forest in sf format.
-	  -splitmissing=false: Split missing values onto a third branch at each node (experimental).
-	  -target="": The row header of the target in the feature matrix.
-	  -train="featurematrix.afm": AFM formated feature matrix containing training data.
-
-
-
-
-
-Applyforrest Utility
-
-"applyforest" applies a forest to the specified feature matrix and outputs predictions as a two column
-(caselabel	predictedvalue) tsv.
-
-	Usage of applyforest:
-	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
-	  -preds="predictions.tsv": The name of a file to write the predictions into.
-	  -rfpred="rface.sf": A predictor forest.
-
-
-
-Errorrate Utility
-
-errorrate calculates the error of a forest vs a testing data set and reports it to standard out
-
-	Usage of errorrate:
-	  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
-	  -rfpred="rface.sf": A predictor forest.
-
-
-Leafcount Utility
-
-leafcount outputs counts of case case co-occurrence on leaf nodes (Brieman's proximity) and counts of the
-number of times a feature is used to split a node containing each case (a measure of relative/local
-importance).
-
-	Usage of leafcount:
-	  -branches="branches.tsv": a case by feature sparse matrix of leaf co-occurance in tsv format
-	  -fm="featurematrix.afm": AFM formated feature matrix to use.
-	  -leaves="leaves.tsv": a case by case sparse matrix of leaf co-occurance in tsv format
-	  -rfpred="rface.sf": A predictor forest.
-
-
-Feature Matrix Files
-
-CloudForest borrows the annotated feature matrix (.afm) and stoicastic forest (.sf) file formats
-from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
-
-An annotated feature matrix (.afm) file is a tab delineated file with column and row headers. Columns represent cases and rows
-represent features. A row header/feature id includes a prefix to specify the feature type
-
-	"N:" Prefix for numerical feature id.
-	"C:" Prefix for categorical feature id.
-	"B:" Prefix for boolean feature id.
-
-Categorical and boolean features use strings for their category labels. Missing values are represented
-by "?","nan","na", or "null" (case insensitive). A short example:
-
-	featureid	case1	case2	case3
-	N:NumF1	0.0	.1	na
-	C:CatF2 red	red	green
-
-
-Stochastic Forest Files
-
-A stochastic forest (.sf) file contains a forest of decision trees. The main advantage of this
-format as opposed to an established format like json is that an sf file can be written iteratively
-tree by tree and multiple .sf files can be combined with minimal logic required allowing for
-massively parallel growth of forests with low memory use.
-
-An .sf file consists of lines each of which is a comma separated list of key value pairs. Lines can
-designate either a FOREST, TREE, or NODE. Each tree belongs to the preceding forest and each node to
-the preceding tree. Nodes must be written in order of increasing depth.
-
-CloudForest generates fewer fields then rf-ace but requires the following. Other fields will be
-ignored
-
-Forest requires forest type (only RF currently), target and ntrees:
-
-	FOREST=RF|GBT|..,TARGET="$feature_id",NTREES=int
-
-Tree requires only an int and the value is  ignored though the line is needed to designate a new tree:
-
-	TREE=int
-
-Node requires a path encoded so that the root node is specified by "*" and each split left or right as "L" or "R".
-Leaf nodes should also define PRED such as "PRED=1.5" or "PRED=red". Splitter nodes should define SPLITTER with
-a feature id inside of double quotes, SPLITTERTYPE=[CATEGORICAL|NUMERICAL] and a LVALUE term which can be either
-a float inside of double quotes representing the highest value sent left or a ":" separated list of categorical
-values sent left.
-
-	NODE=$path,PRED=[float|string],SPLITTER="$feature_id",SPLITTERTYPE=[CATEGORICAL|NUMERICAL] LVALUES="[float|: separated list"
-
-An example .sf file:
-
-	FOREST=RF,TARGET="N:CLIN:TermCategory:NB::::",NTREES=12800
-	TREE=0
-	NODE=*,PRED=3.48283,SPLITTER="B:SURV:Family_Thyroid:F::::maternal",SPLITTERTYPE=CATEGORICAL,LVALUES="false"
-	NODE=*L,PRED=3.75
-	NODE=*R,PRED=1
-
-Cloud forest can parse and apply .sf files generated by at least some versions of rf-ace.
-
-
-References
-
-The idea for (and trademark of the term) Random Forests originated with Leo Brieman and
-Adele Cuttler. Their code and paper's can be found at:
-
-http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm
-
-All code in CloudForest is original but some ideas for methods and optimizations were inspired by
-Timo Erkilla's rf-ace and Andy Liaw and Matthew Wiener randomForest R package based on Brieman and
-Cuttler's code:
-
-https://code.google.com/p/rf-ace/
-http://cran.r-project.org/web/packages/randomForest/index.html
-
-The idea for Artificial Contrasts was found in:
-Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
-Ensembles, Artificial Variables, and Redundancy Elimination"
-http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
-
-The idea for growing trees to minimize categorical entropy comes from Ross Quinlan's ID3:
-http://en.wikipedia.org/wiki/ID3_algorithm
-
-"The Elements of Statistical Learning" 2nd edition by Trevor Hastie, Robert Tibshirani and Jerome Friedman
-was also consulted during development.
 
 */
 package CloudForest

@@ -2,19 +2,24 @@ CloudForest
 ==============
 
 CloudForest implements fast, flexible ensembles of decision trees for machine
-learning in pure Go (golang). It includes implementations of Breiman
-and Cutler's Random Forest for classification and regression on heterogeneous
-numerical/categorical data with missing values and several related algorithms
-including entropy and cost driven classification, L1 regression and feature
-selection with artificial contrasts. It is intended to allow algorithms
-to be quickly modified for your needs.
+learning in pure Go (golang tp search engines). It allows for a number of related algorithms
+for classification, regression, feature selection and structure analysis on heterogeneous
+numerical/categorical data with missing values. These include:
 
-Command line utilities to grow, apply and canalize forests are provided in sub directories
+*Breiman and Cutler's Random Forest for Classification and Regression
+*Adaptive Boosting (AdaBoost) Classification and Regression
+*Gradiant Boosting Tree Regression
+*Entropy and Cost driven classification
+*L1 regression
+*Feature selection with artificial contrasts
+*Proximity and model structure analysis
+
+Command line utilities to grow, apply and analize forests are provided in sub directories
 or CloudForest can be used as a library.
 
 This Document covers comand line ussage and provides algorythmic background.
 
-Documentation has been generated with godoc and can be viewed live at:
+Documentation for coding against CloudForest has been generated with godoc and can be viewed live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
 
 Pull requests and bug reports are welcome; Code Repo and Issue tracker can be found at:
@@ -40,16 +45,17 @@ Quick Start
 
 ```bash
 #grow a predictor forest with default pamaters and save it to forest.sf
-#run growforest -h for more options
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName
 
-#grow a 1000 tree forest using, 16 cores and report out of bag error
-growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob -nThreads 16 -nTrees 1000
+#grow a 1000 tree forest using, 16 cores and report out of bag error with minium leafSize 8 
+growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob -nThreads 16 -nTrees 1000 -leafSize 8
 
 #grow a 1000 tree forest evaluating half the features as canidates at each split and reporting oob error
 #after each tree to watch for convergence
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName -mTry .5 -progress
 
+#report all growforest options
+growforest -h
 
 #Print the (balanced for classification, least squares for regression error rate on test data to standard out
 errorrate -fm test.fm -rfpred forest.sf
@@ -68,51 +74,76 @@ leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -brances branches
 ```
 
 Growforest Utility
-------------------
+--------------------
 
-"growforest" trains a forest using the following parameters which can be listed with -h
+growforest trains a forest using the following parameters which can be listed with -h
 
-```
-Usage of growforest:
-  -adaboost=false: Use Adaptive boosting for regresion/classification.
-  -balance=false: Ballance bagging of samples by target class for unbalanced classification.
-  -blacklist="": A list of feature id's to exclude from the set of predictors.
-  -contrastall=false: Include a shuffled artificial contrast copy of every feature.
-  -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
-  -cpuprofile="": write cpu profile to file
-  -entropy=false: Use entropy minimizing classification (target must be categorical).
-  -gbt=0: Use gradiant boosting with the specified learning rate.
-  -importance="": File name to output importance.
-  -impute=false: Impute missing values to feature mean/mode before growth.
-  -l1=false: Use l1 norm regression (target must be numeric).
-  -leafSize="0": The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.
-  -mTry="0": Number of candidate features for each split as a count (ex: 10) or portion of total (ex: .5). Ceil(sqrt(nFeatures)) if <=0.
-  -multiboost=false: Allow multithreaded boosting which msy have unexpected results. (highly experimental)
-  -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
-  -nCores=1: The number of cores to use.
-  -nSamples="0": The number of cases to sample (with replacement) for each tree as a count (ex: 10) or portion of total (ex: .5). If <=0 set to total number of cases.
-  -nTrees=100: Number of trees to grow in the predictor.
-  -nobag=false: Don't bag samples for each tree.
-  -oob=false: Calculte and report oob error.
-  -oobpreds="": Calculate and report oob predictions in the file specified.
-  -ordinal=false: Use ordinal regression (target must be numeric).
-  -permutate=false: Permutate the target feature (to establish random predictive power).
-  -progress=false: Report tree number and running oob error.
-  -rfpred="rface.sf": File name to output predictor forest in sf format.
-  -shuffleRE="": A regular expression to identify features that should be shuffled.
-  -splitmissing=false: Split missing values onto a third branch at each node (experimental).
-  -target="": The row header of the target in the feature matrix.
-  -train="featurematrix.afm": AFM formated feature matrix containing training data.
+ Basic options
+
+ ```
+   -target="": The row header of the target in the feature matrix.
+   -train="featurematrix.afm": AFM formated feature matrix containing training data.
+   -rfpred="rface.sf": File name to output predictor forest in sf format.
+   -leafSize="0": The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.
+   -mTry="0": Number of candidate features for each split as a count (ex: 10) or portion of total (ex: .5). Ceil(sqrt(nFeatures)) if <=0.
+   -nSamples="0": The number of cases to sample (with replacement) for each tree as a count (ex: 10) or portion of total (ex: .5). If <=0 set to total number of cases.
+   -nTrees=100: Number of trees to grow in the predictor.
+  
+   -importance="": File name to output importance.
+ 
+   -oob=false: Calculte and report oob error.
+  
+ ```
+
+ Advanced Options
+
+ ```
+   -blacklist="": A list of feature id's to exclude from the set of predictors.
+   -impute=false: Impute missing values to feature mean/mode before growth.
+   -nCores=1: The number of cores to use.
+   -progress=false: Report tree number and running oob error.
+   -oobpreds="": Calculate and report oob predictions in the file specified.
+   -cpuprofile="": write cpu profile to file
+   -multiboost=false: Allow multithreaded boosting which msy have unexpected results. (highly experimental)
+   -nobag=false: Don't bag samples for each tree.
+   -splitmissing=false: Split missing values onto a third branch at each node (experimental).
+ ```
+
+ Regersion Options
+
+ ```
+   -gbt=0: Use gradiant boosting with the specified learning rate.
+   -l1=false: Use l1 norm regression (target must be numeric).
+   -ordinal=false: Use ordinal regression (target must be numeric).
+ ```
+
+ Classification Options
+
+ ```
+   -adaboost=false: Use Adaptive boosting for regresion/classification.
+   -balance=false: Ballance bagging of samples by target class for unbalanced classification.
+   -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
+   -entropy=false: Use entropy minimizing classification (target must be categorical).
+ ```
+
+ Randomizing Data
+
+ Randomizing shuffeling parts of the data or including shuffled "Artifichal Contrasts" can be usefull to establish baselines for comparison.
+
+ ```
+   -permutate=false: Permutate the target feature (to establish random predictive power).
+   -contrastall=false: Include a shuffled artificial contrast copy of every feature.
+   -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
+   -shuffleRE="": A regular expression to identify features that should be shuffled.
  ```
 
 
 
 
-
 Applyforrest Utility
---------------------
+----------------------
 
-"applyforest" applies a forest to the specified feature matrix and outputs predictions as a two column
+applyforest applies a forest to the specified feature matrix and outputs predictions as a two column
 (caselabel	predictedvalue) tsv.
 
 ```
@@ -127,7 +158,7 @@ Usage of applyforest:
 
 
 Errorrate Utility
------------------
+-------------------
 
 errorrate calculates the error of a forest vs a testing data set and reports it to standard out
 
@@ -140,10 +171,10 @@ Usage of errorrate:
 
 
 Leafcount Utility
------------------
+-------------------
 
-leafcount outputs counts of case case co-occurrence on leaf nodes (Brieman's proximity) and counts of the
-number of times a feature is used to split a node containing each case (a measure of relative/local
+leafcount outputs counts of case case co-occurrence on leaf nodes (leaves.tsv, Brieman's proximity) and counts of the
+number of times a feature is used to split a node containing each case (branches.tsv a measure of relative/local
 importance).
 
 ```
@@ -154,9 +185,25 @@ Usage of leafcount:
   -rfpred="rface.sf": A predictor forest.
 ```
 
+Importance and Contrasts
+--------------------------
+
+Variable Importance in CloudForest is based on the as the mean decrease in impurity over all of
+the splits made using a feature. It is output in a tsv as:
+
+Feature DecreasePerUse UseCount DecresePerTree
+
+Where DecresePerTree is calculated over all trees, not just the ones the feature was used in.
+
+To provide a baseline for evaluating importance, artificial contrast features can be used by
+including shuffled copies of existing features (see the Randomizing date options of growforest).
+
+A feature that performs well when randomized (or when the target has been randomized) may be causing
+overfitting.
+
 
 Feature Matrix Files
---------------------
+----------------------
 
 CloudForest borrows the annotated feature matrix (.afm) and stoicastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
@@ -181,7 +228,7 @@ C:CatF2 red	red	green
 
 
 Stochastic Forest Files
------------------------
+-------------------------
 
 A stochastic forest (.sf) file contains a forest of decision trees. The main advantage of this
 format as opposed to an established format like json is that an sf file can be written iteratively
@@ -220,5 +267,31 @@ An example .sf file:
 	NODE=*R,PRED=1
 
 Cloud forest can parse and apply .sf files generated by at least some versions of rf-ace.
+
+References
+-------------
+
+The idea for (and trademark of the term) Random Forests originated with Leo Brieman and
+Adele Cuttler. Their code and paper's can be found at:
+
+http://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm
+
+All code in CloudForest is original but some ideas for methods and optimizations were inspired by
+Timo Erkilla's rf-ace and Andy Liaw and Matthew Wiener randomForest R package based on Brieman and
+Cuttler's code:
+
+https://code.google.com/p/rf-ace/
+http://cran.r-project.org/web/packages/randomForest/index.html
+
+The idea for Artificial Contrasts was found in:
+Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
+Ensembles, Artificial Variables, and Redundancy Elimination"
+http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
+
+The idea for growing trees to minimize categorical entropy comes from Ross Quinlan's ID3:
+http://en.wikipedia.org/wiki/ID3_algorithm
+
+"The Elements of Statistical Learning" 2nd edition by Trevor Hastie, Robert Tibshirani and Jerome Friedman
+was also consulted during development.
 
     
