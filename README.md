@@ -6,13 +6,13 @@ learning in pure Go (golang tp search engines). It allows for a number of relate
 for classification, regression, feature selection and structure analysis on heterogeneous
 numerical/categorical data with missing values. These include:
 
-*Breiman and Cutler's Random Forest for Classification and Regression
-*Adaptive Boosting (AdaBoost) Classification and Regression
-*Gradiant Boosting Tree Regression
-*Entropy and Cost driven classification
-*L1 regression
-*Feature selection with artificial contrasts
-*Proximity and model structure analysis
+* Breiman and Cutler's Random Forest for Classification and Regression
+* Adaptive Boosting (AdaBoost) Classification and Regression
+* Gradiant Boosting Tree Regression
+* Entropy and Cost driven classification
+* L1 regression
+* Feature selection with artificial contrasts
+* Proximity and model structure analysis
 
 Command line utilities to grow, apply and analize forests are provided in sub directories
 or CloudForest can be used as a library.
