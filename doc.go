@@ -18,13 +18,6 @@ Feature selection with artificial contrasts
 
 Proximity and model structure analysis
 
-CloudForest can be imported and coded against or Command line utilities to grow, apply and analyze
-forests are provided in sub directories and document below.
-
-CloudForest was created by Ryan Bressler and is being developed in the Shumelivich Lab at
-the Institute for Systems Biology for use on genomic/biomedical data with partial support
-from The Cancer Genome Atlas and the Inova Translational Medicine Institute.
-
 The API hasn't stabelized yet and may change rappidly. Tests and benchmarks have been performed
 only on propritary and unpublished data sets and cannont yet be released.
 
@@ -33,6 +26,10 @@ http://godoc.org/github.com/ryanbressler/CloudForest
 
 Pull requests and bug reports are welcome; Development Code Repo and Issue tracker can be found at:
 https://github.com/ryanbressler/CloudForest
+
+CloudForest was created by Ryan Bressler and is being developed in the Shumelivich Lab at
+the Institute for Systems Biology for use on genomic/biomedical data with partial support
+from The Cancer Genome Atlas and the Inova Translational Medicine Institute.
 
 
 Goals
