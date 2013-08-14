@@ -15,7 +15,7 @@ func main() {
 	rf := flag.String("rfpred",
 		"rface.sf", "A predictor forest.")
 	predfn := flag.String("preds",
-		"predictions.tsv", "The name of a file to write the predictions into.")
+		"", "The name of a file to write the predictions into.")
 	var num bool
 	flag.BoolVar(&num, "mean", false, "Force numeric (mean) voteing.")
 	var cat bool
@@ -41,9 +41,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	predfile, err := os.Create(*predfn)
-	if err != nil {
-		log.Fatal(err)
+	var predfile *os.File
+	if *predfn != "" {
+		predfile, err = os.Create(*predfn)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer predfile.Close()
 	}
 
 	var bb CloudForest.VoteTallyer
@@ -61,16 +65,17 @@ func main() {
 	targeti, hasTarget := data.Map[forest.Target]
 	if hasTarget {
 		er := bb.TallyError(data.Data[targeti])
-		fmt.Printf("Error Rate: %v\n", er)
+		fmt.Printf("%v\n", er)
 	}
-
-	fmt.Printf("Outputting label predicted actual tsv o %v\n", *predfn)
-	for i, l := range data.CaseLabels {
-		actual := "NA"
-		if hasTarget {
-			actual = data.Data[targeti].GetStr(i)
+	if *predfn != "" {
+		fmt.Printf("Outputting label predicted actual tsv o %v\n", *predfn)
+		for i, l := range data.CaseLabels {
+			actual := "NA"
+			if hasTarget {
+				actual = data.Data[targeti].GetStr(i)
+			}
+			fmt.Fprintf(predfile, "%v\t%v\t%v\n", l, bb.Tally(i), actual)
 		}
-		fmt.Fprintf(predfile, "%v\t%v\t%v\n", l, bb.Tally(i), actual)
 	}
 
 }

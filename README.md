@@ -2,22 +2,22 @@ CloudForest
 ==============
 
 CloudForest implements fast, flexible ensembles of decision trees for machine
-learning in pure Go (golang tp search engines). It allows for a number of related algorithms
+learning in pure Go (golang to search engines). It allows for a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
-numerical/categorical data with missing values. These include:
+numerical / categorical data with missing values. These include:
 
 * Breiman and Cutler's Random Forest for Classification and Regression
 * Adaptive Boosting (AdaBoost) Classification and Regression
-* Gradiant Boosting Tree Regression
+* Gradient Boosting Tree Regression
 * Entropy and Cost driven classification
 * L1 regression
 * Feature selection with artificial contrasts
 * Proximity and model structure analysis
 
-Command line utilities to grow, apply and analize forests are provided in sub directories
+Command line utilities to grow, apply and analyze forests are provided in sub directories
 or CloudForest can be used as a library.
 
-This Document covers comand line ussage and provides algorythmic background.
+This Document covers command line usage and provides algorithmic background.
 
 Documentation for coding against CloudForest has been generated with godoc and can be viewed live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
@@ -28,14 +28,13 @@ https://github.com/ryanbressler/CloudForest
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
 Biology.
 
-Instalation
+Installation
 -------------
 With go and go path set up:
 
 ```bash
 go get github.com/ryanbressler/CloudForest
 go install github.com/ryanbressler/CloudForest/growforest
-go install github.com/ryanbressler/CloudForest/errorrate
 go install github.com/ryanbressler/CloudForest/applyforest
 go install github.com/ryanbressler/CloudForest/leafcount
 ```
@@ -44,39 +43,53 @@ Quick Start
 -------------
 
 ```bash
-#grow a predictor forest with default pamaters and save it to forest.sf
+#grow a predictor forest with default parameters and save it to forest.sf
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName
 
-#grow a 1000 tree forest using, 16 cores and report out of bag error with minium leafSize 8 
+#grow a 1000 tree forest using, 16 cores and report out of bag error with minimum leafSize 8 
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob -nThreads 16 -nTrees 1000 -leafSize 8
 
-#grow a 1000 tree forest evaluating half the features as canidates at each split and reporting oob error
-#after each tree to watch for convergence
+#grow a 1000 tree forest evaluating half the features as candidates at each split and reporting 
+#out of bag error after each tree to watch for convergence
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName -mTry .5 -progress
 
 #report all growforest options
 growforest -h
 
 #Print the (balanced for classification, least squares for regression error rate on test data to standard out
-errorrate -fm test.fm -rfpred forest.sf
+applyforest -fm test.fm -rfpred forest.sf
 
 #Apply the forest, report errorrate and save predictions
 #Predictions are output in a tsv as:
 #CaseLabel	Predicted	Actual
-errorrate -fm test.fm -rfpred forest.sf -preds predictions.tsv
+applyforest -fm test.fm -rfpred forest.sf -preds predictions.tsv
 
 #Calculate counts of case vs case (leaves) and case vs feature (branches) proximity.
 #Leaves are reported as:
 #Case1 Case2 Count
 #Branches Are Reported as:
 #Case Feature Count
-leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -brances branches.tsv
+leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -branches branches.tsv
 ```
 
 Growforest Utility
 --------------------
 
 growforest trains a forest using the following parameters which can be listed with -h
+
+Paramater's are implemented using go's parameter parser so that boolean parameters can be
+set to true with a simple flag:
+    
+    #the following are equivalent
+    growforest -oob
+    growforest -oob=true
+
+And equals signs and quotes are optional for other parameters:
+	
+    #the following are equivalent
+	growforest -train featurematrix.afm
+	growforest -train="featurematrix.afm"
+
 
  Basic options
 
@@ -91,7 +104,7 @@ growforest trains a forest using the following parameters which can be listed wi
   
    -importance="": File name to output importance.
  
-   -oob=false: Calculte and report oob error.
+   -oob=false: Calculate and report oob error.
   
  ```
 
@@ -109,19 +122,20 @@ growforest trains a forest using the following parameters which can be listed wi
    -splitmissing=false: Split missing values onto a third branch at each node (experimental).
  ```
 
- Regersion Options
+ Regression Options
 
  ```
-   -gbt=0: Use gradiant boosting with the specified learning rate.
+   -gbt=0: Use gradient boosting with the specified learning rate.
    -l1=false: Use l1 norm regression (target must be numeric).
    -ordinal=false: Use ordinal regression (target must be numeric).
+   -adaboost=false: Use Adaptive boosting (highly experimental for regression).
  ```
 
  Classification Options
 
  ```
-   -adaboost=false: Use Adaptive boosting for regresion/classification.
-   -balance=false: Ballance bagging of samples by target class for unbalanced classification.
+   -adaboost=false: Use Adaptive boosting for classification.
+   -balance=false: Balance bagging of samples by target class for unbalanced classification.
    -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
    -entropy=false: Use entropy minimizing classification (target must be categorical).
  ```
@@ -151,24 +165,9 @@ Usage of applyforest:
   -fm="featurematrix.afm": AFM formated feature matrix containing data.
   -mean=false: Force numeric (mean) voteing.
   -mode=false: Force catagorical (mode) voteing.
-  -preds="predictions.tsv": The name of a file to write the predictions into.
+  -preds="": The name of a file to write the predictions into.
   -rfpred="rface.sf": A predictor forest.
 ```
-
-
-
-Errorrate Utility
--------------------
-
-errorrate calculates the error of a forest vs a testing data set and reports it to standard out
-
-```
-Usage of errorrate:
-  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
-  -rfpred="rface.sf": A predictor forest.
-
-```
-
 
 Leafcount Utility
 -------------------
@@ -183,6 +182,18 @@ Usage of leafcount:
   -fm="featurematrix.afm": AFM formated feature matrix to use.
   -leaves="leaves.tsv": a case by case sparse matrix of leaf co-occurrence in tsv format
   -rfpred="rface.sf": A predictor forest.
+```
+
+DEPRECIATED Errorrate Utility (equivlent to applyforest with no -preds option)
+-------------------
+
+errorrate calculates the error of a forest vs a testing data set and reports it to standard out
+
+```
+Usage of errorrate:
+  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
+  -rfpred="rface.sf": A predictor forest.
+
 ```
 
 Importance and Contrasts
@@ -205,11 +216,11 @@ overfitting.
 Feature Matrix Files
 ----------------------
 
-CloudForest borrows the annotated feature matrix (.afm) and stoicastic forest (.sf) file formats
+CloudForest borrows the annotated feature matrix (.afm) and stochastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
 
 An annotated feature matrix (.afm) file is a tab delineated file with column and row headers. Columns represent cases and rows
-represent features. A row header/feature id includes a prefix to specify the feature type
+represent features. A row header / feature id includes a prefix to specify the feature type
 
 ```
 "N:" Prefix for numerical feature id.

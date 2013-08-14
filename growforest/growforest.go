@@ -71,7 +71,7 @@ func main() {
 	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
 
 	var oob bool
-	flag.BoolVar(&oob, "oob", false, "Calculte and report oob error.")
+	flag.BoolVar(&oob, "oob", false, "Calculate and report oob error.")
 
 	var caseoob string
 	flag.StringVar(&caseoob, "oobpreds", "", "Calculate and report oob predictions in the file specified.")
