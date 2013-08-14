@@ -204,13 +204,22 @@ the splits made using a feature. It is output in a tsv as:
 
 Feature DecreasePerUse UseCount DecresePerTree DecresePerTreeUsed TreeUsedCount MeanMinimalDepth
 
-Where DecresePerTree is calculated over all trees, not just the ones the feature was used in and DecresePerTree
+Where DecresePerTree is calculated over all trees, not just the ones the feature was used in and DecresePerTree.
+
+Each of these scores has different properties:
+* Per-use and per-tree-used scores may be more resistant to feature redundancy, 
+* Per-tree-used and per-tree scores may better pick out complex effects.
+* Mean Minimal Depth has been proposed (see "Random Survival Forests") as an alternative importance.
 
 To provide a baseline for evaluating importance, artificial contrast features can be used by
-including shuffled copies of existing features (see the Randomizing date options of growforest).
+including shuffled copies of existing features (-nContrasts, -contrastAll).
 
 A feature that performs well when randomized (or when the target has been randomized) may be causing
-overfitting.
+overfitting. 
+
+The option to permutate the target (-permutate) will establish a minimum random baseline. Using a 
+regular expression (-shuffleRE) to shuffle part of the data can be useful in teasing out the contributions of 
+different subsets of features. 
 
 
 Feature Matrix Files
