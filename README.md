@@ -17,7 +17,7 @@ numerical / categorical data with missing values. These include:
 Command line utilities to grow, apply and analyze forests are provided in sub directories
 or CloudForest can be used as a library.
 
-This Document covers command line usage and provides algorithmic background.
+This Document covers command line usage, file formats and some algorithmic background.
 
 Documentation for coding against CloudForest has been generated with godoc and can be viewed live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
@@ -202,9 +202,9 @@ Importance and Contrasts
 Variable Importance in CloudForest is based on the as the mean decrease in impurity over all of
 the splits made using a feature. It is output in a tsv as:
 
-Feature DecreasePerUse UseCount DecresePerTree
+Feature DecreasePerUse UseCount DecresePerTree DecresePerTreeUsed TreeUsedCount MeanMinimalDepth
 
-Where DecresePerTree is calculated over all trees, not just the ones the feature was used in.
+Where DecresePerTree is calculated over all trees, not just the ones the feature was used in and DecresePerTree
 
 To provide a baseline for evaluating importance, artificial contrast features can be used by
 including shuffled copies of existing features (see the Randomizing date options of growforest).

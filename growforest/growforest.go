@@ -338,10 +338,12 @@ func main() {
 	//****************** Needed Collections and vars ******************//
 
 	var imppnt *[]*CloudForest.RunningMean
+	var mmdpnt *[]*CloudForest.RunningMean
 	if *imp != "" {
 		fmt.Println("Recording Importance Scores.")
 
 		imppnt = CloudForest.NewRunningMeans(len(data.Data))
+		mmdpnt = CloudForest.NewRunningMeans(len(data.Data))
 	}
 
 	treechan := make(chan *CloudForest.Tree, 0)
@@ -365,6 +367,12 @@ func main() {
 				}
 			}
 
+			var depthUsed *[]int
+			if mmdpnt != nil {
+				du := make([]int, len(data.Data))
+				depthUsed = &du
+			}
+
 			allocs := CloudForest.NewBestSplitAllocs(nSamples, targetf)
 			for {
 				nCases := data.Data[0].Length()
@@ -386,7 +394,17 @@ func main() {
 
 				}
 
-				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, imppnt, allocs)
+				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, imppnt, depthUsed, allocs)
+
+				if mmdpnt != nil {
+					for i, v := range *depthUsed {
+						if v != 0 {
+							(*mmdpnt)[i].Add(float64(v))
+							(*depthUsed)[i] = 0
+						}
+
+					}
+				}
 
 				if boost {
 					boostMutex.Lock()
@@ -460,7 +478,8 @@ func main() {
 		defer impfile.Close()
 		for i, v := range *imppnt {
 			mean, count := v.Read()
-			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", data.Data[i].GetName(), mean, count, mean*float64(count)/float64(nTrees))
+			meanMinDepth, treeCount := (*mmdpnt)[i].Read()
+			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\t%v\t%v\t%v\n", data.Data[i].GetName(), mean, count, mean*float64(count)/float64(nTrees), mean*float64(count)/float64(treeCount), treeCount, meanMinDepth)
 
 		}
 	}
