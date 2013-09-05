@@ -4,28 +4,33 @@ learning in pure Go (golang tp search engines). It allows for a number of relate
 for classification, regression, feature selection and structure analysis on heterogeneous
 numerical/categorical data with missing values. These include:
 
-Breiman and Cutler's Random Forest for Classification and Regression
+	* Breiman and Cutler's Random Forest for Classification and Regression
 
-Adaptive Boosting (AdaBoost) Classification and Regression
+	* Adaptive Boosting (AdaBoost) Classification
 
-Gradiant Boosting Tree Regression
+	* Gradiant Boosting Tree Regression
 
-Entropy and Cost driven classification
+	* Entropy and Cost driven classification
 
-L1 regression
+	* L1 regression
 
-Feature selection with artificial contrasts
+	* Feature selection with artificial contrasts
 
-Proximity and model structure analysis
+	* Proximity and model structure analysis
+
+	* Roughly balanced bagging for unbalanced classification
 
 The API hasn't stabelized yet and may change rappidly. Tests and benchmarks have been performed
-only on propritary and unpublished data sets and cannont yet be released.
+only on embargoed data sets and cannont yet be released.
 
-Documentation is in code and can be viewed with godoc or live at:
+Library Documentation is in code and can be viewed with godoc or live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
 
-Pull requests and bug reports are welcome; Development Code Repo and Issue tracker can be found at:
-https://github.com/ryanbressler/CloudForest
+Documenation of command line utilities and file formats can be found in README.md, which can be
+viewed fromated on github:
+http://github.com/ryanbressler/CloudForest
+
+Pull requests and bug reports are welcome.
 
 CloudForest was created by Ryan Bressler and is being developed in the Shumelivich Lab at
 the Institute for Systems Biology for use on genomic/biomedical data with partial support
@@ -83,6 +88,12 @@ includes several alternative targets:
  EntropyTarget : For use in entropy minimizing classification
  RegretTarget  : For use in classification driven by differing costs in miscategorization.
  L1Target      : For use in L1 norm error regression (which may be less sensitive to outliers).
+ OrdinalTarget : For ordinal regression
+
+Additional targets can be stacked on top of these target to add boosting functionality:
+ GradBoostTarget : For Gradian Boosting Regression
+ AdaBoostTarget  : For Adaptive Boosting Classification
+
 
 
 Efficient Splitting
@@ -197,27 +208,6 @@ but it may be faster to grow the forest to disk as in the growforest utility.
 Prediction and Voting is done using Tree.Vote and CatBallotBox and NumBallotBox which implement the
 VoteTallyer interface.
 
-
-Compiling for Speed
-
-When compiled with go1.1 CloudForest achieves running times similar to implementations in
-other languages. Using gccgo (4.8.0 at least) results in longer running times and is not
-recommended until full go1.1 support is implemented in gcc 4.8.1.
-
-Roadmap
-
-Development of CloudForest is being driven by our needs as we analyze large biomedical data sets.
-As such new and modified analysis will be added as needed. The basic functionality has stabilized
-but we have discussed several possible changes that may require additional abstraction and/or
-changes in the api. These include:
-
-Allow additional types of candidate features. Some multidimensional data types
-may not be best served by decomposition into categorical and numerical features. It would be possible
-to allow arbitrary feature types by adding CanidateFeature (which should expose BestSplit), CodedSplitter
-and Splitter abstraction.
-
-Allowing data to reside anywhere. This would involve abstracting FeatureMatrix to allow database etc
-driven implementations.
 
 
 */
