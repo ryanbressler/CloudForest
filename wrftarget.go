@@ -1,9 +1,5 @@
 package CloudForest
 
-import (
-	"math"
-)
-
 /*
 WRFTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
 */
@@ -15,8 +11,7 @@ type WRFTarget struct {
 /*
 NewWRFTarget creates a categorical adaptive boosting target and initializes its weights.
 */
-func NewWRFTarget(f CatFeature) (abt *WRFTarget, weights map[string]float64) {
-	nCases := f.Length()
+func NewWRFTarget(f CatFeature, weights map[string]float64) (abt *WRFTarget) {
 	abt = &WRFTarget{f, make([]float64, f.NCats())}
 
 	for i, _ := range abt.Weights {
@@ -48,8 +43,8 @@ func (target *WRFTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 		counts[i] = 0
 	}
 	for _, i := range *cases {
-		if !target.Missing[i] {
-			cati := target.CatData[i]
+		if !target.IsMissing(i) {
+			cati := target.Geti(i)
 			counts[cati] += 1
 			total += target.Weights[cati]
 		}
@@ -69,21 +64,23 @@ func (target *WRFTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 func (f *WRFTarget) FindPredicted(cases []int) (pred string) {
 
 	counts := make([]int, f.NCats())
-	for _, i := range *cases {
-		if !f.Missing[i] {
-			counts[f.CatData[i]] += 1
+	for _, i := range cases {
+		if !f.IsMissing(i) {
+			counts[f.Geti(i)] += 1
 		}
 
 	}
-	max := 0
+	m := 0
+	max := 0.0
 	for k, v := range counts {
-		if v*f.Weights[k] > max {
+		val := float64(v) * f.Weights[k]
+		if val > max {
 			m = k
-			max = v
+			max = val
 		}
 	}
 
-	pred = f.Back[f.Modei(cases)]
+	pred = f.NumToCat(m)
 
 	return
 
