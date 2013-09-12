@@ -215,8 +215,6 @@ func (target *DenseNumFeature) Impurity(cases *[]int, counter *[]int) (e float64
 	e = target.Error(cases, m)
 	return
 
-	return
-
 }
 
 //Error returns the  Mean Squared error of the cases specified vs the predicted
