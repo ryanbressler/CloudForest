@@ -29,6 +29,9 @@ func main() {
 	costs := flag.String("cost",
 		"", "For categorical targets, a json string to float map of the cost of falsely identifying each category.")
 
+	rfweights := flag.String("rfweights",
+		"", "For categorical targets, a json string to float map of the weights to use for each catagory in Weighted RF.")
+
 	blacklist := flag.String("blacklist",
 		"", "A list of feature id's to exclude from the set of predictors.")
 
@@ -348,6 +351,16 @@ func main() {
 			regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
 			regTarg.SetCosts(costmap)
 			targetf = regTarg
+		case *rfweights != "":
+			fmt.Println("Using rf weights: ", *rfweights)
+			weightmap := make(map[string]float64)
+			err := json.Unmarshal([]byte(*rfweights), &weightmap)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			wrfTarget := CloudForest.NewWRFTarget(targetf.(CloudForest.CatFeature), weightmap)
+			targetf = wrfTarget
 
 		case entropy:
 			fmt.Println("Using entropy minimization.")
