@@ -112,6 +112,8 @@ And equals signs and quotes are optional for other parameters:
 
  ```
    -blacklist="": A list of feature id's to exclude from the set of predictors.
+   -includeRE="": Filter features that DON'T match this RE.
+   -blockRE="": A regular expression to identify features that should be filtered out.
    -impute=false: Impute missing values to feature mean/mode before growth.
    -nCores=1: The number of cores to use.
    -progress=false: Report tree number and running oob error.

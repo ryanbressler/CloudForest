@@ -47,6 +47,12 @@ func main() {
 	var shuffleRE string
 	flag.StringVar(&shuffleRE, "shuffleRE", "", "A regular expression to identify features that should be shuffled.")
 
+	var blockRE string
+	flag.StringVar(&blockRE, "blockRE", "", "A regular expression to identify features that should be filtered out.")
+
+	var includeRE string
+	flag.StringVar(&includeRE, "includeRE", "", "Filter features that DON'T match this RE.")
+
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
 
@@ -177,6 +183,42 @@ func main() {
 
 	}
 
+	//find the target feature
+	fmt.Printf("Target : %v\n", *targetname)
+	targeti, ok := data.Map[*targetname]
+	if !ok {
+		log.Fatal("Target not found in data.")
+	}
+
+	if blockRE != "" {
+		re := regexp.MustCompile(blockRE)
+		for i, feature := range data.Data {
+			if targeti != i && re.MatchString(feature.GetName()) {
+				if blacklistis[i] == false {
+					blacklisted += 1
+					blacklistis[i] = true
+				}
+
+			}
+
+		}
+
+	}
+
+	if includeRE != "" {
+		re := regexp.MustCompile(includeRE)
+		for i, feature := range data.Data {
+			if targeti != i && !re.MatchString(feature.GetName()) {
+				if blacklistis[i] == false {
+					blacklisted += 1
+					blacklistis[i] = true
+				}
+
+			}
+
+		}
+	}
+
 	nFeatures := len(data.Data) - blacklisted
 	fmt.Printf("nFeatures : %v\n", nFeatures)
 
@@ -190,13 +232,6 @@ func main() {
 	if impute {
 		fmt.Println("Imputing missing values to feature mean/mode.")
 		data.ImputeMissing()
-	}
-
-	//find the target feature
-	fmt.Printf("Target : %v\n", *targetname)
-	targeti, ok := data.Map[*targetname]
-	if !ok {
-		log.Fatal("Target not found in data.")
 	}
 
 	if permutate {
