@@ -1,7 +1,7 @@
 package CloudForest
 
 /*
-WRFTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
+WRFTarget wraps a numerical feature as a target for us weigted random forest.
 */
 type WRFTarget struct {
 	CatFeature
@@ -9,7 +9,7 @@ type WRFTarget struct {
 }
 
 /*
-NewWRFTarget creates a categorical adaptive boosting target and initializes its weights.
+NewWRFTarget creates a weighted random forest target and initializes its weights.
 */
 func NewWRFTarget(f CatFeature, weights map[string]float64) (abt *WRFTarget) {
 	abt = &WRFTarget{f, make([]float64, f.NCats())}
@@ -22,7 +22,7 @@ func NewWRFTarget(f CatFeature, weights map[string]float64) (abt *WRFTarget) {
 }
 
 /*
-WRFTarget.SplitImpurity is an AdaBoosting version of SplitImpurity.
+WRFTarget.SplitImpurity is an weigtedRF version of SplitImpurity.
 */
 func (target *WRFTarget) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
 	nl := float64(len(l))
@@ -58,9 +58,7 @@ func (target *WRFTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	return
 }
 
-//Find predicted takes the indexes of a set of cases and returns the
-//predicted value. For categorical features this is a string containing the
-//most common category and for numerical it is the mean of the values.
+//FindPredicted finds the predicted target as the weighted catagorical Mode.
 func (f *WRFTarget) FindPredicted(cases []int) (pred string) {
 
 	counts := make([]int, f.NCats())

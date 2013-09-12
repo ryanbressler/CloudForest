@@ -51,7 +51,10 @@ growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob -nThread
 
 #grow a 1000 tree forest evaluating half the features as candidates at each split and reporting 
 #out of bag error after each tree to watch for convergence
-growforest -train train.fm -rfpred forest.sf -target B:FeatureName -mTry .5 -progress
+growforest -train train.fm -rfpred forest.sf -target B:FeatureName -mTry .5 -progress 
+
+#growforest with weighted random forest
+growforest -train train.fm -rfpred forest.sf -target B:FeatureName -rfweights '{"true":2,"false":0.5}'
 
 #report all growforest options
 growforest -h
@@ -140,8 +143,14 @@ And equals signs and quotes are optional for other parameters:
    -balance=false: Balance bagging of samples by target class for unbalanced classification.
    -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
    -entropy=false: Use entropy minimizing classification (target must be categorical).
+   -rfweights="": For categorical targets, a json string to float map of the weights to use for each catagory in Weighted RF.
  ```
 
+Note: rfweights and cost should use json to specify the weights and or costs per class using the strings used to represent the class in the boolean or catagorical feature:
+
+```
+   growforest -rfweights '{"true":2,"false":0.5}'
+```
  Randomizing Data
 
  Randomizing shuffeling parts of the data or including shuffled "Artifichal Contrasts" can be usefull to establish baselines for comparison.
