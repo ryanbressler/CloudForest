@@ -13,6 +13,14 @@ numerical / categorical data with missing values. These include:
 * L1 regression
 * Feature selection with artificial contrasts
 * Proximity and model structure analysis
+* Methods for Classification on Unbalanced Data
+
+CloudForest has been optimized to minimize memory use, allow multi-core and learning with 
+minimal allocations and perform especially well learning from categorical features 
+with a small number of class labels. This includes binary data and genomic variant data which
+may have class labels like "reference", "heterozygous", "homozygous".
+
+File formats have been chosen to allow multi machine parallel learning. 
 
 Command line utilities to grow, apply and analyze forests are provided in sub directories
 or CloudForest can be used as a library.
@@ -80,7 +88,7 @@ Growforest Utility
 
 growforest trains a forest using the following parameters which can be listed with -h
 
-Paramater's are implemented using go's parameter parser so that boolean parameters can be
+Parameter's are implemented using go's parameter parser so that boolean parameters can be
 set to true with a simple flag:
     
     #the following are equivalent
@@ -153,7 +161,7 @@ Note: rfweights and cost should use json to specify the weights and or costs per
 ```
  Randomizing Data
 
- Randomizing shuffeling parts of the data or including shuffled "Artifichal Contrasts" can be usefull to establish baselines for comparison.
+ Randomizing shuffling parts of the data or including shuffled "Artifichal Contrasts" can be useful to establish baselines for comparison.
 
  ```
    -permutate=false: Permutate the target feature (to establish random predictive power).
@@ -332,5 +340,12 @@ http://en.wikipedia.org/wiki/ID3_algorithm
 
 "The Elements of Statistical Learning" 2nd edition by Trevor Hastie, Robert Tibshirani and Jerome Friedman
 was also consulted during development.
+
+Methods for classification from unbalanced data are covered in several papers:
+http://statistics.berkeley.edu/sites/default/files/tech-reports/666.pdf
+http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3163175/
+http://www.biomedcentral.com/1471-2105/11/523
+http://bib.oxfordjournals.org/content/early/2012/03/08/bib.bbs006
+http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0067863
 
     
