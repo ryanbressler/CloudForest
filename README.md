@@ -151,10 +151,10 @@ And equals signs and quotes are optional for other parameters:
    -balance=false: Balance bagging of samples by target class for unbalanced classification.
    -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
    -entropy=false: Use entropy minimizing classification (target must be categorical).
-   -rfweights="": For categorical targets, a json string to float map of the weights to use for each catagory in Weighted RF.
+   -rfweights="": For categorical targets, a json string to float map of the weights to use for each category in Weighted RF.
  ```
 
-Note: rfweights and cost should use json to specify the weights and or costs per class using the strings used to represent the class in the boolean or catagorical feature:
+Note: rfweights and cost should use json to specify the weights and or costs per class using the strings used to represent the class in the boolean or categorical feature:
 
 ```
    growforest -rfweights '{"true":2,"false":0.5}'
