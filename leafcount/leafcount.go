@@ -5,6 +5,7 @@ import (
 	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -23,33 +24,39 @@ func main() {
 	data := CloudForest.ParseAFM(datafile)
 	log.Print("Data file ", len(data.Data), " by ", data.Data[0].Length())
 
-	forestfile, err := os.Open(*rf) // For read access.
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer forestfile.Close()
-	forestreader := CloudForest.NewForestReader(forestfile)
-	forest, err := forestreader.ReadForest()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Print("Forest has ", len(forest.Trees), " trees ")
-
 	counts := new(CloudForest.SparseCounter)
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 
-	for i := 0; i < len(forest.Trees); i++ {
-		leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
-		for _, leaf := range leaves {
-			for j := 0; j < len(leaf.Cases); j++ {
-				for k := 0; k < len(leaf.Cases); k++ {
+	for _, fn := range strings.Split(*rf, ",") {
 
-					counts.Add(leaf.Cases[j], leaf.Cases[k], 1)
+		forestfile, err := os.Open(fn) // For read access.
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer forestfile.Close()
+		forestreader := CloudForest.NewForestReader(forestfile)
+		forest, err := forestreader.ReadForest()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Print("Forest has ", len(forest.Trees), " trees ")
 
+		counts := new(CloudForest.SparseCounter)
+		caseFeatureCounts := new(CloudForest.SparseCounter)
+
+		for i := 0; i < len(forest.Trees); i++ {
+			leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
+			for _, leaf := range leaves {
+				for j := 0; j < len(leaf.Cases); j++ {
+					for k := 0; k < len(leaf.Cases); k++ {
+
+						counts.Add(leaf.Cases[j], leaf.Cases[k], 1)
+
+					}
 				}
 			}
-		}
 
+		}
 	}
 
 	log.Print("Outputting Case Case  Co-Occurrence Counts")
