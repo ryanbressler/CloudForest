@@ -41,9 +41,6 @@ func main() {
 		}
 		log.Print("Forest has ", len(forest.Trees), " trees ")
 
-		counts := new(CloudForest.SparseCounter)
-		caseFeatureCounts := new(CloudForest.SparseCounter)
-
 		for i := 0; i < len(forest.Trees); i++ {
 			leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
 			for _, leaf := range leaves {
