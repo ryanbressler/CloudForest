@@ -36,6 +36,7 @@ func main() {
 		runtime.GOMAXPROCS(len(files))
 	}
 
+	doneChan := make(chan int, 0)
 	for _, fn := range files {
 
 		go func() {
@@ -64,8 +65,13 @@ func main() {
 				}
 
 			}
+			doneChan <- 1
 		}()
 
+	}
+
+	for i := 0; i < len(files); i++ {
+		<-doneChan
 	}
 
 	log.Print("Outputting Case Case  Co-Occurrence Counts")
