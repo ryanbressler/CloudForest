@@ -5,6 +5,7 @@ import (
 	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -13,6 +14,8 @@ func main() {
 	rf := flag.String("rfpred", "rface.sf", "A predictor forest.")
 	outf := flag.String("leaves", "leaves.tsv", "a case by case sparse matrix of leaf co-occurrence in tsv format")
 	boutf := flag.String("branches", "branches.tsv", "a case by feature sparse matrix of leaf co-occurrence in tsv format")
+	var multithread bool
+	flag.BoolVar(&multithread, "multithread", false, "Parse seperate forests in seperate threads.")
 
 	flag.Parse()
 
@@ -27,33 +30,42 @@ func main() {
 	counts := new(CloudForest.SparseCounter)
 	caseFeatureCounts := new(CloudForest.SparseCounter)
 
-	for _, fn := range strings.Split(*rf, ",") {
+	files := strings.Split(*rf, ",")
 
-		forestfile, err := os.Open(fn) // For read access.
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer forestfile.Close()
-		forestreader := CloudForest.NewForestReader(forestfile)
-		forest, err := forestreader.ReadForest()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Print("Forest has ", len(forest.Trees), " trees ")
+	if multithread {
+		runtime.GOMAXPROCS(len(files))
+	}
 
-		for i := 0; i < len(forest.Trees); i++ {
-			leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
-			for _, leaf := range leaves {
-				for j := 0; j < len(leaf.Cases); j++ {
-					for k := 0; k < len(leaf.Cases); k++ {
+	for _, fn := range files {
 
-						counts.Add(leaf.Cases[j], leaf.Cases[k], 1)
+		go func() {
+			forestfile, err := os.Open(fn) // For read access.
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer forestfile.Close()
+			forestreader := CloudForest.NewForestReader(forestfile)
+			forest, err := forestreader.ReadForest()
+			if err != nil {
+				log.Fatal(err)
+			}
+			log.Print("Forest has ", len(forest.Trees), " trees ")
 
+			for i := 0; i < len(forest.Trees); i++ {
+				leaves := forest.Trees[i].GetLeaves(data, caseFeatureCounts)
+				for _, leaf := range leaves {
+					for j := 0; j < len(leaf.Cases); j++ {
+						for k := 0; k < len(leaf.Cases); k++ {
+
+							counts.Add(leaf.Cases[j], leaf.Cases[k], 1)
+
+						}
 					}
 				}
-			}
 
-		}
+			}
+		}()
+
 	}
 
 	log.Print("Outputting Case Case  Co-Occurrence Counts")
