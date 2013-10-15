@@ -63,11 +63,13 @@ func NewRunningMeans(size int) *[]*RunningMean {
 //Sparse counter uses maps to track sparse integer counts in large matrix.
 //The matrix is assumed to contain zero values where nothing has been added.
 type SparseCounter struct {
-	Map map[int]map[int]int
+	Map   map[int]map[int]int
+	mutex sync.Mutex
 }
 
 //Add increases the count in i,j by val.
 func (sc *SparseCounter) Add(i int, j int, val int) {
+	sc.mutex.Lock()
 	if sc.Map == nil {
 		sc.Map = make(map[int]map[int]int, 0)
 	}
@@ -79,11 +81,13 @@ func (sc *SparseCounter) Add(i int, j int, val int) {
 		sc.Map[i][j] = 0
 	}
 	sc.Map[i][j] = sc.Map[i][j] + val
+	sc.mutex.Unlock()
 }
 
 //Write tsv writes the non zero counts out into a three column tsv containing i, j, and
 //count in the columns.
 func (sc *SparseCounter) WriteTsv(writer io.Writer) {
+	sc.mutex.Lock()
 	for i := range sc.Map {
 		for j, val := range sc.Map[i] {
 			if _, err := fmt.Fprintf(writer, "%v\t%v\t%v\n", i, j, val); err != nil {
@@ -91,6 +95,7 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 			}
 		}
 	}
+	sc.mutex.Unlock()
 }
 
 /*
