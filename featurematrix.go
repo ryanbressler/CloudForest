@@ -32,12 +32,14 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases []int,
 	candidates []int,
 	leafSize int,
+	vet bool,
 	allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64) {
 
 	impurityDecrease = minImp
 
 	var f, bestF *Feature
 	var inerImp float64
+	var vetImp float64
 	var split, bestSplit interface{}
 
 	parentImp := target.Impurity(&cases, allocs.Counter)
@@ -45,7 +47,13 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	for _, i := range candidates {
 		f = &fm.Data[i]
 		split, inerImp = (*f).BestSplit(target, &cases, parentImp, leafSize, allocs)
-		//BUG more stringent cutoff in BestSplitter?
+
+		if vet && inerImp > minImp && inerImp > impurityDecrease {
+			allocs.ContrastTarget.(Feature).Shuffle()
+			_, vetImp = (*f).BestSplit(allocs.ContrastTarget, &cases, parentImp, leafSize, allocs)
+			inerImp = inerImp - vetImp
+		}
+
 		if inerImp > minImp && inerImp > impurityDecrease {
 			bestF = f
 			impurityDecrease = inerImp

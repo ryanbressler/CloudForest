@@ -4,11 +4,12 @@ import ()
 
 //BestSplitAllocs contains reusable allocations for split searching.
 type BestSplitAllocs struct {
-	Left       *[]int
-	Right      *[]int
-	NonMissing *[]int
-	Counter    *[]int
-	Sorter     *SortableFeature
+	Left           *[]int
+	Right          *[]int
+	NonMissing     *[]int
+	Counter        *[]int
+	Sorter         *SortableFeature
+	ContrastTarget Target
 }
 
 //NewBestSplitAllocs initializes all of the reusable allocations for split
@@ -23,6 +24,7 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 		&right,
 		&nonmissing,
 		&counter,
-		new(SortableFeature)}
+		new(SortableFeature),
+		target.(Feature).Copy().(Target)}
 	return
 }

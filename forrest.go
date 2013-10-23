@@ -35,6 +35,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 	nTrees int,
 	leafSize int,
 	splitmissing bool,
+	vet bool,
 	importance *[]*RunningMean) (f *Forest) {
 
 	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees)}
@@ -56,7 +57,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())
-		f.Trees[i].Grow(fm, target, cases, candidates, mTry, leafSize, splitmissing, importance, nil, allocs)
+		f.Trees[i].Grow(fm, target, cases, candidates, mTry, leafSize, splitmissing, vet, importance, nil, allocs)
 	}
 	return
 }

@@ -76,6 +76,9 @@ func main() {
 	var l1 bool
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
+	var vet bool
+	flag.BoolVar(&vet, "vet", false, "Vet potential spliters by comparison to best split of randomized data.")
+
 	var entropy bool
 	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
 
@@ -442,7 +445,7 @@ func main() {
 
 				}
 
-				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, imppnt, depthUsed, allocs)
+				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, vet, imppnt, depthUsed, allocs)
 
 				if mmdpnt != nil {
 					for i, v := range *depthUsed {
