@@ -30,7 +30,7 @@ func main() {
 		"", "For categorical targets, a json string to float map of the cost of falsely identifying each category.")
 
 	rfweights := flag.String("rfweights",
-		"", "For categorical targets, a json string to float map of the weights to use for each catagory in Weighted RF.")
+		"", "For categorical targets, a json string to float map of the weights to use for each category in Weighted RF.")
 
 	blacklist := flag.String("blacklist",
 		"", "A list of feature id's to exclude from the set of predictors.")
@@ -77,7 +77,7 @@ func main() {
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
 	var vet bool
-	flag.BoolVar(&vet, "vet", false, "Vet potential spliters by comparison to best split of randomized data.")
+	flag.BoolVar(&vet, "vet", false, "Vet potential splitters by comparison to best split of randomized data.")
 
 	var entropy bool
 	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
@@ -92,25 +92,25 @@ func main() {
 	flag.BoolVar(&progress, "progress", false, "Report tree number and running oob error.")
 
 	var adaboost bool
-	flag.BoolVar(&adaboost, "adaboost", false, "Use Adaptive boosting for regresion/classification.")
+	flag.BoolVar(&adaboost, "adaboost", false, "Use Adaptive boosting for regression/classification.")
 
 	var gradboost float64
 	flag.Float64Var(&gradboost, "gbt", 0.0, "Use gradiant boosting with the specified learning rate.")
 
 	var multiboost bool
-	flag.BoolVar(&multiboost, "multiboost", false, "Allow multithreaded boosting which msy have unexpected results. (highly experimental)")
+	flag.BoolVar(&multiboost, "multiboost", false, "Allow multithreaded boosting which may have unexpected results. (highly experimental)")
 
 	var nobag bool
 	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
 
 	var balance bool
-	flag.BoolVar(&balance, "balance", false, "Ballance bagging of samples by target class for unbalanced classification.")
+	flag.BoolVar(&balance, "balance", false, "Balance bagging of samples by target class for unbalanced classification.")
 
 	var ordinal bool
 	flag.BoolVar(&ordinal, "ordinal", false, "Use ordinal regression (target must be numeric).")
 
 	var permutate bool
-	flag.BoolVar(&permutate, "permutate", false, "Permutate the target feature (to establish random predictive power).")
+	flag.BoolVar(&permutate, "permute", false, "Permute the target feature (to establish random predictive power).")
 
 	flag.Parse()
 

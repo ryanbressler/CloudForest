@@ -130,7 +130,7 @@ And equals signs and quotes are optional for other parameters:
    -progress=false: Report tree number and running oob error.
    -oobpreds="": Calculate and report oob predictions in the file specified.
    -cpuprofile="": write cpu profile to file
-   -multiboost=false: Allow multithreaded boosting which msy have unexpected results. (highly experimental)
+   -multiboost=false: Allow multithreaded boosting which may have unexpected results. (highly experimental)
    -nobag=false: Don't bag samples for each tree.
    -splitmissing=false: Split missing values onto a third branch at each node (experimental).
  ```
@@ -163,11 +163,16 @@ Note: rfweights and cost should use json to specify the weights and or costs per
 
  Randomizing shuffling parts of the data or including shuffled "Artifichal Contrasts" can be useful to establish baselines for comparison.
 
+ The "vet" option extends the principle to tree growth. When evaluating potential splitters it subtracts the impurity decrease from the best 
+ split candidate splitters can make on a shuffled target from the impurity decrease of the actual best split. This is intended to penalizes 
+ certain types of features that contribute to over-fitting including unique identifiers and sparse features
+
  ```
-   -permutate=false: Permutate the target feature (to establish random predictive power).
+   -permute: Permute the target feature (to establish random predictive power).
    -contrastall=false: Include a shuffled artificial contrast copy of every feature.
    -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
    -shuffleRE="": A regular expression to identify features that should be shuffled.
+   -vet=false: Vet potential splitters by comparison to best split of randomized data.
  ```
 
 
@@ -182,8 +187,8 @@ applyforest applies a forest to the specified feature matrix and outputs predict
 ```
 Usage of applyforest:
   -fm="featurematrix.afm": AFM formated feature matrix containing data.
-  -mean=false: Force numeric (mean) voteing.
-  -mode=false: Force catagorical (mode) voteing.
+  -mean=false: Force numeric (mean) voting.
+  -mode=false: Force categorical (mode) voting.
   -preds="": The name of a file to write the predictions into.
   -rfpred="rface.sf": A predictor forest.
 ```

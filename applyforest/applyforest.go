@@ -17,9 +17,9 @@ func main() {
 	predfn := flag.String("preds",
 		"", "The name of a file to write the predictions into.")
 	var num bool
-	flag.BoolVar(&num, "mean", false, "Force numeric (mean) voteing.")
+	flag.BoolVar(&num, "mean", false, "Force numeric (mean) voting.")
 	var cat bool
-	flag.BoolVar(&cat, "mode", false, "Force catagorical (mode) voteing.")
+	flag.BoolVar(&cat, "mode", false, "Force categorical (mode) voting.")
 
 	flag.Parse()
 
