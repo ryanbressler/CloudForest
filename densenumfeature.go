@@ -347,7 +347,7 @@ func (f *DenseNumFeature) Copy() Feature {
 	return fake
 }
 
-func (f *DenseNumFeature) CopyInTo(copyf Feature) Feature {
+func (f *DenseNumFeature) CopyInTo(copyf Feature) {
 	copy(copyf.(*DenseNumFeature).Missing, f.Missing)
 	copy(copyf.(*DenseNumFeature).NumData, f.NumData)
 }

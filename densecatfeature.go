@@ -703,7 +703,7 @@ func (f *DenseCatFeature) Copy() Feature {
 
 }
 
-func (f *DenseCatFeature) CopyInTo(copyf Feature) Feature {
+func (f *DenseCatFeature) CopyInTo(copyf Feature) {
 	copy(copyf.(*DenseCatFeature).Missing, f.Missing)
 	copy(copyf.(*DenseCatFeature).CatData, f.CatData)
 }
