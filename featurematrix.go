@@ -21,12 +21,9 @@ type FeatureMatrix struct {
 BestSplitter finds the best splitter from a number of candidate features to slit on by looping over
 all features and calling BestSplit.
 
-itter tells the splitter to use iterative (instead of random) searches for large categorical features.
+leafSize specifies the minimum leafSize that can be be produced by the split.
 
-splitmissing tells the splitter to keep missing features in a third branch at each node.
-
-Vet specifies weather feature splits should be veted against best split that can be made against a
-randomized target.
+Vet specifies weather feature splits should be penalized with a randomized version of themselves.
 
 allocs contains pointers to reusable structures for use while searching for the best split and should
 be initialized to the proper size with NewBestSplitAlocs.

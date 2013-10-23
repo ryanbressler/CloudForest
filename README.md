@@ -148,6 +148,7 @@ And equals signs and quotes are optional for other parameters:
 
  ```
    -adaboost=false: Use Adaptive boosting for classification.
+   -balanceby="": Roughly balanced bag the target within each class of this feature.
    -balance=false: Balance bagging of samples by target class for unbalanced classification.
    -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
    -entropy=false: Use entropy minimizing classification (target must be categorical).

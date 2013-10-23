@@ -106,6 +106,9 @@ func main() {
 	var balance bool
 	flag.BoolVar(&balance, "balance", false, "Balance bagging of samples by target class for unbalanced classification.")
 
+	var balanceby string
+	flag.StringVar(&balanceby, "balanceby", "", "Roughly balanced bag the target within each class of this feature.")
+
 	var ordinal bool
 	flag.BoolVar(&ordinal, "ordinal", false, "Use ordinal regression (target must be numeric).")
 
@@ -262,9 +265,15 @@ func main() {
 	targetf := data.Data[targeti]
 	unboostedTarget := targetf.Copy()
 
-	var bSampler *CloudForest.BalancedSampler
+	var bSampler CloudForest.Bagger
 	if balance {
 		bSampler = CloudForest.NewBalancedSampler(targetf.(*CloudForest.DenseCatFeature))
+	}
+
+	if balanceby != "" {
+		bSampler = CloudForest.NewSecondaryBalancedSampler(targetf.(*CloudForest.DenseCatFeature), data.Data[data.Map[balanceby]].(*CloudForest.DenseCatFeature))
+		balance = true
+
 	}
 
 	nNonMissing := 0

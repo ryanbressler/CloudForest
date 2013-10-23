@@ -63,9 +63,15 @@ target is the feature to predict via regression or classification as determined 
 cases specifies the cases to calculate impurity decrease over and can contain repeated values
 to allow for sampling of cases with replacement as in RF.
 
+canidates specifies the potential features to use as splitters
+
 mTry specifies the number of candidate features to evaluate for each split.
 
 leafSize specifies the minimum number of cases at a leafNode.
+
+splitmissing indicates if missing values should be split onto a third branch
+
+vet indicates if splits should be penalized against a randomized version of them selves
 */
 func (t *Tree) Grow(fm *FeatureMatrix,
 	target Target,

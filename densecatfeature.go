@@ -653,7 +653,7 @@ func (f *DenseCatFeature) Shuffle() {
 
 }
 
-//Shuffle does an inflace shuffle of the specified feature
+//ShuffleCases does an inplace shuffle of the specified cases
 func (f *DenseCatFeature) ShuffleCases(cases *[]int) {
 	capacity := len(*cases)
 	//shuffle
