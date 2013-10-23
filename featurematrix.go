@@ -25,6 +25,9 @@ itter tells the splitter to use iterative (instead of random) searches for large
 
 splitmissing tells the splitter to keep missing features in a third branch at each node.
 
+Vet specifies weather feature splits should be veted against best split that can be made against a
+randomized target.
+
 allocs contains pointers to reusable structures for use while searching for the best split and should
 be initialized to the proper size with NewBestSplitAlocs.
 */
@@ -43,7 +46,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	var split, bestSplit interface{}
 
 	if vet {
-		allocs.ContrastTarget.(Feature).Shuffle()
+		allocs.ContrastTarget.(Feature).ShuffleCases(&cases)
 	}
 
 	parentImp := target.Impurity(&cases, allocs.Counter)

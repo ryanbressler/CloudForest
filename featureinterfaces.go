@@ -27,6 +27,7 @@ type Feature interface {
 	ShuffledCopy() (fake Feature)
 	Copy() (copy Feature)
 	Shuffle()
+	ShuffleCases(cases *[]int)
 	ImputeMissing()
 	GetName() string
 }

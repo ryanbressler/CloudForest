@@ -283,7 +283,7 @@ func (f *DenseNumFeature) FindPredicted(cases []int) (pred string) {
 
 }
 
-//Shuffle does an inflace shuffle of the specified feature
+//Shuffle does an inplace shuffle of the specified feature
 func (f *DenseNumFeature) Shuffle() {
 	capacity := len(f.Missing)
 	//shuffle
@@ -295,6 +295,26 @@ func (f *DenseNumFeature) Shuffle() {
 
 		data := f.NumData[j]
 		f.NumData[j] = f.NumData[sourcei]
+		f.NumData[sourcei] = data
+
+	}
+
+}
+
+//Shuffle does an inplace shuffle of the specified feature
+func (f *DenseNumFeature) ShuffleCases(cases *[]int) {
+	capacity := len(*cases)
+	//shuffle
+	for j := 0; j < capacity; j++ {
+
+		targeti := (*cases)[j]
+		sourcei := (*cases)[j+rand.Intn(capacity-j)]
+		missing := f.Missing[targeti]
+		f.Missing[targeti] = f.Missing[sourcei]
+		f.Missing[sourcei] = missing
+
+		data := f.NumData[targeti]
+		f.NumData[targeti] = f.NumData[sourcei]
 		f.NumData[sourcei] = data
 
 	}

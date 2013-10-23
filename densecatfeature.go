@@ -653,6 +653,26 @@ func (f *DenseCatFeature) Shuffle() {
 
 }
 
+//Shuffle does an inflace shuffle of the specified feature
+func (f *DenseCatFeature) ShuffleCases(cases *[]int) {
+	capacity := len(*cases)
+	//shuffle
+	for j := 0; j < capacity; j++ {
+
+		targeti := (*cases)[j]
+		sourcei := (*cases)[j+rand.Intn(capacity-j)]
+		missing := f.Missing[targeti]
+		f.Missing[targeti] = f.Missing[sourcei]
+		f.Missing[sourcei] = missing
+
+		data := f.CatData[targeti]
+		f.CatData[targeti] = f.CatData[sourcei]
+		f.CatData[sourcei] = data
+
+	}
+
+}
+
 /*ShuffledCopy returns a shuffled version of f for use as an artificial contrast in evaluation of
 importance scores. The new feature will be named featurename:SHUFFLED*/
 func (f *DenseCatFeature) ShuffledCopy() Feature {
