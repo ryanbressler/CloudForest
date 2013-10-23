@@ -347,6 +347,11 @@ func (f *DenseNumFeature) Copy() Feature {
 	return fake
 }
 
+func (f *DenseNumFeature) CopyInTo(copyf Feature) Feature {
+	copy(copyf.(*DenseNumFeature).Missing, f.Missing)
+	copy(copyf.(*DenseNumFeature).NumData, f.NumData)
+}
+
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
 func (f *DenseNumFeature) ImputeMissing() {
 	cases := make([]int, 0, len(f.Missing))

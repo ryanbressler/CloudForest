@@ -703,6 +703,11 @@ func (f *DenseCatFeature) Copy() Feature {
 
 }
 
+func (f *DenseCatFeature) CopyInTo(copyf Feature) Feature {
+	copy(copyf.(*DenseCatFeature).Missing, f.Missing)
+	copy(copyf.(*DenseCatFeature).CatData, f.CatData)
+}
+
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
 func (f *DenseCatFeature) ImputeMissing() {
 	cases := make([]int, 0, len(f.Missing))
