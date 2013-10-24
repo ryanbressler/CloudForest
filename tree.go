@@ -77,10 +77,12 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	target Target,
 	cases []int,
 	candidates []int,
+	oob []int,
 	mTry int,
 	leafSize int,
 	splitmissing bool,
 	vet bool,
+	evaloob bool,
 	importance *[]*RunningMean,
 	depthUsed *[]int,
 	allocs *BestSplitAllocs) {
@@ -89,7 +91,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&candidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], leafSize, vet, allocs)
+			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], oob, leafSize, vet, evaloob, allocs)
 			if best != nil && impDec > minImp {
 				fi := fm.Map[best.Feature]
 				if importance != nil {

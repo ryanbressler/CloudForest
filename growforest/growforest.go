@@ -77,7 +77,10 @@ func main() {
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
 	var vet bool
-	flag.BoolVar(&vet, "vet", false, "Vet potential splitters by comparison to best split of randomized data.")
+	flag.BoolVar(&vet, "vet", false, "Penalize potential splitter impurity decrease by subtracting the best split of a permuted target.")
+
+	var evaloob bool
+	flag.BoolVar(&evaloob, "evaloob", false, "Evaluate potential splitting features on OOB cases after finding split value in bag.")
 
 	var entropy bool
 	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
@@ -421,6 +424,8 @@ func main() {
 			tree := CloudForest.NewTree()
 			tree.Target = *targetname
 			cases := make([]int, 0, nSamples)
+			oobcases := make([]int, 0, nSamples)
+
 			if nobag {
 				for i := 0; i < nSamples; i++ {
 					cases = append(cases, i)
@@ -454,7 +459,20 @@ func main() {
 
 				}
 
-				tree.Grow(data, targetf, cases, canidates, mTry, leafSize, splitmissing, vet, imppnt, depthUsed, allocs)
+				if oob || evaloob {
+					ibcases := make([]bool, nCases)
+					for _, v := range cases {
+						ibcases[v] = true
+					}
+					oobcases = oobcases[0:0]
+					for i, v := range ibcases {
+						if !v {
+							oobcases = append(oobcases, i)
+						}
+					}
+				}
+
+				tree.Grow(data, targetf, cases, canidates, oobcases, mTry, leafSize, splitmissing, vet, evaloob, imppnt, depthUsed, allocs)
 
 				if mmdpnt != nil {
 					for i, v := range *depthUsed {
@@ -480,18 +498,7 @@ func main() {
 				}
 
 				if oob {
-					ibcases := make([]bool, nCases)
-					for _, v := range cases {
-						ibcases[v] = true
-					}
-					cases = cases[0:0]
-					for i, v := range ibcases {
-						if !v {
-							cases = append(cases, i)
-						}
-					}
-
-					tree.VoteCases(data, oobVotes, cases)
+					tree.VoteCases(data, oobVotes, oobcases)
 				}
 
 				treechan <- tree

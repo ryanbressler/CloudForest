@@ -132,6 +132,7 @@ And equals signs and quotes are optional for other parameters:
    -cpuprofile="": write cpu profile to file
    -multiboost=false: Allow multithreaded boosting which may have unexpected results. (highly experimental)
    -nobag=false: Don't bag samples for each tree.
+   -evaloob=false: Evaluate potential splitting features on OOB cases after finding split value in bag.
    -splitmissing=false: Split missing values onto a third branch at each node (experimental).
  ```
 
@@ -173,7 +174,7 @@ Note: rfweights and cost should use json to specify the weights and or costs per
    -contrastall=false: Include a shuffled artificial contrast copy of every feature.
    -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
    -shuffleRE="": A regular expression to identify features that should be shuffled.
-   -vet=false: Vet potential splitters by comparison to best split of randomized data.
+   -vet=false: Penalize potential splitter impurity decrease by subtracting the best split of a permuted target.
  ```
 
 

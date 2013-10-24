@@ -31,8 +31,10 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases []int,
 	candidates []int,
+	oob []int,
 	leafSize int,
 	vet bool,
+	evaloob bool,
 	allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64) {
 
 	impurityDecrease = minImp
@@ -56,6 +58,12 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 			allocs.ContrastTarget.(Feature).ShuffleCases(&cases)
 			_, vetImp = (*f).BestSplit(allocs.ContrastTarget, &cases, parentImp, leafSize, allocs)
 			inerImp = inerImp - vetImp
+		}
+
+		if evaloob && inerImp > minImp && inerImp > impurityDecrease {
+			spliter := (*f).DecodeSplit(split)
+			l, r, _ := spliter.Split(fm, oob)
+			inerImp = target.SplitImpurity(l, r, allocs.Counter)
 		}
 
 		if inerImp > minImp && inerImp > impurityDecrease {
