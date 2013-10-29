@@ -1,7 +1,7 @@
 CloudForest
 ==============
 
-CloudForest implements fast, flexible ensembles of decision trees for machine
+CloudForest implements fast, multithreaded, flexible ensembles of decision trees for machine
 learning in pure Go (golang to search engines). It allows for a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
 numerical / categorical data with missing values. These include:
@@ -14,10 +14,9 @@ numerical / categorical data with missing values. These include:
 * Feature selection with artificial contrasts
 * Proximity and model structure analysis
 * Methods for Classification on Unbalanced Data
+* Methods for learning from data with lots of noisy features.
 
-CloudForest has been optimized to minimize memory use, allow multi-core and learning with 
-minimal allocations and perform especially well learning from categorical features 
-with a small number of class labels. This includes binary data and genomic variant data which
+CloudForest has been optimized to minimize memory use, allow multi-core and multi-machine learning with and perform especially well learning from categorical features with a small number of class labels. This includes binary data and genomic variant data which
 may have class labels like "reference", "heterozygous", "homozygous".
 
 File formats have been chosen to allow multi machine parallel learning. 
@@ -243,9 +242,60 @@ including shuffled copies of existing features (-nContrasts, -contrastAll).
 A feature that performs well when randomized (or when the target has been randomized) may be causing
 overfitting. 
 
-The option to permutate the target (-permutate) will establish a minimum random baseline. Using a 
+The option to permute the target (-permute) will establish a minimum random baseline. Using a 
 regular expression (-shuffleRE) to shuffle part of the data can be useful in teasing out the contributions of 
-different subsets of features. 
+different subsets of features.
+
+
+Noisy Data with More Features then Cases
+-----------------------------------------
+
+Genomic data is frequently has many noisy features which can lead to in bag over fitting. CloudForest implements some
+methods designed to help combat this.
+
+The -evaloob method evaluates potential best splitting features on the oob data after learning the split value for
+each splitter as normal from the in bag/branch data as normal. Importance scores are also calcualted using OOB cases. 
+This idea is discussed in Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
+Ensembles, Artificial Variables, and Redundancy Elimination"
+
+The -vet option penalizes the impurity decrease of potential best split by subtracting the best split they can make after
+the target values cases on which the split is being evaluated have been shuffled.
+
+These options can be used together in which case both are performed on the oob cases.
+
+
+Class Unbalanced Data
+----------------------
+
+Genomic studies also frequently have unbalanced target classes. Ie you might be interested in a rare disease but have 
+samples drawn from the general population. CloudForest implements three methods for dealing with such studies, roughly 
+balanced bagging (-balance), cost weighted classification (-costs) and weighted gini impurity driven classification 
+(-rfweights). See the references bellow for a discussion of these options.
+
+
+Missing Values
+----------------
+
+By default cloud forest uses a fast heuristic for missing values. When proposing a split on a feature
+with missing data the missing cases are removed and the impurity value is corrected to use three way impurity
+which reduces the bias towards features with lots of missing data:
+
+                I(split) = p(l)I(l)+p(r)I(r)+p(m)I(m)
+
+Missing values in the target variable are left out of impurity calculations.
+
+This provided generally good results at a fraction of the computational costs of imputing data.
+
+Optionally, -impute can be called before forest growth to impute missing values to the feature mean/mode which Brieman 
+suggests as a fast method for imputing values.
+
+This forest could also be analyzed for proximity (using leafcount or tree.GetLeaves) to do the
+more accurate proximity weighted imputation Brieman describes.
+
+Experimental support (-splitmissing) is provided for 3 way splitting which splits missing cases onto a third branch.
+This has so far yielded mixed results in testing.
+
+
 
 
 Feature Matrix Files
@@ -319,7 +369,7 @@ Compiling for Speed
 
 When compiled with go1.1 CloudForest achieves running times similar to implementations in
 other languages. Using gccgo (4.8.0 at least) results in longer running times and is not
-recommended. This may change as gcc go addopts the go 1.1 way of implementing closures. 
+recommended. This may change as gcc go adopts the go 1.1 way of implementing closures. 
 
 
 References
