@@ -1,6 +1,6 @@
 /*
 Package CloudForest implements ensembles of decision trees for machine
-learning in pure Go (golang tp search engines). It allows for a number of related algorithms
+learning in pure Go (golang to search engines). It allows for a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
 numerical/categorical data with missing values. These include:
 
@@ -20,13 +20,13 @@ numerical/categorical data with missing values. These include:
 
 	* Roughly balanced bagging for unbalanced classification
 
-The API hasn't stabelized yet and may change rappidly. Tests and benchmarks have been performed
-only on embargoed data sets and cannont yet be released.
+The API hasn't stabilized yet and may change rapidly. Tests and benchmarks have been performed
+only on embargoed data sets and can not yet be released.
 
 Library Documentation is in code and can be viewed with godoc or live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
 
-Documenation of command line utilities and file formats can be found in README.md, which can be
+Documentation of command line utilities and file formats can be found in README.md, which can be
 viewed fromated on github:
 http://github.com/ryanbressler/CloudForest
 
@@ -86,12 +86,12 @@ trees against the Target interface which allows for alternative definitions of i
 includes several alternative targets:
 
  EntropyTarget : For use in entropy minimizing classification
- RegretTarget  : For use in classification driven by differing costs in miscategorization.
+ RegretTarget  : For use in classification driven by differing costs in mis-categorization.
  L1Target      : For use in L1 norm error regression (which may be less sensitive to outliers).
  OrdinalTarget : For ordinal regression
 
 Additional targets can be stacked on top of these target to add boosting functionality:
- GradBoostTarget : For Gradian Boosting Regression
+ GradBoostTarget : For Gradient Boosting Regression
  AdaBoostTarget  : For Adaptive Boosting Classification
 
 
@@ -109,7 +109,7 @@ arrays make this sort of optimization transparent. For example a function like:
 
 	func(s *Splitter) SplitInPlace(fm *FeatureMatrix, cases []int) (l []int, r []int)
 
-can return left and right slices that point to the same underlying array as the origional
+can return left and right slices that point to the same underlying array as the original
 slice of cases but these slices should not have their values changed.
 
 Functions used while searching for the best split also accepts pointers to reusable slices and

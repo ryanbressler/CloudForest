@@ -247,11 +247,11 @@ regular expression (-shuffleRE) to shuffle part of the data can be useful in tea
 different subsets of features.
 
 
-Noisy Data with More Features then Cases
+Noisy, High Cardinality, Data with More Features then Cases
 -----------------------------------------
 
-Genomic data is frequently has many noisy features which can lead to in bag over fitting. CloudForest implements some
-methods designed to help combat this.
+Genomic data is frequently has many noisy, high cardinality, features which can lead to in bag over fitting. CloudForest 
+implements some methods designed to help combat this.
 
 The -evaloob method evaluates potential best splitting features on the oob data after learning the split value for
 each splitter as normal from the in bag/branch data as normal. Importance scores are also calcualted using OOB cases. 
