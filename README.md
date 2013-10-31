@@ -227,9 +227,10 @@ Importance and Contrasts
 Variable Importance in CloudForest is based on the as the mean decrease in impurity over all of
 the splits made using a feature. It is output in a tsv as:
 
-Feature DecreasePerUse UseCount DecresePerTree DecresePerTreeUsed TreeUsedCount MeanMinimalDepth
+Feature DecreasePerUse UseCount DecreasePerTree DecreasePerTreeUsed TreeUsedCount MeanMinimalDepth
 
-Where DecresePerTree is calculated over all trees, not just the ones the feature was used in and DecresePerTree.
+Decrease per tree  (the 4th column) is the most common definition of importance in other implementations and 
+is calculated over all trees, not just the ones the feature was used in.
 
 Each of these scores has different properties:
 * Per-use and per-tree-used scores may be more resistant to feature redundancy, 
@@ -247,25 +248,26 @@ regular expression (-shuffleRE) to shuffle part of the data can be useful in tea
 different subsets of features.
 
 
-Noisy, High Cardinality, Data with More Features then Cases
------------------------------------------
+Data With Lots of Noisy, Uninformative, High Cardinality Features
+------------------------------------------------------------------
 
-Genomic data is frequently has many noisy, high cardinality, features which can lead to in bag over fitting. CloudForest 
-implements some methods designed to help combat this.
+Genomic data is frequently has many noisy, high cardinality, uninformative features which can lead to in bag over fitting. To combat this, 
+CloudForest implements some methods designed to help better filter out uninformative features.
 
 The -evaloob method evaluates potential best splitting features on the oob data after learning the split value for
 each splitter as normal from the in bag/branch data as normal. Importance scores are also calcualted using OOB cases. 
 This idea is discussed in Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
-Ensembles, Artificial Variables, and Redundancy Elimination"
+Ensembles, Artificial Variables, and Redundancy Elimination."
 
 The -vet option penalizes the impurity decrease of potential best split by subtracting the best split they can make after
 the target values cases on which the split is being evaluated have been shuffled.
 
-These options can be used together in which case both are performed on the oob cases.
+In testing so far evaloob provides better performance and is less computationally intensive. These options can be used together which
+may provide the best performance in very noisy data. When used together vetting is also done on the out of bag cases. 
 
 
-Class Unbalanced Data
-----------------------
+Data With Unbalanced Classes
+----------------------------
 
 Genomic studies also frequently have unbalanced target classes. Ie you might be interested in a rare disease but have 
 samples drawn from the general population. CloudForest implements three methods for dealing with such studies, roughly 
