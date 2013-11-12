@@ -158,7 +158,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 					but it was slower.  */
-			innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], allocs.Counter)
+			innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs.Counter)
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
@@ -194,16 +194,21 @@ and i(tl) i(tR) are the left and right impurities.
 
 Counter is only used for categorical targets and should have the same length as the number of categories in the target.
 */
-func (target *DenseNumFeature) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
+func (target *DenseNumFeature) SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64) {
 	// l := *left
 	// r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
+	nm := 0.0
 
 	impurityDecrease = nl * target.Impurity(&l, nil)
 	impurityDecrease += nr * target.Impurity(&r, nil)
+	if m != nil {
+		nm := float64(len(m))
+		impurityDecrease += nm * target.Impurity(&m, nil)
+	}
 
-	impurityDecrease /= nl + nr
+	impurityDecrease /= nl + nr + nm
 	return
 }
 

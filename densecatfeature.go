@@ -220,7 +220,7 @@ func (f *DenseCatFeature) BestCatSplitIterBig(target Target, cases *[]int, paren
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
 
 			if nextImp > innerImp {
 				innerSplit.Set(nextSplit)
@@ -314,7 +314,7 @@ func (f *DenseCatFeature) BestCatSplitIter(target Target, cases *[]int, parentIm
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -417,7 +417,7 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 			continue
 		}
 
-		innerimp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
+		innerimp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -506,7 +506,7 @@ func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp
 			continue
 		}
 
-		innerImp = parentImp - target.SplitImpurity(left, right, allocs.Counter)
+		innerImp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
 
 		if innerImp > impurityDecrease {
 			bestSplit.Set(bits)
@@ -540,16 +540,21 @@ and i(tl) i(tR) are the left and right impurities.
 
 Counter is only used for categorical targets and should have the same length as the number of categories in the target.
 */
-func (target *DenseCatFeature) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
+func (target *DenseCatFeature) SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64) {
 	// l := *left
 	// r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
+	nm := 0.0
 
 	impurityDecrease = nl * target.GiniWithoutAlocate(&l, counter)
 	impurityDecrease += nr * target.GiniWithoutAlocate(&r, counter)
+	if m != nil {
+		nm := float64(len(m))
+		impurityDecrease += nm * target.GiniWithoutAlocate(&m, counter)
+	}
 
-	impurityDecrease /= nl + nr
+	impurityDecrease /= nl + nr + nm
 	return
 }
 

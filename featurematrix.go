@@ -56,8 +56,8 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 		if evaloob && inerImp > minImp && inerImp > impurityDecrease {
 			spliter := (*f).DecodeSplit(split)
-			l, r, _ := spliter.Split(fm, oob)
-			inerImp = target.Impurity(&oob, allocs.Counter) - target.SplitImpurity(l, r, allocs.Counter)
+			l, r, m := spliter.Split(fm, oob)
+			inerImp = target.Impurity(&oob, allocs.Counter) - target.SplitImpurity(l, r, m, allocs.Counter)
 		}
 
 		if vet && inerImp > minImp && inerImp > impurityDecrease {

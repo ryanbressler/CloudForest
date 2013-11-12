@@ -29,14 +29,19 @@ func NewNumAdaBoostTarget(f NumFeature) (abt *NumAdaBoostTarget) {
 /*
 NumAdaBoostTarget.SplitImpurity is an AdaBoosting version of SplitImpurity.
 */
-func (target *NumAdaBoostTarget) SplitImpurity(l []int, r []int, counter *[]int) (impurityDecrease float64) {
+func (target *NumAdaBoostTarget) SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64) {
 	nl := float64(len(l))
 	nr := float64(len(r))
+	nm := 0.0
 
 	impurityDecrease = nl * target.Impurity(&l, counter)
 	impurityDecrease += nr * target.Impurity(&r, counter)
+	if m != nil {
+		nm := float64(len(m))
+		impurityDecrease += nm * target.Impurity(&m, counter)
+	}
 
-	impurityDecrease /= nl + nr
+	impurityDecrease /= nl + nr + nm
 	return
 }
 
