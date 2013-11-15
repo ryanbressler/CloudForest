@@ -38,6 +38,7 @@ type Feature interface {
 //provide access to the underlying data.
 type NumFeature interface {
 	Feature
+	Span(cases *[]int) float64
 	Get(i int) float64
 	Put(i int, v float64)
 	Predicted(cases *[]int) float64
@@ -51,6 +52,7 @@ type NumFeature interface {
 //provide access to the underlying data.
 type CatFeature interface {
 	Feature
+	DistinctCats(cases *[]int, counter *[]int) int
 	CatToNum(value string) (numericv int)
 	NumToCat(i int) (value string)
 	Geti(i int) int

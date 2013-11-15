@@ -76,6 +76,9 @@ func main() {
 	var l1 bool
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
+	var density bool
+	flag.BoolVar(&density, "density", false, "Build density estimating trees instead of classifcation/regression trees.")
+
 	var vet bool
 	flag.BoolVar(&vet, "vet", false, "Penalize potential splitter impurity decrease by subtracting the best split of a permuted target.")
 
@@ -330,64 +333,74 @@ func main() {
 	}
 
 	//****** Set up Target for Alternative Impurity  if needed *******//
+	var target CloudForest.Target
+	if density {
+		fmt.Println("Estimating Density.")
+		target = &CloudForest.DensityTarget{&data.Data, nSamples}
+	} else {
 
-	switch targetf.(type) {
-	case CloudForest.NumFeature:
-		if l1 {
-			fmt.Println("Using l1/absolute deviance error.")
-			targetf = &CloudForest.L1Target{targetf.(CloudForest.NumFeature)}
-		}
-		if ordinal {
-			fmt.Println("Using Ordinal (mode) prediction.")
-			targetf = CloudForest.NewOrdinalTarget(targetf.(CloudForest.NumFeature))
-		}
-		switch {
-		case gradboost != 0.0:
-			fmt.Println("Using Gradiant Boosting.")
-			targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
+		switch targetf.(type) {
 
-		case adaboost:
-			fmt.Println("Using Numeric Adaptive Boosting.")
-			//BUG(ryan): gradiant boostign should expose learning rate.
-			targetf = CloudForest.NewNumAdaBoostTarget(targetf.(CloudForest.NumFeature))
-		}
-
-	case CloudForest.CatFeature:
-		fmt.Println("Performing classification.")
-		switch {
-		case *costs != "":
-			fmt.Println("Using missclasification costs: ", *costs)
-			costmap := make(map[string]float64)
-			err := json.Unmarshal([]byte(*costs), &costmap)
-			if err != nil {
-				log.Fatal(err)
+		case CloudForest.NumFeature:
+			fmt.Println("Performing regression.")
+			if l1 {
+				fmt.Println("Using l1/absolute deviance error.")
+				targetf = &CloudForest.L1Target{targetf.(CloudForest.NumFeature)}
 			}
-
-			regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
-			regTarg.SetCosts(costmap)
-			targetf = regTarg
-		case *rfweights != "":
-			fmt.Println("Using rf weights: ", *rfweights)
-			weightmap := make(map[string]float64)
-			err := json.Unmarshal([]byte(*rfweights), &weightmap)
-			if err != nil {
-				log.Fatal(err)
+			if ordinal {
+				fmt.Println("Using Ordinal (mode) prediction.")
+				targetf = CloudForest.NewOrdinalTarget(targetf.(CloudForest.NumFeature))
 			}
+			switch {
+			case gradboost != 0.0:
+				fmt.Println("Using Gradiant Boosting.")
+				targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
 
-			wrfTarget := CloudForest.NewWRFTarget(targetf.(CloudForest.CatFeature), weightmap)
-			targetf = wrfTarget
+			case adaboost:
+				fmt.Println("Using Numeric Adaptive Boosting.")
+				//BUG(ryan): gradiant boostign should expose learning rate.
+				targetf = CloudForest.NewNumAdaBoostTarget(targetf.(CloudForest.NumFeature))
+			}
+			target = targetf
 
-		case entropy:
-			fmt.Println("Using entropy minimization.")
-			targetf = &CloudForest.EntropyTarget{targetf.(CloudForest.CatFeature)}
+		case CloudForest.CatFeature:
+			fmt.Println("Performing classification.")
+			switch {
+			case *costs != "":
+				fmt.Println("Using missclasification costs: ", *costs)
+				costmap := make(map[string]float64)
+				err := json.Unmarshal([]byte(*costs), &costmap)
+				if err != nil {
+					log.Fatal(err)
+				}
 
-		case boost:
+				regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
+				regTarg.SetCosts(costmap)
+				targetf = regTarg
+			case *rfweights != "":
+				fmt.Println("Using rf weights: ", *rfweights)
+				weightmap := make(map[string]float64)
+				err := json.Unmarshal([]byte(*rfweights), &weightmap)
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			fmt.Println("Using Adaptive Boosting.")
-			targetf = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
+				wrfTarget := CloudForest.NewWRFTarget(targetf.(CloudForest.CatFeature), weightmap)
+				targetf = wrfTarget
+
+			case entropy:
+				fmt.Println("Using entropy minimization.")
+				targetf = &CloudForest.EntropyTarget{targetf.(CloudForest.CatFeature)}
+
+			case boost:
+
+				fmt.Println("Using Adaptive Boosting.")
+				targetf = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
+
+			}
+			target = targetf
 
 		}
-
 	}
 
 	forestfile, err := os.Create(*rf)
@@ -396,7 +409,6 @@ func main() {
 	}
 	defer forestfile.Close()
 	forestwriter := CloudForest.NewForestWriter(forestfile)
-	//forestwriter.WriteForestHeader(*targetname, nTrees)
 
 	//****************** Needed Collections and vars ******************//
 
@@ -472,7 +484,7 @@ func main() {
 					}
 				}
 
-				tree.Grow(data, targetf, cases, canidates, oobcases, mTry, leafSize, splitmissing, vet, evaloob, imppnt, depthUsed, allocs)
+				tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, vet, evaloob, imppnt, depthUsed, allocs)
 
 				if mmdpnt != nil {
 					for i, v := range *depthUsed {

@@ -602,6 +602,26 @@ func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (
 	return
 }
 
+//DistinctCats counts the number of distincts cats present in the specified cases.
+func (target *DenseCatFeature) DistinctCats(cases *[]int, counts *[]int) (total int) {
+	total = 0
+	counter := *counts
+	for i, _ := range counter {
+		counter[i] = 0
+	}
+	for _, i := range *cases {
+		if !target.Missing[i] {
+			counter[target.CatData[i]] = 1
+		}
+	}
+	for _, v := range counter {
+		if v > 0 {
+			total += 1
+		}
+	}
+	return
+}
+
 //Mode returns the mode category feature for the cases specified
 func (f *DenseCatFeature) Mode(cases *[]int) (m string) {
 	m = f.Back[f.Modei(cases)]

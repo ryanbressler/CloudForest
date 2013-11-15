@@ -276,6 +276,35 @@ func (f *DenseNumFeature) Mode(cases *[]int) (m float64) {
 
 }
 
+//Span returns the lengh along the real line spaned by the specified cases
+func (f *DenseNumFeature) Span(cases *[]int) (span float64) {
+	first := true
+	min := 0.0
+	max := 0.0
+	val := 0.0
+	for _, i := range *cases {
+		if !f.Missing[i] {
+			val = f.NumData[i]
+			if first {
+				min = val
+				max = val
+				continue
+			}
+			switch {
+			case val > max:
+				max = val
+			case val < min:
+				min = val
+			}
+
+		}
+
+	}
+
+	return max - min
+
+}
+
 //Find predicted takes the indexes of a set of cases and returns the
 //predicted value. For categorical features this is a string containing the
 //most common category and for numerical it is the mean of the values.
