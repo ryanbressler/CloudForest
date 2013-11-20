@@ -14,8 +14,8 @@ numerical / categorical data with missing values. These include:
 * Feature selection with artificial contrasts
 * Methods for Classification on Unbalanced Data
 * Methods for learning from data with lots of noisy features.
-* Preliminary implementation of density forests
-* Proximity and affinity analysis of random forests suitable for manifold learning
+* Preliminary Implementation of Density Estimating Trees/Forests
+* Proximity/Affinity Analysis suitable for manifold learning
 
 CloudForest has been optimized to minimize memory use, allow multi-core and multi-machine learning with and perform especially well learning from categorical features with a small number of class labels. This includes binary data and genomic variant data which
 may have class labels like "reference", "heterozygous", "homozygous".
