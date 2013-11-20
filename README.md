@@ -7,14 +7,15 @@ for classification, regression, feature selection and structure analysis on hete
 numerical / categorical data with missing values. These include:
 
 * Breiman and Cutler's Random Forest for Classification and Regression
-* Adaptive Boosting (AdaBoost) Classification and Regression
+* Adaptive Boosting (AdaBoost) Classification
 * Gradient Boosting Tree Regression
 * Entropy and Cost driven classification
 * L1 regression
 * Feature selection with artificial contrasts
-* Proximity and model structure analysis
 * Methods for Classification on Unbalanced Data
 * Methods for learning from data with lots of noisy features.
+* Preliminary implementation of density forests
+* Proximity and affinity analysis of random forests suitable for manifold learning
 
 CloudForest has been optimized to minimize memory use, allow multi-core and multi-machine learning with and perform especially well learning from categorical features with a small number of class labels. This includes binary data and genomic variant data which
 may have class labels like "reference", "heterozygous", "homozygous".
@@ -406,5 +407,13 @@ http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3163175/
 http://www.biomedcentral.com/1471-2105/11/523
 http://bib.oxfordjournals.org/content/early/2012/03/08/bib.bbs006
 http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0067863
+
+Denisty Estimating Trees/Forests are Discussed:
+http://users.cis.fiu.edu/~lzhen001/activities/KDD2011Program/docs/p627.pdf
+http://research.microsoft.com/pubs/158806/CriminisiForests_FoundTrends_2011.pdf
+The later also introduces the idea of manifold forests which can be learned using down stream analysis of the
+outputs of leafcount to find the Fiedler vectors of the graph laplacian. 
+
+
 
     
