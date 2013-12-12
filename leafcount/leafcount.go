@@ -19,12 +19,12 @@ func main() {
 
 	flag.Parse()
 
-	datafile, err := os.Open(*fm) // For read access.
+	//Parse Data
+	data, err := CloudForest.LoadAFM(*fm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer datafile.Close()
-	data := CloudForest.ParseAFM(datafile)
+
 	log.Print("Data file ", len(data.Data), " by ", data.Data[0].Length())
 
 	counts := new(CloudForest.SparseCounter)

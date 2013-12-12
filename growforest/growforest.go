@@ -149,13 +149,10 @@ func main() {
 	fmt.Printf("nTrees : %v\n", nTrees)
 	//Parse Data
 	fmt.Printf("Loading data from: %v\n", *fm)
-	datafile, err := os.Open(*fm)
+	data, err := CloudForest.LoadAFM(*fm)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	data := CloudForest.ParseAFM(datafile)
-	datafile.Close()
 
 	if nContrasts > 0 {
 		fmt.Printf("Adding %v Random Contrasts\n", nContrasts)

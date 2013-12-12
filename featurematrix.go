@@ -1,10 +1,12 @@
 package CloudForest
 
 import (
+	"archive/zip"
 	"encoding/csv"
 	"io"
 	"log"
 	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -170,6 +172,28 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 		count++
 	}
 	return &FeatureMatrix{data, lookup, headers}
+}
+
+//LoadAFM loads a, possible zipped, FeatureMatrix specified by filename
+func LoadAFM(filename string) (fm *FeatureMatrix, err error) {
+
+	r, err := zip.OpenReader(filename)
+	if err == nil {
+		rc, err := r.File[0].Open()
+		if err == nil {
+			fm = ParseAFM(rc)
+			rc.Close()
+			return fm, err
+		}
+	}
+
+	datafile, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	fm = ParseAFM(datafile)
+	datafile.Close()
+	return
 }
 
 //ParseFeature parses a Feature from an array of strings and a capacity

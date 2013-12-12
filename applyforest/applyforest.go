@@ -23,12 +23,11 @@ func main() {
 
 	flag.Parse()
 
-	datafile, err := os.Open(*fm) // For read access.
+	//Parse Data
+	data, err := CloudForest.LoadAFM(*fm)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer datafile.Close()
-	data := CloudForest.ParseAFM(datafile)
 
 	forestfile, err := os.Open(*rf) // For read access.
 	if err != nil {
