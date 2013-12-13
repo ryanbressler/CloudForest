@@ -3,6 +3,7 @@ package CloudForest
 import (
 	"archive/zip"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -17,6 +18,38 @@ type FeatureMatrix struct {
 	Data       []Feature
 	Map        map[string]int
 	CaseLabels []string
+}
+
+//WriteCases writes a new feature matrix with the specified cases to the the provided writer.
+func (fm *FeatureMatrix) WriteCases(w io.Writer, cases []int) (err error) {
+	vals := make([]string, 0, len(cases)+1)
+
+	//print header
+	vals = append(vals, ".")
+	for i := 0; i < len(cases); i++ {
+		vals = append(vals, fm.CaseLabels[cases[i]])
+	}
+	_, err = fmt.Fprintln(w, strings.Join(vals, "\t"))
+	if err != nil {
+		return
+	}
+
+	for i := 0; i < len(fm.Data); i++ {
+		vals = vals[0:0]
+		vals = append(vals, fm.Data[i].GetName())
+		for j := 0; j < len(cases); j++ {
+			vals = append(vals, fm.Data[i].GetStr(cases[j]))
+		}
+
+		_, err = fmt.Fprintln(w, strings.Join(vals, "\t"))
+		if err != nil {
+			return
+		}
+
+	}
+
+	return
+
 }
 
 /*

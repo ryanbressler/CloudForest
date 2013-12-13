@@ -17,10 +17,10 @@ type BalancedSampler struct {
 //NeaBalancedSampler initalizes a balanced sampler that will evenly balance cases
 //between the classes present in the provided DesnseeCatFeature.
 func NewBalancedSampler(catf *DenseCatFeature) (s *BalancedSampler) {
-	s = &BalancedSampler{make([][]int, catf.NCats())}
+	s = &BalancedSampler{make([][]int, 0, catf.NCats())}
 
 	for i := 0; i < catf.NCats(); i++ {
-		s.Cases = append(s.Cases, make([]int, catf.Length()))
+		s.Cases = append(s.Cases, make([]int, 0, catf.Length()))
 	}
 
 	for i, v := range catf.CatData {
