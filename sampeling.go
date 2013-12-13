@@ -53,12 +53,12 @@ type SecondaryBalancedSampler struct {
 
 func NewSecondaryBalancedSampler(target *DenseCatFeature, balanceby *DenseCatFeature) (s *SecondaryBalancedSampler) {
 	nSecondaryCats := balanceby.NCats()
-	s = &SecondaryBalancedSampler{0, make([]int, nSecondaryCats, nSecondaryCats), make([][][]int, nSecondaryCats)}
+	s = &SecondaryBalancedSampler{0, make([]int, nSecondaryCats, nSecondaryCats), make([][][]int, 0, nSecondaryCats)}
 
 	for i := 0; i < nSecondaryCats; i++ {
-		s.Samplers = append(s.Samplers, make([][]int, target.NCats()))
+		s.Samplers = append(s.Samplers, make([][]int, 0, target.NCats()))
 		for j := 0; j < target.NCats(); j++ {
-			s.Samplers[i] = append(s.Samplers[i], make([]int, target.Length()))
+			s.Samplers[i] = append(s.Samplers[i], make([]int, 0, target.Length()))
 		}
 
 	}
