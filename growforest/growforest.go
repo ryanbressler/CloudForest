@@ -231,8 +231,8 @@ func main() {
 		}
 	}
 
-	nFeatures := len(data.Data) - blacklisted
-	fmt.Printf("nFeatures : %v\n", nFeatures)
+	nFeatures := len(data.Data) - blacklisted - 1
+	fmt.Printf("Non Target Features : %v\n", nFeatures)
 
 	mTry := CloudForest.ParseAsIntOrFractionOfTotal(StringmTry, nFeatures)
 	if mTry <= 0 {
