@@ -16,6 +16,8 @@ func main() {
 		"rface.sf", "A predictor forest.")
 	predfn := flag.String("preds",
 		"", "The name of a file to write the predictions into.")
+	votefn := flag.String("votes",
+		"", "The name of a file to write catagorical vote totals to.")
 	var num bool
 	flag.BoolVar(&num, "mean", false, "Force numeric (mean) voting.")
 	var cat bool
@@ -67,7 +69,7 @@ func main() {
 		fmt.Printf("%v\n", er)
 	}
 	if *predfn != "" {
-		fmt.Printf("Outputting label predicted actual tsv o %v\n", *predfn)
+		fmt.Printf("Outputting label predicted actual tsv to %v\n", *predfn)
 		for i, l := range data.CaseLabels {
 			actual := "NA"
 			if hasTarget {
@@ -77,4 +79,34 @@ func main() {
 		}
 	}
 
+	//Not thread safe code!
+	if *votefn != "" {
+		fmt.Printf("Outputting vote totals to %v\n", *votefn)
+		cbb := bb.(*CloudForest.CatBallotBox)
+		votefile, err := os.Create(*votefn)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer votefile.Close()
+		fmt.Fprintf(votefile, ".\t")
+
+		for _, lable := range cbb.CatMap.Back {
+			fmt.Fprintf(votefile, "%v\t", lable)
+		}
+		fmt.Fprintf(votefile, "\n")
+
+		for i, box := range cbb.Box {
+			fmt.Fprintf(votefile, "%v\t", data.CaseLabels[i])
+
+			for i, _ := range cbb.CatMap.Back {
+				total := 0.0
+				total = box.Map[i]
+
+				fmt.Fprintf(votefile, "%v\t", total)
+
+			}
+			fmt.Fprintf(votefile, "\n")
+
+		}
+	}
 }

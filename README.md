@@ -193,6 +193,7 @@ Usage of applyforest:
   -mode=false: Force categorical (mode) voting.
   -preds="": The name of a file to write the predictions into.
   -rfpred="rface.sf": A predictor forest.
+  -votes="": The name of a file to write catagorical vote totals to.
 ```
 
 Leafcount Utility

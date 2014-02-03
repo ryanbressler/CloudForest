@@ -21,7 +21,7 @@ func NewCatBallot() (cb *CatBallot) {
 //Keeps track of votes by trees in a thread safe manner.
 type CatBallotBox struct {
 	*CatMap
-	box []*CatBallot
+	Box []*CatBallot
 }
 
 //Build a new ballot box for the number of cases specified by "size".
@@ -31,7 +31,7 @@ func NewCatBallotBox(size int) *CatBallotBox {
 			make([]string, 0, 0)},
 		make([]*CatBallot, 0, size)}
 	for i := 0; i < size; i++ {
-		bb.box = append(bb.box, NewCatBallot())
+		bb.Box = append(bb.Box, NewCatBallot())
 	}
 	return &bb
 }
@@ -40,12 +40,12 @@ func NewCatBallotBox(size int) *CatBallotBox {
 //category "pred".
 func (bb *CatBallotBox) Vote(casei int, pred string, weight float64) {
 	predn := bb.CatToNum(pred)
-	bb.box[casei].Mutex.Lock()
-	if _, ok := bb.box[casei].Map[predn]; !ok {
-		bb.box[casei].Map[predn] = 0
+	bb.Box[casei].Mutex.Lock()
+	if _, ok := bb.Box[casei].Map[predn]; !ok {
+		bb.Box[casei].Map[predn] = 0
 	}
-	bb.box[casei].Map[predn] = bb.box[casei].Map[predn] + weight
-	bb.box[casei].Mutex.Unlock()
+	bb.Box[casei].Map[predn] = bb.Box[casei].Map[predn] + weight
+	bb.Box[casei].Mutex.Unlock()
 }
 
 //TallyCatagorical tallies the votes for the case specified by i as
@@ -54,8 +54,8 @@ func (bb *CatBallotBox) Vote(casei int, pred string, weight float64) {
 func (bb *CatBallotBox) Tally(i int) (predicted string) {
 	predictedn := 0
 	votes := 0.0
-	bb.box[i].Mutex.Lock()
-	for k, v := range bb.box[i].Map {
+	bb.Box[i].Mutex.Lock()
+	for k, v := range bb.Box[i].Map {
 		if v > votes {
 			predictedn = k
 			votes = v
@@ -63,7 +63,7 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 		}
 
 	}
-	bb.box[i].Mutex.Unlock()
+	bb.Box[i].Mutex.Unlock()
 	if votes > 0 {
 		predicted = bb.Back[predictedn]
 	} else {
