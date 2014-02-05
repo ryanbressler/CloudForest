@@ -88,21 +88,21 @@ func main() {
 			log.Fatal(err)
 		}
 		defer votefile.Close()
-		fmt.Fprintf(votefile, ".\t")
+		fmt.Fprintf(votefile, ".")
 
 		for _, lable := range cbb.CatMap.Back {
-			fmt.Fprintf(votefile, "%v\t", lable)
+			fmt.Fprintf(votefile, "\t%v", lable)
 		}
 		fmt.Fprintf(votefile, "\n")
 
 		for i, box := range cbb.Box {
-			fmt.Fprintf(votefile, "%v\t", data.CaseLabels[i])
+			fmt.Fprintf(votefile, "%v", data.CaseLabels[i])
 
-			for i, _ := range cbb.CatMap.Back {
+			for j, _ := range cbb.CatMap.Back {
 				total := 0.0
-				total = box.Map[i]
+				total = box.Map[j]
 
-				fmt.Fprintf(votefile, "%v\t", total)
+				fmt.Fprintf(votefile, "\t%v", total)
 
 			}
 			fmt.Fprintf(votefile, "\n")
