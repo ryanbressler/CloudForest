@@ -391,8 +391,11 @@ Cuttler's code:
 https://code.google.com/p/rf-ace/
 http://cran.r-project.org/web/packages/randomForest/index.html
 
-The idea for Artificial Contrasts was found in:
-Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's paper "Feature Selection with
+The idea for Artificial Contrasts is based on:
+Eugene Tuvand and Kari Torkkola's "Feature Filtering with Ensembles Using Artiﬁcial Contrasts"
+http://enpub.fulton.asu.edu/workshop/FSDM05-Proceedings.pdf#page=74
+and
+Eugene Tuv, Alexander Borisov, George Runger and Kari Torkkola's "Feature Selection with
 Ensembles, Artificial Variables, and Redundancy Elimination"
 http://www.researchgate.net/publication/220320233_Feature_Selection_with_Ensembles_Artificial_Variables_and_Redundancy_Elimination/file/d912f5058a153a8b35.pdf
 
