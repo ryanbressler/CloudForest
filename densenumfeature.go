@@ -14,6 +14,8 @@ type DenseNumFeature struct {
 	Name    string
 }
 
+//Append will parse and append a single value to the end of the feature. It is generally only used
+//during data parseing.
 func (f *DenseNumFeature) Append(v string) {
 	fv, err := strconv.ParseFloat(v, 64)
 	if err != nil {

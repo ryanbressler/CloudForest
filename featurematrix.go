@@ -172,6 +172,10 @@ func (fm *FeatureMatrix) ImputeMissing() {
 	}
 }
 
+//LoadCases will load data stored case by case from a cvs reader into a
+//feature matrix that has allready been filled with the coresponding empty
+//features. It is a lower level method generally called after inital setup to parse
+//a fm, arff, csv etc.
 func (fm *FeatureMatrix) LoadCases(data *csv.Reader, rowlabels bool) {
 	count := 0
 	for {
@@ -282,7 +286,12 @@ func LoadAFM(filename string) (fm *FeatureMatrix, err error) {
 		return
 	}
 
-	fm = ParseAFM(datafile)
+	if strings.HasSuffix(filename, ".arff") {
+		fm = ParseARFF(datafile)
+	} else {
+		fm = ParseAFM(datafile)
+	}
+
 	datafile.Close()
 	return
 }

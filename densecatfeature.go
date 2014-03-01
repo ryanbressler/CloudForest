@@ -22,6 +22,8 @@ type DenseCatFeature struct {
 	RandomSearch bool
 }
 
+//Append will parse and append a single value to the end of the feature. It is generally only used
+//during data parseing.
 func (f *DenseCatFeature) Append(v string) {
 	norm := strings.ToLower(v)
 	if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {

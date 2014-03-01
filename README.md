@@ -302,8 +302,8 @@ This has so far yielded mixed results in testing.
 
 
 
-Feature Matrix Files
-----------------------
+Data Formats - Feature Matrix Files and .arff files
+----------------------------------------------------
 
 CloudForest borrows the annotated feature matrix (.afm) and stochastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
@@ -329,9 +329,11 @@ C:CatF2 red	red	green
 
 Some sample data files are included in the "data" directory.
 
+CloudFores also supports a basic version of weka's ARFF format. This format will be detected via the ".arff" file extension. Only numeric and nominal/catagorical attributes are supported. There is no support for spaces in feature names or sparse data and trailing space or comments after the data field may cause odd behavior. 
 
-Stochastic Forest Files
--------------------------
+
+Models - Stochastic Forest Files
+--------------------------------
 
 A stochastic forest (.sf) file contains a forest of decision trees. The main advantage of this
 format as opposed to an established format like json is that an sf file can be written iteratively
