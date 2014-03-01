@@ -8,7 +8,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -173,6 +172,33 @@ func (fm *FeatureMatrix) ImputeMissing() {
 	}
 }
 
+func (fm *FeatureMatrix) LoadCases(data *csv.Reader, rowlabels bool) {
+	count := 0
+	for {
+		record, err := data.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Print("Error:", err)
+			break
+		}
+
+		caselabel := fmt.Sprintf("%v", count)
+		if rowlabels {
+			caselabel = record[0]
+			record = record[1:]
+		}
+		fm.CaseLabels = append(fm.CaseLabels, caselabel)
+
+		for i, v := range record {
+			fm.Data[i].Append(v)
+		}
+
+		count++
+	}
+
+}
+
 //Parse an AFM (annotated feature matrix) out of an io.Reader
 //AFM format is a tsv with row and column headers where the row headers start with
 //N: indicating numerical, C: indicating categorical or B: indicating boolean
@@ -191,6 +217,37 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 	}
 	headers = headers[1:]
 
+	if len(headers[0]) > 1 {
+		sniff := headers[0][:2]
+		if sniff == "N:" || sniff == "C:" || sniff == "B:" {
+			//features in cols
+
+			for i, label := range headers {
+				if label[:2] == "N:" {
+					data = append(data, &DenseNumFeature{
+						make([]float64, 0, 0),
+						make([]bool, 0, 0),
+						label})
+				} else {
+					data = append(data, &DenseCatFeature{
+						&CatMap{make(map[string]int, 0),
+							make([]string, 0, 0)},
+						make([]int, 0, 0),
+						make([]bool, 0, 0),
+						label,
+						false})
+				}
+				lookup[label] = i
+
+			}
+
+			fm := &FeatureMatrix{data, lookup, make([]string, 0, 0)}
+			fm.LoadCases(tsv, true)
+			return fm
+		}
+	}
+
+	//features in rows
 	count := 0
 	for {
 		record, err := tsv.Read()
@@ -224,6 +281,7 @@ func LoadAFM(filename string) (fm *FeatureMatrix, err error) {
 	if err != nil {
 		return
 	}
+
 	fm = ParseAFM(datafile)
 	datafile.Close()
 	return
@@ -246,14 +304,7 @@ func ParseFeature(record []string) Feature {
 		f.NumData = make([]float64, 0, capacity)
 
 		for i := 1; i < len(record); i++ {
-			v, err := strconv.ParseFloat(record[i], 64)
-			if err != nil {
-				f.NumData = append(f.NumData, 0.0)
-				f.Missing = append(f.Missing, true)
-				continue
-			}
-			f.NumData = append(f.NumData, float64(v))
-			f.Missing = append(f.Missing, false)
+			f.Append(record[i])
 
 		}
 		return f
@@ -268,16 +319,7 @@ func ParseFeature(record []string) Feature {
 			false}
 		f.CatData = make([]int, 0, capacity)
 		for i := 1; i < len(record); i++ {
-			v := record[i]
-			norm := strings.ToLower(v)
-			if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
-
-				f.CatData = append(f.CatData, 0)
-				f.Missing = append(f.Missing, true)
-				continue
-			}
-			f.CatData = append(f.CatData, f.CatToNum(v))
-			f.Missing = append(f.Missing, false)
+			f.Append(record[i])
 
 		}
 		return f

@@ -3,6 +3,7 @@ package CloudForest
 import (
 	"math/big"
 	"math/rand"
+	"strings"
 )
 
 /*DenseCatFeature is a structure representing a single feature in a feature matrix.
@@ -19,6 +20,18 @@ type DenseCatFeature struct {
 	Missing      []bool
 	Name         string
 	RandomSearch bool
+}
+
+func (f *DenseCatFeature) Append(v string) {
+	norm := strings.ToLower(v)
+	if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
+
+		f.CatData = append(f.CatData, 0)
+		f.Missing = append(f.Missing, true)
+		return
+	}
+	f.CatData = append(f.CatData, f.CatToNum(v))
+	f.Missing = append(f.Missing, false)
 }
 
 func (f *DenseCatFeature) Length() int {

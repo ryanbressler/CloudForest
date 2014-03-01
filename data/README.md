@@ -1,7 +1,7 @@
 CloudForest - Sample Data Sets
 ===============================
 
-A few small sample data sets are included in this directory in ready to use formats.
+A few small sample data sets are included in this directory in ready to use formats for use in testing and benchmarking.
 
 Unless otherwise noted they are taken from the UCI Machine Learning Repository and licensed accordingly.
 
@@ -10,8 +10,9 @@ http://archive.ics.uci.edu/ml
 Bache, K. & Lichman, M. (2013). UCI Machine Learning Repository [http://archive.ics.uci.edu/ml]. Irvine, CA: University of California, School of Information and Computer Science.
 
 
-Iris Data Set - iris.data.fm
-------------------------------
+Iris Data Set  
+--------------
+iris.data.fm, iris.data.trans.fm
 
 Classify the C:Class feature.
 
@@ -21,8 +22,9 @@ Fisher,R.A. "The use of multiple measurements in taxonomic problems" Annual Euge
 
 
 
-Fores Fires Data Set - forestfires.fm
---------------------------------
+Fores Fires Data Set 
+---------------------
+forestfires.fm, forestfires.trans.fm
 
 Regress on the N:area feature. Also interesting for feature imporatnce.
 

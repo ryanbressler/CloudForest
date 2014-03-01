@@ -5,12 +5,24 @@ import (
 	"log"
 	"math/rand"
 	"sort"
+	"strconv"
 )
 
 type DenseNumFeature struct {
 	NumData []float64
 	Missing []bool
 	Name    string
+}
+
+func (f *DenseNumFeature) Append(v string) {
+	fv, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		f.NumData = append(f.NumData, 0.0)
+		f.Missing = append(f.Missing, true)
+		return
+	}
+	f.NumData = append(f.NumData, float64(fv))
+	f.Missing = append(f.Missing, false)
 }
 
 func (f *DenseNumFeature) NCats() int {

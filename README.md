@@ -308,8 +308,9 @@ Feature Matrix Files
 CloudForest borrows the annotated feature matrix (.afm) and stochastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
 
-An annotated feature matrix (.afm) file is a tab delineated file with column and row headers. Columns represent cases and rows
-represent features. A row header / feature id includes a prefix to specify the feature type
+An annotated feature matrix (.afm) file is a tab delineated file with column and row headers. By default columns represent cases and rows represent features/variables though the transpose (rows as cases/observations) is also detected and supported. 
+
+A row header / feature id includes a prefix to specify the feature type. These prefixes are also used to detect column vs row orientation.
 
 ```
 "N:" Prefix for numerical feature id.

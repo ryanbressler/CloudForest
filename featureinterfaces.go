@@ -31,6 +31,7 @@ type Feature interface {
 	ShuffleCases(cases *[]int)
 	ImputeMissing()
 	GetName() string
+	Append(v string)
 }
 
 //NumFeature contains the methods of Feature plus methods needed to implement
