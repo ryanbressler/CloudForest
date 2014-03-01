@@ -326,6 +326,8 @@ N:NumF1	0.0	.1	na
 C:CatF2 red	red	green
 ```
 
+Some sample data files are included in the "data" directory.
+
 
 Stochastic Forest Files
 -------------------------
