@@ -606,11 +606,9 @@ func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (
 	}
 	delta := 0
 	for _, i = range *cases {
-		//if !target.Missing[i] {
 		delta = btou(!target.Missing[i])
 		counter[target.CatData[i]] += delta
 		total += delta
-		//}
 	}
 	e = 1.0
 	t := float64(total * total)
