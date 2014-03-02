@@ -136,7 +136,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 BestNumSplit searches over the possible splits of cases that can be made with f
 and returns the one that minimizes the impurity of the target and the impurity decrease.
 
-It expects to be provided for cases fir which the feature is not missing.
+It expects to be provided cases for which the feature is not missing.
 
 It searches by sorting the cases by the potential splitter and then evaluating each "gap"
 between cases with non equal value as a potential split.
