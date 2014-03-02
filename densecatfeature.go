@@ -600,19 +600,22 @@ but the counter will also contain per category counts.
 func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
 	total := 0
 	counter := *counts
-	for i, _ := range counter {
+	i := 0
+	for i, _ = range counter {
 		counter[i] = 0
 	}
-	for _, i := range *cases {
-		if !target.Missing[i] {
-			counter[target.CatData[i]] += 1
-			total += 1
-		}
+	delta := 0
+	for _, i = range *cases {
+		//if !target.Missing[i] {
+		delta = btou(!target.Missing[i])
+		counter[target.CatData[i]] += delta
+		total += delta
+		//}
 	}
 	e = 1.0
 	t := float64(total * total)
-	for _, v := range counter {
-		e -= float64(v*v) / t
+	for _, i := range counter {
+		e = 1.0 - float64(i*i)/t
 	}
 	return
 }
