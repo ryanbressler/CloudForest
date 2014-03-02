@@ -41,19 +41,23 @@ func (target *EntropyTarget) SplitImpurity(l []int, r []int, m []int, counter *[
 func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64) {
 	total := 0
 	counter := *counts
-	for i, _ := range counter {
+	i := 0
+	for i, _ = range counter {
 		counter[i] = 0
 	}
-	for _, i := range *cases {
-		if !target.IsMissing(i) {
-			counter[target.Geti(i)] += 1
-			total += 1
+	for _, i = range *cases {
+		if target.IsMissing(i) {
+			continue
 		}
+
+		counter[target.Geti(i)] += 1
+		total += 1
+
 	}
 	e = 0.0
 	p := 0.0
-	for _, v := range counter {
-		p = float64(v) / float64(total)
+	for _, i = range counter {
+		p = float64(i) / float64(total)
 		e -= p * math.Log2(p)
 	}
 

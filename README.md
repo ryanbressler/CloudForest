@@ -335,7 +335,7 @@ ARFF Files
 
 CloudFores also supports limited import of weka's ARFF format. This format will be detected via the ".arff" file extension. Only numeric and nominal/catagorical attributes are supported, all other attribute types will be assumed to be catagorical and should usully be removed or blacklisted. There is no support for spaces in feature names, quoted strings or sparse data. Trailing space or comments after the data field may cause odd behavior. 
 
-The arf format also provides an easy way to annotate a cvs file with information about the supplied fields:
+The ARFF format also provides an easy way to annotate a cvs file with information about the supplied fields:
 
 ```
 @relation data
