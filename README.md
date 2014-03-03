@@ -302,7 +302,7 @@ This has so far yielded mixed results in testing.
 
 
 
-Data Formats - Feature Matrix Files and .arff files
+Data Formats - Feature Matrix Files, .arff and .libsvm files
 ----------------------------------------------------
 
 Feature Matrix Files
@@ -348,6 +348,12 @@ The ARFF format also provides an easy way to annotate a cvs file with informatio
 .1,red
 ?,green
 ```
+
+LibSvm Files
+
+There is also basic support for sparse data in libsvm's file format. This format will be detected by the ".libsvm" file format and has some limitations.
+The target field will be given the designation "0" and be in the "0" position of the matrix. No other feature can have this designation.
+Data will be parsed intto the new SparseNumFeature data structure which, for the time being, has better memory performance but worse computational performance due to hash lookups. 
 
 
 Models - Stochastic Forest Files
