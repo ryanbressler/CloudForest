@@ -286,9 +286,12 @@ func LoadAFM(filename string) (fm *FeatureMatrix, err error) {
 		return
 	}
 
-	if strings.HasSuffix(filename, ".arff") {
+	switch {
+	case strings.HasSuffix(filename, ".arff"):
 		fm = ParseARFF(datafile)
-	} else {
+	case strings.HasSuffix(filename, ".libsvm"):
+		fm = ParseLibSVM(datafile)
+	default:
 		fm = ParseAFM(datafile)
 	}
 

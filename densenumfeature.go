@@ -27,6 +27,16 @@ func (f *DenseNumFeature) Append(v string) {
 	f.Missing = append(f.Missing, false)
 }
 
+func (f *DenseNumFeature) PutStr(i int, v string) {
+	fv, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		f.Missing[i] = true
+		return
+	}
+	f.NumData[i] = float64(fv)
+	f.Missing[i] = false
+}
+
 func (f *DenseNumFeature) NCats() int {
 	return 0
 }

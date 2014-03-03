@@ -10,14 +10,6 @@ import (
 	"sync"
 )
 
-// btou converts a bool to a 0/1 value.
-func btou(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 //RunningMean is a thread safe strut for keeping track of running means as used in
 //importance calculations. (TODO: could this be made lock free?)
 type RunningMean struct {
