@@ -169,6 +169,9 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		sorter.Cases = *cases
 		sort.Sort(sorter)
 
+		lastsplit := 0
+		innerimp := 0.0
+
 		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 		// repeated allocations
 
@@ -182,7 +185,13 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 					but it was slower.  */
-			innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs.Counter)
+			if lastsplit == 0 {
+				innerimp = parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs)
+				lastsplit = i
+			} else {
+				innerimp = parentImp - target.UpdateSImpFromAllocs(sorter.Cases[:i], sorter.Cases[i:], nil, allocs, sorter.Cases[lastsplit:i])
+				lastsplit = i
+			}
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
@@ -218,7 +227,7 @@ and i(tl) i(tR) are the left and right impurities.
 
 Counter is only used for categorical targets and should have the same length as the number of categories in the target.
 */
-func (target *DenseNumFeature) SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64) {
+func (target *DenseNumFeature) SplitImpurity(l []int, r []int, m []int, allocs *BestSplitAllocs) (impurityDecrease float64) {
 	// l := *left
 	// r := *right
 	nl := float64(len(l))
@@ -234,6 +243,12 @@ func (target *DenseNumFeature) SplitImpurity(l []int, r []int, m []int, counter 
 
 	impurityDecrease /= nl + nr + nm
 	return
+}
+
+//UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
+//Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
+func (target *DenseNumFeature) UpdateSImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64) {
+	return target.SplitImpurity(l, r, m, allocs)
 }
 
 //Impurity returns Gini impurity or mean squared error vs the mean for a set of cases

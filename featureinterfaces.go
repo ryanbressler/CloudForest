@@ -16,7 +16,8 @@ type Feature interface {
 	GoesLeft(i int, splitter *Splitter) bool
 	PutMissing(i int)
 	PutStr(i int, v string)
-	SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64)
+	SplitImpurity(l []int, r []int, m []int, allocs *BestSplitAllocs) (impurityDecrease float64)
+	UpdateSImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64)
 	Impurity(cases *[]int, counter *[]int) (impurity float64)
 	FindPredicted(cases []int) (pred string)
 	BestSplit(target Target,
@@ -70,8 +71,8 @@ type CatFeature interface {
 //as either a catagroical or numerical feature in a random forest.
 type Target interface {
 	NCats() (n int)
-	SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64)
-	//UpdateImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64)
+	SplitImpurity(l []int, r []int, m []int, allocs *BestSplitAllocs) (impurityDecrease float64)
+	UpdateSImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64)
 	Impurity(cases *[]int, counter *[]int) (impurity float64)
 	FindPredicted(cases []int) (pred string)
 }

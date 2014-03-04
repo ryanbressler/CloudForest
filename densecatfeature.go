@@ -235,7 +235,7 @@ func (f *DenseCatFeature) BestCatSplitIterBig(target Target, cases *[]int, paren
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, nil, allocs)
 
 			if nextImp > innerImp {
 				innerSplit.Set(nextSplit)
@@ -329,7 +329,7 @@ func (f *DenseCatFeature) BestCatSplitIter(target Target, cases *[]int, parentIm
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
+			nextImp = parentImp - target.SplitImpurity(left, right, nil, allocs)
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -432,7 +432,7 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 			continue
 		}
 
-		innerimp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
+		innerimp = parentImp - target.SplitImpurity(left, right, nil, allocs)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -521,7 +521,7 @@ func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp
 			continue
 		}
 
-		innerImp = parentImp - target.SplitImpurity(left, right, nil, allocs.Counter)
+		innerImp = parentImp - target.SplitImpurity(left, right, nil, allocs)
 
 		if innerImp > impurityDecrease {
 			bestSplit.Set(bits)
@@ -555,18 +555,49 @@ and i(tl) i(tR) are the left and right impurities.
 
 Counter is only used for categorical targets and should have the same length as the number of categories in the target.
 */
-func (target *DenseCatFeature) SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64) {
+func (target *DenseCatFeature) SplitImpurity(l []int, r []int, m []int, allocs *BestSplitAllocs) (impurityDecrease float64) {
 	// l := *left
 	// r := *right
 	nl := float64(len(l))
 	nr := float64(len(r))
 	nm := 0.0
 
-	impurityDecrease = nl * target.GiniWithoutAlocate(&l, counter)
-	impurityDecrease += nr * target.GiniWithoutAlocate(&r, counter)
+	impurityDecrease = nl * target.GiniWithoutAlocate(&l, allocs.LCounter)
+	impurityDecrease += nr * target.GiniWithoutAlocate(&r, allocs.RCounter)
 	if m != nil {
 		nm := float64(len(m))
-		impurityDecrease += nm * target.GiniWithoutAlocate(&m, counter)
+		impurityDecrease += nm * target.GiniWithoutAlocate(&m, allocs.Counter)
+	}
+
+	impurityDecrease /= nl + nr + nm
+	return
+}
+
+//UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
+//Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
+func (target *DenseCatFeature) UpdateSImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64) {
+	var cat, i int
+	catdata := target.CatData
+	lcounter := *allocs.LCounter
+	rcounter := *allocs.RCounter
+	for _, i = range movedRtoL {
+
+		//most expensive statement:
+		cat = catdata[i]
+		lcounter[cat]++
+		rcounter[cat]--
+		//counter[target.Geti(i)]++
+
+	}
+	nl := float64(len(l))
+	nr := float64(len(r))
+	nm := 0.0
+
+	impurityDecrease = nl * target.ImpFromCounts(len(l), allocs.LCounter)
+	impurityDecrease += nr * target.ImpFromCounts(len(r), allocs.RCounter)
+	if m != nil && len(m) > 0 {
+		nm := float64(len(m))
+		impurityDecrease += nm * target.ImpFromCounts(len(m), allocs.Counter)
 	}
 
 	impurityDecrease /= nl + nr + nm
@@ -629,6 +660,16 @@ func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (
 		e -= float64(i*i) / t
 	}
 	return
+}
+
+func (target *DenseCatFeature) ImpFromCounts(total int, counts *[]int) (e float64) {
+	e++
+	t := float64(total * total)
+	for _, i := range *counts {
+		e -= float64(i*i) / t
+	}
+	return
+
 }
 
 //DistinctCats counts the number of distincts cats present in the specified cases.
