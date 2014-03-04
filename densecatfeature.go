@@ -592,14 +592,10 @@ func (target *DenseCatFeature) Gini(cases *[]int) (e float64) {
 	return
 }
 
-/*
-giniWithoutAlocate calculates gini impurity using the supplied counter which must
-be a slice with length equal to the number of cases. This allows you to reduce allocations
-but the counter will also contain per category counts.
-*/
-func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
+//CountPerCat puts per catagory counts in the supplied counter. It is designed for use in
+//a target and doesn't check for missing values.
+func (target *DenseCatFeature) CountPerCat(cases *[]int, counts *[]int) {
 	//this function is a hot spot
-	total := len(*cases)
 	//cs := *cases
 	counter := *counts
 	//fastest to derfrence this outside of loop?
@@ -609,20 +605,27 @@ func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (
 		counter[i] = 0
 	}
 
-	// classic for loop is slightelly slower then range statement...maybe unwrap
-	// for i = 0; i < total; i++ {
-	// 	counter[catdata[i]]++
-	// }
 	for _, i = range *cases {
 		//most expensive statement:
 		counter[catdata[i]]++
 		//counter[target.Geti(i)]++
 	}
 
+}
+
+/*
+giniWithoutAlocate calculates gini impurity using the supplied counter which must
+be a slice with length equal to the number of cases. This allows you to reduce allocations
+but the counter will also contain per category counts.
+*/
+func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
+
+	total := len(*cases)
+	target.CountPerCat(cases, counts)
 	//fastest way to set e to 1.0?
 	e++
 	t := float64(total * total)
-	for _, i := range counter {
+	for _, i := range *counts {
 		e -= float64(i*i) / t
 	}
 	return

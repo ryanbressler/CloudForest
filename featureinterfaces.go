@@ -54,6 +54,7 @@ type NumFeature interface {
 //provide access to the underlying data.
 type CatFeature interface {
 	Feature
+	CountPerCat(cases *[]int, counter *[]int)
 	DistinctCats(cases *[]int, counter *[]int) int
 	CatToNum(value string) (numericv int)
 	NumToCat(i int) (value string)
@@ -70,6 +71,7 @@ type CatFeature interface {
 type Target interface {
 	NCats() (n int)
 	SplitImpurity(l []int, r []int, m []int, counter *[]int) (impurityDecrease float64)
+	//UpdateImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64)
 	Impurity(cases *[]int, counter *[]int) (impurity float64)
 	FindPredicted(cases []int) (pred string)
 }
