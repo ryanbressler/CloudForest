@@ -39,21 +39,40 @@ func (target *EntropyTarget) SplitImpurity(l []int, r []int, m []int, counter *[
 //EntropyTarget.Impurity implements categorical entropy as sum(pj*log2(pj)) where pj
 //is the number of cases with the j'th category over the total number of cases.
 func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64) {
-	total := 0
+	// total := 0
+	// counter := *counts
+	// i := 0
+	// for i, _ = range counter {
+	// 	counter[i] = 0
+	// }
+	// for _, i = range *cases {
+	// 	if target.IsMissing(i) {
+	// 		continue
+	// 	}
+
+	// 	counter[target.Geti(i)] += 1
+	// 	total += 1
+
+	// }
+
+	//this function is a hot spot
+	total := len(*cases)
+	//cs := *cases
 	counter := *counts
 	i := 0
 	for i, _ = range counter {
 		counter[i] = 0
 	}
+
+	// classic for loop is slightelly slower then range statement...maybe unwrap
+	// for i = 0; i < total; i++ {
+	// 	counter[catdata[i]]++
+	// }
 	for _, i = range *cases {
-		if target.IsMissing(i) {
-			continue
-		}
-
-		counter[target.Geti(i)] += 1
-		total += 1
-
+		//most expensive statement:
+		counter[target.Geti(i)]++
 	}
+
 	e = 0.0
 	p := 0.0
 	for _, i = range counter {

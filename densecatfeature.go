@@ -598,21 +598,28 @@ be a slice with length equal to the number of cases. This allows you to reduce a
 but the counter will also contain per category counts.
 */
 func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64) {
-	//this function is a bit of a hot spot, somewhat optimized but could use more
-	total := 0
+	//this function is a hot spot
+	total := len(*cases)
+	//cs := *cases
 	counter := *counts
+	//fastest to derfrence this outside of loop?
+	catdata := target.CatData
 	i := 0
 	for i, _ = range counter {
 		counter[i] = 0
 	}
+
+	// classic for loop is slightelly slower then range statement...maybe unwrap
+	// for i = 0; i < total; i++ {
+	// 	counter[catdata[i]]++
+	// }
 	for _, i = range *cases {
-		if target.Missing[i] {
-			continue
-		}
-		counter[target.CatData[i]] += 1
-		total += 1
+		//most expensive statement:
+		counter[catdata[i]]++
 	}
-	e = 1.0
+
+	//fastest way to set e to 1.0?
+	e++
 	t := float64(total * total)
 	for _, i := range counter {
 		e -= float64(i*i) / t
