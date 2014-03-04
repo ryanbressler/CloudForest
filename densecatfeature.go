@@ -616,6 +616,7 @@ func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (
 	for _, i = range *cases {
 		//most expensive statement:
 		counter[catdata[i]]++
+		//counter[target.Geti(i)]++
 	}
 
 	//fastest way to set e to 1.0?
