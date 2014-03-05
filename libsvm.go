@@ -65,7 +65,8 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 				data = append(data, &SparseNumFeature{
 					make(map[int]float64),
 					make(map[int]bool),
-					fmt.Sprintf("%v", len(data))})
+					fmt.Sprintf("%v", len(data)),
+					false})
 
 				/*
 					data = append(data, &DenseUint8Feature{

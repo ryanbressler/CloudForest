@@ -9,9 +9,10 @@ import (
 )
 
 type SparseNumFeature struct {
-	NumData map[int]float64
-	Missing map[int]bool
-	Name    string
+	NumData    map[int]float64
+	Missing    map[int]bool
+	Name       string
+	HasMissing bool
 }
 
 //Append will parse and append a single value to the end of the feature. It is generally only used
@@ -21,6 +22,7 @@ func (f *SparseNumFeature) Append(v string) {
 	// if err != nil {
 	// 	f.NumData = append(f.NumData, 0.0)
 	// 	f.Missing = append(f.Missing, true)
+	// 	f.HasMissing = true
 	// 	return
 	// }
 	// f.NumData = append(f.NumData, float64(fv))
@@ -35,12 +37,11 @@ func (f *SparseNumFeature) PutStr(i int, v string) {
 	fv, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		f.Missing[i] = true
+		f.HasMissing = true
 		return
 	}
 	f.NumData[i] = float64(fv)
-	if f.Missing[i] {
-		f.Missing[i] = false
-	}
+	f.Missing[i] = false
 }
 
 func (f *SparseNumFeature) NCats() int {
@@ -61,6 +62,7 @@ func (f *SparseNumFeature) IsMissing(i int) bool {
 
 func (f *SparseNumFeature) PutMissing(i int) {
 	f.Missing[i] = true
+	f.HasMissing = true
 }
 
 func (f *SparseNumFeature) Get(i int) float64 {
@@ -115,34 +117,42 @@ func (f *SparseNumFeature) BestSplit(target Target,
 	leafSize int,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
-	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
-	*allocs.Right = (*allocs.Right)[0:0]
+	var nmissing, nonmissing, total int
+	var nonmissingparentImp, missingimp float64
+	var tosplit *[]int
+	if f.HasMissing {
+		*allocs.NonMissing = (*allocs.NonMissing)[0:0]
+		*allocs.Right = (*allocs.Right)[0:0]
 
-	for _, i := range *cases {
-		if f.Missing[i] {
-			*allocs.Right = append(*allocs.Right, i)
-		} else {
-			*allocs.NonMissing = append(*allocs.NonMissing, i)
+		for _, i := range *cases {
+			if f.Missing[i] {
+				*allocs.Right = append(*allocs.Right, i)
+			} else {
+				*allocs.NonMissing = append(*allocs.NonMissing, i)
+			}
 		}
+		if len(*allocs.NonMissing) == 0 {
+			return
+		}
+		nmissing = len(*allocs.Right)
+		total = len(*cases)
+		nonmissing = total - nmissing
+
+		nonmissingparentImp = target.Impurity(allocs.NonMissing, allocs.Counter)
+
+		if nmissing > 0 {
+			missingimp = target.Impurity(allocs.Right, allocs.Counter)
+		}
+		tosplit = allocs.NonMissing
+	} else {
+		nonmissingparentImp = parentImp
+		tosplit = cases
 	}
-	if len(*allocs.NonMissing) == 0 {
-		return
-	}
-	nmissing := float64(len(*allocs.Right))
-	total := float64(len(*cases))
-	nonmissing := total - nmissing
 
-	nonmissingparentImp := target.Impurity(allocs.NonMissing, allocs.Counter)
+	codedSplit, impurityDecrease = f.BestNumSplit(target, tosplit, nonmissingparentImp, leafSize, allocs)
 
-	missingimp := 0.0
-	if nmissing > 0 {
-		missingimp = target.Impurity(allocs.Right, allocs.Counter)
-	}
-
-	codedSplit, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
-
-	if nmissing > 0 && impurityDecrease > minImp {
-		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
+	if f.HasMissing && nmissing > 0 && impurityDecrease > minImp {
+		impurityDecrease = parentImp + ((float64(nonmissing)*(impurityDecrease-nonmissingparentImp) - float64(nmissing)*missingimp) / float64(total))
 	}
 	return
 
@@ -175,8 +185,13 @@ func (f *SparseNumFeature) BestNumSplit(target Target,
 		sorter.Cases = *cases
 		sort.Sort(sorter)
 
+		lastsplit := 0
+		innerimp := 0.0
+
 		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 		// repeated allocations
+
+		var lc, rc, mc []int
 
 		for i := leafSize; i < (len(sorter.Cases) - leafSize); i++ {
 			c := sorter.Cases[i]
@@ -188,7 +203,18 @@ func (f *SparseNumFeature) BestNumSplit(target Target,
 			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 					but it was slower.  */
-			innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs)
+			if lastsplit == 0 {
+				lc = sorter.Cases[:i]
+				rc = sorter.Cases[i:]
+				innerimp = parentImp - target.SplitImpurity(&lc, &rc, nil, allocs)
+				lastsplit = i
+			} else {
+				lc = sorter.Cases[:i]
+				rc = sorter.Cases[i:]
+				mc = sorter.Cases[lastsplit:i]
+				innerimp = parentImp - target.UpdateSImpFromAllocs(&lc, &rc, nil, allocs, &mc)
+				lastsplit = i
+			}
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
@@ -224,18 +250,18 @@ and i(tl) i(tR) are the left and right impurities.
 
 Counter is only used for categorical targets and should have the same length as the number of categories in the target.
 */
-func (target *SparseNumFeature) SplitImpurity(l []int, r []int, m []int, allocs *BestSplitAllocs) (impurityDecrease float64) {
+func (target *SparseNumFeature) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
 	// l := *left
 	// r := *right
-	nl := float64(len(l))
-	nr := float64(len(r))
+	nl := float64(len(*l))
+	nr := float64(len(*r))
 	nm := 0.0
 
-	impurityDecrease = nl * target.Impurity(&l, nil)
-	impurityDecrease += nr * target.Impurity(&r, nil)
-	if m != nil {
-		nm = float64(len(m))
-		impurityDecrease += nm * target.Impurity(&m, nil)
+	impurityDecrease = nl * target.Impurity(l, nil)
+	impurityDecrease += nr * target.Impurity(r, nil)
+	if m != nil && len(*m) > 0 {
+		nm = float64(len(*m))
+		impurityDecrease += nm * target.Impurity(m, nil)
 	}
 
 	impurityDecrease /= nl + nr + nm
@@ -244,7 +270,7 @@ func (target *SparseNumFeature) SplitImpurity(l []int, r []int, m []int, allocs 
 
 //UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
 //Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
-func (target *SparseNumFeature) UpdateSImpFromAllocs(l []int, r []int, m []int, allocs *BestSplitAllocs, movedRtoL []int) (impurityDecrease float64) {
+func (target *SparseNumFeature) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64) {
 	return target.SplitImpurity(l, r, m, allocs)
 }
 
@@ -403,23 +429,24 @@ func (f *SparseNumFeature) ShuffledCopy() Feature {
 
 /*Copy returns a copy of f.*/
 func (f *SparseNumFeature) Copy() Feature {
+	capacity := len(f.Missing)
 	fake := &SparseNumFeature{
 		nil,
-		make(map[int]bool),
-		f.Name}
-	//BUG: need to copy sparse maps
-	// copy(fake.Missing, f.Missing)
+		make(map[int]bool, capacity),
+		f.Name,
+		false}
 
-	// fake.NumData = make(map[int]float64)
-	// copy(fake.NumData, f.NumData)
+	//copy(fake.Missing, f.Missing)
+
+	fake.NumData = make(map[int]float64, capacity)
+	//copy(fake.NumData, f.NumData)
 
 	return fake
 }
 
 func (f *SparseNumFeature) CopyInTo(copyf Feature) {
-	//BUG: need to copy sparse maps
-	// copy(copyf.(*SparseNumFeature).Missing, f.Missing)
-	// copy(copyf.(*SparseNumFeature).NumData, f.NumData)
+	//copy(copyf.(*SparseNumFeature).Missing, f.Missing)
+	//copy(copyf.(*SparseNumFeature).NumData, f.NumData)
 }
 
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
@@ -441,4 +468,5 @@ func (f *SparseNumFeature) ImputeMissing() {
 
 		}
 	}
+	f.HasMissing = false
 }
