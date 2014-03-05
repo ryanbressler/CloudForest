@@ -20,6 +20,7 @@ type DenseCatFeature struct {
 	Missing      []bool
 	Name         string
 	RandomSearch bool
+	HasMissing   bool
 }
 
 //Append will parse and append a single value to the end of the feature. It is generally only used
@@ -30,6 +31,7 @@ func (f *DenseCatFeature) Append(v string) {
 
 		f.CatData = append(f.CatData, 0)
 		f.Missing = append(f.Missing, true)
+		f.HasMissing = true
 		return
 	}
 	f.CatData = append(f.CatData, f.CatToNum(v))
@@ -50,6 +52,7 @@ func (f *DenseCatFeature) IsMissing(i int) bool {
 
 func (f *DenseCatFeature) PutMissing(i int) {
 	f.Missing[i] = true
+	f.HasMissing = true
 }
 
 func (f *DenseCatFeature) Geti(i int) int {
@@ -69,6 +72,11 @@ func (f *DenseCatFeature) GetStr(i int) string {
 }
 
 func (f *DenseCatFeature) PutStr(i int, v string) {
+	norm := strings.ToLower(v)
+	if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
+		f.Missing[i] = true
+		f.HasMissing = true
+	}
 	vi := f.CatToNum(v)
 	f.CatData[i] = vi
 	f.Missing[i] = false
@@ -91,46 +99,54 @@ func (f *DenseCatFeature) BestSplit(target Target,
 	leafSize int,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
-	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
-	*allocs.Right = (*allocs.Right)[0:0]
+	var nmissing, nonmissing, total int
+	var nonmissingparentImp, missingimp float64
+	var tosplit *[]int
+	if f.HasMissing {
+		*allocs.NonMissing = (*allocs.NonMissing)[0:0]
+		*allocs.Right = (*allocs.Right)[0:0]
 
-	for _, i := range *cases {
-		if f.Missing[i] {
-			*allocs.Right = append(*allocs.Right, i)
-		} else {
-			*allocs.NonMissing = append(*allocs.NonMissing, i)
+		for _, i := range *cases {
+			if f.Missing[i] {
+				*allocs.Right = append(*allocs.Right, i)
+			} else {
+				*allocs.NonMissing = append(*allocs.NonMissing, i)
+			}
 		}
-	}
-	if len(*allocs.NonMissing) == 0 {
-		return
-	}
-	nmissing := float64(len(*allocs.Right))
-	total := float64(len(*cases))
-	nonmissing := total - nmissing
+		if len(*allocs.NonMissing) == 0 {
+			return
+		}
+		nmissing = len(*allocs.Right)
+		total = len(*cases)
+		nonmissing = total - nmissing
 
-	nonmissingparentImp := target.Impurity(allocs.NonMissing, allocs.Counter)
+		nonmissingparentImp = target.Impurity(allocs.NonMissing, allocs.Counter)
 
-	missingimp := 0.0
-	if nmissing > 0 {
-		missingimp = target.Impurity(allocs.Right, allocs.Counter)
+		if nmissing > 0 {
+			missingimp = target.Impurity(allocs.Right, allocs.Counter)
+		}
+		tosplit = allocs.NonMissing
+	} else {
+		nonmissingparentImp = parentImp
+		tosplit = cases
 	}
 
 	//TODO: reverse this list, common cases first and maybe make it a switch statement
 	nCats := f.NCats()
 	if f.RandomSearch == false && nCats > maxNonBigCats {
-		codedSplit, impurityDecrease = f.BestCatSplitIterBig(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplitIterBig(target, tosplit, nonmissingparentImp, leafSize, allocs)
 	} else if f.RandomSearch == false && nCats > maxExhaustiveCats {
-		codedSplit, impurityDecrease = f.BestCatSplitIter(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplitIter(target, tosplit, nonmissingparentImp, leafSize, allocs)
 	} else if nCats > maxNonBigCats {
-		codedSplit, impurityDecrease = f.BestCatSplitBig(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplitBig(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	} else if nCats == 2 {
-		codedSplit, impurityDecrease = f.BestBinSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+		codedSplit, impurityDecrease = f.BestBinSplit(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	} else {
-		codedSplit, impurityDecrease = f.BestCatSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+		codedSplit, impurityDecrease = f.BestCatSplit(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	}
 
-	if nmissing > 0 && impurityDecrease > minImp {
-		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
+	if f.HasMissing && nmissing > 0 && impurityDecrease > minImp {
+		impurityDecrease = parentImp + ((float64(nonmissing)*(impurityDecrease-nonmissingparentImp) - float64(nmissing)*missingimp) / float64(total))
 	}
 	return
 
@@ -628,7 +644,7 @@ func (target *DenseCatFeature) SplitImpurity(l []int, r []int, m []int, allocs *
 	impurityDecrease = nl * target.GiniWithoutAlocate(&l, allocs.LCounter)
 	impurityDecrease += nr * target.GiniWithoutAlocate(&r, allocs.RCounter)
 	if m != nil {
-		nm := float64(len(m))
+		nm = float64(len(m))
 		impurityDecrease += nm * target.GiniWithoutAlocate(&m, allocs.Counter)
 	}
 
@@ -850,7 +866,8 @@ func (f *DenseCatFeature) Copy() Feature {
 		nil,
 		make([]bool, capacity),
 		f.Name,
-		f.RandomSearch}
+		f.RandomSearch,
+		f.HasMissing}
 
 	copy(fake.Missing, f.Missing)
 
@@ -884,4 +901,5 @@ func (f *DenseCatFeature) ImputeMissing() {
 
 		}
 	}
+	f.HasMissing = false
 }

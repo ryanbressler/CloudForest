@@ -231,7 +231,8 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 					data = append(data, &DenseNumFeature{
 						make([]float64, 0, 0),
 						make([]bool, 0, 0),
-						label})
+						label,
+						false})
 				} else {
 					data = append(data, &DenseCatFeature{
 						&CatMap{make(map[string]int, 0),
@@ -239,6 +240,7 @@ func ParseAFM(input io.Reader) *FeatureMatrix {
 						make([]int, 0, 0),
 						make([]bool, 0, 0),
 						label,
+						false,
 						false})
 				}
 				lookup[label] = i
@@ -312,7 +314,8 @@ func ParseFeature(record []string) Feature {
 		f := &DenseNumFeature{
 			nil,
 			make([]bool, 0, capacity),
-			record[0]}
+			record[0],
+			false}
 		f.NumData = make([]float64, 0, capacity)
 
 		for i := 1; i < len(record); i++ {
@@ -328,6 +331,7 @@ func ParseFeature(record []string) Feature {
 			nil,
 			make([]bool, 0, capacity),
 			record[0],
+			false,
 			false}
 		f.CatData = make([]int, 0, capacity)
 		for i := 1; i < len(record); i++ {

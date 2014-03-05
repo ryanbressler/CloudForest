@@ -32,7 +32,7 @@ func (target *WRFTarget) SplitImpurity(l []int, r []int, m []int, allocs *BestSp
 	impurityDecrease = nl * target.Impurity(&l, allocs.LCounter)
 	impurityDecrease += nr * target.Impurity(&r, allocs.RCounter)
 	if m != nil {
-		nm := float64(len(m))
+		nm = float64(len(m))
 		impurityDecrease += nm * target.Impurity(&m, allocs.Counter)
 	}
 

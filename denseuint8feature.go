@@ -241,7 +241,7 @@ func (target *DenseUint8Feature) SplitImpurity(l []int, r []int, m []int, allocs
 	impurityDecrease = nl * target.Impurity(&l, nil)
 	impurityDecrease += nr * target.Impurity(&r, nil)
 	if m != nil {
-		nm := float64(len(m))
+		nm = float64(len(m))
 		impurityDecrease += nm * target.Impurity(&m, nil)
 	}
 

@@ -9,9 +9,10 @@ import (
 )
 
 type DenseNumFeature struct {
-	NumData []float64
-	Missing []bool
-	Name    string
+	NumData    []float64
+	Missing    []bool
+	Name       string
+	HasMissing bool
 }
 
 //Append will parse and append a single value to the end of the feature. It is generally only used
@@ -21,6 +22,7 @@ func (f *DenseNumFeature) Append(v string) {
 	if err != nil {
 		f.NumData = append(f.NumData, 0.0)
 		f.Missing = append(f.Missing, true)
+		f.HasMissing = true
 		return
 	}
 	f.NumData = append(f.NumData, float64(fv))
@@ -35,6 +37,7 @@ func (f *DenseNumFeature) PutStr(i int, v string) {
 	fv, err := strconv.ParseFloat(v, 64)
 	if err != nil {
 		f.Missing[i] = true
+		f.HasMissing = true
 		return
 	}
 	f.NumData[i] = float64(fv)
@@ -59,6 +62,7 @@ func (f *DenseNumFeature) IsMissing(i int) bool {
 
 func (f *DenseNumFeature) PutMissing(i int) {
 	f.Missing[i] = true
+	f.HasMissing = true
 }
 
 func (f *DenseNumFeature) Get(i int) float64 {
@@ -113,34 +117,42 @@ func (f *DenseNumFeature) BestSplit(target Target,
 	leafSize int,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
 
-	*allocs.NonMissing = (*allocs.NonMissing)[0:0]
-	*allocs.Right = (*allocs.Right)[0:0]
+	var nmissing, nonmissing, total int
+	var nonmissingparentImp, missingimp float64
+	var tosplit *[]int
+	if f.HasMissing {
+		*allocs.NonMissing = (*allocs.NonMissing)[0:0]
+		*allocs.Right = (*allocs.Right)[0:0]
 
-	for _, i := range *cases {
-		if f.Missing[i] {
-			*allocs.Right = append(*allocs.Right, i)
-		} else {
-			*allocs.NonMissing = append(*allocs.NonMissing, i)
+		for _, i := range *cases {
+			if f.Missing[i] {
+				*allocs.Right = append(*allocs.Right, i)
+			} else {
+				*allocs.NonMissing = append(*allocs.NonMissing, i)
+			}
 		}
+		if len(*allocs.NonMissing) == 0 {
+			return
+		}
+		nmissing = len(*allocs.Right)
+		total = len(*cases)
+		nonmissing = total - nmissing
+
+		nonmissingparentImp = target.Impurity(allocs.NonMissing, allocs.Counter)
+
+		if nmissing > 0 {
+			missingimp = target.Impurity(allocs.Right, allocs.Counter)
+		}
+		tosplit = allocs.NonMissing
+	} else {
+		nonmissingparentImp = parentImp
+		tosplit = cases
 	}
-	if len(*allocs.NonMissing) == 0 {
-		return
-	}
-	nmissing := float64(len(*allocs.Right))
-	total := float64(len(*cases))
-	nonmissing := total - nmissing
 
-	nonmissingparentImp := target.Impurity(allocs.NonMissing, allocs.Counter)
+	codedSplit, impurityDecrease = f.BestNumSplit(target, tosplit, nonmissingparentImp, leafSize, allocs)
 
-	missingimp := 0.0
-	if nmissing > 0 {
-		missingimp = target.Impurity(allocs.Right, allocs.Counter)
-	}
-
-	codedSplit, impurityDecrease = f.BestNumSplit(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
-
-	if nmissing > 0 && impurityDecrease > minImp {
-		impurityDecrease = parentImp + ((nonmissing*(impurityDecrease-nonmissingparentImp) - nmissing*missingimp) / total)
+	if f.HasMissing && nmissing > 0 && impurityDecrease > minImp {
+		impurityDecrease = parentImp + ((float64(nonmissing)*(impurityDecrease-nonmissingparentImp) - float64(nmissing)*missingimp) / float64(total))
 	}
 	return
 
@@ -179,6 +191,8 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 		// repeated allocations
 
+		var lc, rc, mc []int
+
 		for i := leafSize; i < (len(sorter.Cases) - leafSize); i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
@@ -190,10 +204,15 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 					but it was slower.  */
 			if lastsplit == 0 {
-				innerimp = parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs)
+				lc = sorter.Cases[:i]
+				rc = sorter.Cases[i:]
+				innerimp = parentImp - target.SplitImpurity(lc, rc, nil, allocs)
 				lastsplit = i
 			} else {
-				innerimp = parentImp - target.UpdateSImpFromAllocs(sorter.Cases[:i], sorter.Cases[i:], nil, allocs, sorter.Cases[lastsplit:i])
+				lc = sorter.Cases[:i]
+				rc = sorter.Cases[i:]
+				mc = sorter.Cases[lastsplit:i]
+				innerimp = parentImp - target.UpdateSImpFromAllocs(sorter.Cases[:i], sorter.Cases[i:], nil, allocs, mc)
 				lastsplit = i
 			}
 
@@ -241,7 +260,7 @@ func (target *DenseNumFeature) SplitImpurity(l []int, r []int, m []int, allocs *
 	impurityDecrease = nl * target.Impurity(&l, nil)
 	impurityDecrease += nr * target.Impurity(&r, nil)
 	if m != nil {
-		nm := float64(len(m))
+		nm = float64(len(m))
 		impurityDecrease += nm * target.Impurity(&m, nil)
 	}
 
@@ -414,7 +433,8 @@ func (f *DenseNumFeature) Copy() Feature {
 	fake := &DenseNumFeature{
 		nil,
 		make([]bool, capacity),
-		f.Name}
+		f.Name,
+		false}
 
 	copy(fake.Missing, f.Missing)
 
@@ -448,4 +468,5 @@ func (f *DenseNumFeature) ImputeMissing() {
 
 		}
 	}
+	f.HasMissing = false
 }
