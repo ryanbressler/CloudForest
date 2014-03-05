@@ -13,19 +13,19 @@ type SortableFeature struct {
 }
 
 //Len returns the number of cases.
-func (sf SortableFeature) Len() int {
+func (sf *SortableFeature) Len() int {
 	return len(sf.Cases)
 }
 
 //Less determines if the ith case is less then the jth case.
-func (sf SortableFeature) Less(i int, j int) bool {
+func (sf *SortableFeature) Less(i int, j int) bool {
 	return sf.Feature.Less(sf.Cases[i], sf.Cases[j])
 	//return sf.Feature.Get(sf.Cases[i]) < sf.Feature.Get(sf.Cases[j])
 
 }
 
 //Swap exchanges the ith and jth cases.
-func (sf SortableFeature) Swap(i int, j int) {
+func (sf *SortableFeature) Swap(i int, j int) {
 	v := sf.Cases[i]
 	sf.Cases[i] = sf.Cases[j]
 	sf.Cases[j] = v
