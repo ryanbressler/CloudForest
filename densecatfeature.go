@@ -492,7 +492,6 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	leafSize int,
 	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
-	impurityDecrease = minImp
 	left := *allocs.Left
 	right := *allocs.Right
 
@@ -503,9 +502,10 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 
 	*/
 
+	catdata := f.CatData
 	for _, c := range *cases {
 
-		if f.CatData[c] == 1 {
+		if catdata[c] == 1 {
 			left = append(left, c)
 		} else {
 			right = append(right, c)
