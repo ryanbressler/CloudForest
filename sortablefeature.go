@@ -19,7 +19,8 @@ func (sf SortableFeature) Len() int {
 
 //Less determines if the ith case is less then the jth case.
 func (sf SortableFeature) Less(i int, j int) bool {
-	return sf.Feature.Get(sf.Cases[i]) < sf.Feature.Get(sf.Cases[j])
+	return sf.Feature.Less(sf.Cases[i], sf.Cases[j])
+	//return sf.Feature.Get(sf.Cases[i]) < sf.Feature.Get(sf.Cases[j])
 
 }
 

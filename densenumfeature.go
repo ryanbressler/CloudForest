@@ -27,6 +27,10 @@ func (f *DenseNumFeature) Append(v string) {
 	f.Missing = append(f.Missing, false)
 }
 
+func (f *DenseNumFeature) Less(i int, j int) bool {
+	return f.NumData[i] < f.NumData[j]
+}
+
 func (f *DenseNumFeature) PutStr(i int, v string) {
 	fv, err := strconv.ParseFloat(v, 64)
 	if err != nil {

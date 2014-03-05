@@ -27,6 +27,10 @@ func (f *SparseNumFeature) Append(v string) {
 	// f.Missing = append(f.Missing, false)
 }
 
+func (f *SparseNumFeature) Less(i int, j int) bool {
+	return f.NumData[i] < f.NumData[j]
+}
+
 func (f *SparseNumFeature) PutStr(i int, v string) {
 	fv, err := strconv.ParseFloat(v, 64)
 	if err != nil {

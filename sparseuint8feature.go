@@ -27,6 +27,10 @@ func (f *SparseUint8Feature) Append(v string) {
 	// f.Missing = append(f.Missing, false)
 }
 
+func (f *SparseUint8Feature) Less(i int, j int) bool {
+	return f.NumData[i] < f.NumData[j]
+}
+
 func (f *SparseUint8Feature) PutStr(i int, v string) {
 	fv, err := strconv.ParseUint(v, 0, 8)
 	if err != nil {

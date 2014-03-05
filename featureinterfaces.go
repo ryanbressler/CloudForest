@@ -48,6 +48,7 @@ type NumFeature interface {
 	Mean(cases *[]int) float64
 	Norm(i int, v float64) float64
 	Error(cases *[]int, predicted float64) (e float64)
+	Less(i int, j int) bool
 }
 
 //CatFeature contains the methods of Feature plus methods needed to implement
