@@ -177,7 +177,8 @@ func (f *DenseUint8Feature) BestNumSplit(target Target,
 
 		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 		// repeated allocations
-
+		lastsplit := 0
+		innerimp := 0.0
 		for i := leafSize; i < (len(sorter.Cases) - leafSize); i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
@@ -188,7 +189,13 @@ func (f *DenseUint8Feature) BestNumSplit(target Target,
 			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 					but it was slower.  */
-			innerimp := parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs)
+			if lastsplit == 0 {
+				innerimp = parentImp - target.SplitImpurity(sorter.Cases[:i], sorter.Cases[i:], nil, allocs)
+				lastsplit = i
+			} else {
+				innerimp = parentImp - target.UpdateSImpFromAllocs(sorter.Cases[:i], sorter.Cases[i:], nil, allocs, sorter.Cases[lastsplit:i])
+				lastsplit = i
+			}
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp

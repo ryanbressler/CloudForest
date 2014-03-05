@@ -115,6 +115,7 @@ func (f *DenseCatFeature) BestSplit(target Target,
 		missingimp = target.Impurity(allocs.Right, allocs.Counter)
 	}
 
+	//TODO: reverse this list, common cases first and maybe make it a switch statement
 	nCats := f.NCats()
 	if f.RandomSearch == false && nCats > maxNonBigCats {
 		codedSplit, impurityDecrease = f.BestCatSplitIterBig(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
@@ -122,6 +123,8 @@ func (f *DenseCatFeature) BestSplit(target Target,
 		codedSplit, impurityDecrease = f.BestCatSplitIter(target, allocs.NonMissing, nonmissingparentImp, leafSize, allocs)
 	} else if nCats > maxNonBigCats {
 		codedSplit, impurityDecrease = f.BestCatSplitBig(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+	} else if nCats == 2 {
+		codedSplit, impurityDecrease = f.BestBinSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	} else {
 		codedSplit, impurityDecrease = f.BestCatSplit(target, allocs.NonMissing, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	}
@@ -441,6 +444,66 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 		}
 
 	}
+
+	return
+}
+
+/*
+BestBinSplit performs an exhaustive search for the split that minimizes impurity
+in the specified target for categorical features with 2 categories.
+It expects to be provided for cases fir which the feature is not missing.
+
+This implementation follows Brieman's implementation and the R/Matlab implementations
+based on it use exhaustive search for when there are less than 25/10 categories
+and random splits above that.
+
+Searching is implemented via bitwise operations vs an incrementing or random int (32 bit) for speed
+but will currently only work when there are less then 31 categories. Use one of the Big functions
+above that.
+
+The best split is returned as an int for which the bits corresponding to categories that should
+be sent left has been flipped. This can be decoded into a splitter using DecodeSplit on the
+training feature and should not be applied to testing data without doing so as the order of
+categories may have changed.
+
+allocs contains pointers to reusable structures for use while searching for the best split and should
+be initialized to the proper size with NewBestSplitAlocs.
+*/
+func (f *DenseCatFeature) BestBinSplit(target Target,
+	cases *[]int,
+	parentImp float64,
+	maxEx int,
+	leafSize int,
+	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
+
+	impurityDecrease = minImp
+	left := *allocs.Left
+	right := *allocs.Right
+	/*
+
+		Exhaustive search of combinations of categories is carried out by iterating an Int and using
+		the bits to define which categories go to the left of the split.
+
+	*/
+
+	for _, c := range *cases {
+
+		if f.CatData[c] == 1 {
+			left = append(left, c)
+		} else {
+			right = append(right, c)
+		}
+
+	}
+
+	//skip cases where the split didn't do any splitting
+	if len(left) < leafSize || len(right) < leafSize {
+		return
+	}
+
+	impurityDecrease = parentImp - target.SplitImpurity(left, right, nil, allocs)
+
+	bestSplit = 1
 
 	return
 }

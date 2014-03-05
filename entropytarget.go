@@ -72,7 +72,7 @@ func (target *EntropyTarget) ImpFromCounts(total int, counts *[]int) (e float64)
 	for _, i := range *counts {
 		if i > 0 {
 			p = float64(i) / float64(total)
-			e -= p * math.Log2(p)
+			e -= p * math.Log(p)
 		}
 	}
 	return
@@ -90,7 +90,7 @@ func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64) {
 	for _, i := range *counts {
 		if i > 0 {
 			p = float64(i) / float64(total)
-			e -= p * math.Log2(p)
+			e -= p * math.Log(p)
 		}
 
 	}
