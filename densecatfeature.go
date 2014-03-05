@@ -493,7 +493,9 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
 	left := *allocs.Left
+	left = left[0:0]
 	right := *allocs.Right
+	right = right[0:0]
 
 	/*
 
