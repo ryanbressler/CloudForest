@@ -17,8 +17,8 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 	labels := make([]string, 0, 0)
 
 	i := 0
-	ncases := 8100000
-	allthedata := make([]uint8, 784*ncases, 784*ncases)
+	//ncases := 8100000
+	//allthedata := make([]uint8, 784*ncases, 784*ncases)
 	for {
 
 		line, err := reader.ReadString('\n')
@@ -60,20 +60,21 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 			}
 			//pad out the data to include this feature
 			for xi >= len(data) {
-				// data = append(data, &SparseNumFeature{
-				// 	make(map[int]float64),
-				// 	make(map[int]bool),
-				// 	fmt.Sprintf("%v", len(data))})
-
-				data = append(data, &DenseUint8Feature{
-					allthedata[(len(data)-1)*ncases : len(data)*ncases],
+				data = append(data, &SparseNumFeature{
+					make(map[int]float64),
 					make(map[int]bool),
 					fmt.Sprintf("%v", len(data))})
+
 				/*
-					data = append(data, &SparseUint8Feature{
-						make(map[int]uint8),
+					data = append(data, &DenseUint8Feature{
+						allthedata[(len(data)-1)*ncases : len(data)*ncases],
 						make(map[int]bool),
 						fmt.Sprintf("%v", len(data))})
+					/*
+						data = append(data, &SparseUint8Feature{
+							make(map[int]uint8),
+							make(map[int]bool),
+							fmt.Sprintf("%v", len(data))})
 				*/
 
 			}
