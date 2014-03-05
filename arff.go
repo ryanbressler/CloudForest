@@ -33,7 +33,7 @@ func ParseARFF(input io.Reader) *FeatureMatrix {
 		if strings.HasPrefix(norm, "@attribute") {
 			vals := strings.Fields(line)
 
-			if strings.ToLower(vals[2]) == "numeric" {
+			if strings.ToLower(vals[2]) == "numeric" || strings.ToLower(vals[2]) == "real" {
 				data = append(data, &DenseNumFeature{
 					make([]float64, 0, 0),
 					make([]bool, 0, 0),
