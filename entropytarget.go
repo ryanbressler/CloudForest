@@ -70,8 +70,10 @@ func (target *EntropyTarget) UpdateSImpFromAllocs(l []int, r []int, m []int, all
 func (target *EntropyTarget) ImpFromCounts(total int, counts *[]int) (e float64) {
 	p := 0.0
 	for _, i := range *counts {
-		p = float64(i) / float64(total)
-		e -= p * math.Log2(p)
+		if i > 0 {
+			p = float64(i) / float64(total)
+			e -= p * math.Log2(p)
+		}
 	}
 	return
 
@@ -86,8 +88,11 @@ func (target *EntropyTarget) Impurity(cases *[]int, counts *[]int) (e float64) {
 
 	p := 0.0
 	for _, i := range *counts {
-		p = float64(i) / float64(total)
-		e -= p * math.Log2(p)
+		if i > 0 {
+			p = float64(i) / float64(total)
+			e -= p * math.Log2(p)
+		}
+
 	}
 
 	return

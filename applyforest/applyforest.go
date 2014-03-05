@@ -52,7 +52,7 @@ func main() {
 	}
 
 	var bb CloudForest.VoteTallyer
-	if !cat && (num || strings.HasPrefix(forest.Target, "N")) {
+	if !cat && (num || data.Data[data.Map[forest.Target]].NCats()>0)) {
 		bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
 	} else {
 		bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
