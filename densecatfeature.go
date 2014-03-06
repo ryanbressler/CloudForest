@@ -651,6 +651,21 @@ func (target *DenseCatFeature) SplitImpurity(l *[]int, r *[]int, m *[]int, alloc
 	return
 }
 
+func (target *DenseCatFeature) MoveCountsRtoL(allocs *BestSplitAllocs, movedRtoL *[]int) {
+	var cat, i int
+	catdata := target.CatData
+	lcounter := *allocs.LCounter
+	rcounter := *allocs.RCounter
+	for _, i = range *movedRtoL {
+
+		//most expensive statement:
+		cat = catdata[i]
+		lcounter[cat]++
+		rcounter[cat]--
+
+	}
+}
+
 //UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
 //Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
 func (target *DenseCatFeature) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64) {

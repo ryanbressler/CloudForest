@@ -58,6 +58,7 @@ type NumFeature interface {
 type CatFeature interface {
 	Feature
 	CountPerCat(cases *[]int, counter *[]int)
+	MoveCountsRtoL(allocs *BestSplitAllocs, movedRtoL *[]int)
 	DistinctCats(cases *[]int, counter *[]int) int
 	CatToNum(value string) (numericv int)
 	NumToCat(i int) (value string)

@@ -39,18 +39,7 @@ func (target *EntropyTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs 
 //UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
 //Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
 func (target *EntropyTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64) {
-	var cat, i int
-	lcounter := *allocs.LCounter
-	rcounter := *allocs.RCounter
-	for _, i = range *movedRtoL {
-
-		//most expensive statement:
-		cat = target.Geti(i)
-		lcounter[cat]++
-		rcounter[cat]--
-		//counter[target.Geti(i)]++
-
-	}
+	target.MoveCountsRtoL(allocs, movedRtoL)
 	nl := float64(len(*l))
 	nr := float64(len(*r))
 	nm := 0.0

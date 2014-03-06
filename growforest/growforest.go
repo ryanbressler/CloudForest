@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"sync"
+	"time"
 )
 
 func main() {
@@ -421,6 +422,7 @@ func main() {
 	treechan := make(chan *CloudForest.Tree, 0)
 
 	//****************** Good Stuff Stars Here ;) ******************//
+	trainingStart := time.Now()
 	for core := 0; core < nCores; core++ {
 		go func() {
 			weight := -1.0
@@ -532,6 +534,10 @@ func main() {
 		}
 
 	}
+
+	trainingEnd := time.Now()
+	fmt.Printf("Training model to disk took %v.\n", trainingEnd.Sub(trainingStart))
+
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
 	}
