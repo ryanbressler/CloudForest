@@ -98,6 +98,51 @@ func (f *DenseNumFeature) Norm(i int, v float64) float64 {
 	return d * d
 }
 
+func (f *DenseNumFeature) Split(codedSplit interface{}, cases []int) (l []int, r []int, m []int) {
+	length := len(cases)
+
+	lastleft := -1
+	lastright := length
+	swaper := 0
+
+	//Move left cases to the start and right cases to the end so that missing cases end up
+	//in between.
+	split := codedSplit.(float64)
+
+	for i := 0; i < lastright; i++ {
+		if f.HasMissing && f.IsMissing(cases[i]) {
+			continue
+		}
+		if f.NumData[cases[i]] <= split {
+			//Left
+			if i != lastleft+1 {
+				lastleft += 1
+				swaper = cases[i]
+				cases[i] = cases[lastleft]
+				cases[lastleft] = swaper
+				i--
+
+			}
+
+		} else {
+			//Right
+			lastright -= 1
+			swaper = cases[i]
+			cases[i] = cases[lastright]
+			cases[lastright] = swaper
+			i -= 1
+
+		}
+
+	}
+
+	l = cases[:lastleft+1]
+	r = cases[lastright:]
+	m = cases[lastleft+1 : lastright]
+
+	return
+}
+
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.

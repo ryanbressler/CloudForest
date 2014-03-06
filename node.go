@@ -8,6 +8,8 @@ import ()
 //have not been split away.
 type Recursable func(*Node, []int, int)
 
+type CodedRecursable func(*Node, []int, int) (int, interface{})
+
 //A node of a decision tree.
 //Pred is a string containing either the category or a representation of a float
 //(less then ideal)
@@ -41,6 +43,19 @@ func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int, depth int) 
 		n.Right.Recurse(r, fm, rs, depth)
 		if len(ms) > 0 && n.Missing != nil {
 			n.Missing.Recurse(r, fm, ms, depth)
+		}
+	}
+}
+
+func (n *Node) CodedRecurse(r CodedRecursable, fm *FeatureMatrix, cases []int, depth int) {
+	fi, codedSplit := r(n, cases, depth)
+	depth++
+	if n.Splitter != nil {
+		ls, rs, ms := fm.Data[fi].Split(codedSplit, cases)
+		n.Left.CodedRecurse(r, fm, ls, depth)
+		n.Right.CodedRecurse(r, fm, rs, depth)
+		if len(ms) > 0 && n.Missing != nil {
+			n.Missing.CodedRecurse(r, fm, ms, depth)
 		}
 	}
 }

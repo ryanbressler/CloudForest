@@ -156,6 +156,72 @@ func (f *DenseCatFeature) BestSplit(target Target,
 
 }
 
+func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r []int, m []int) {
+	length := len(cases)
+
+	lastleft := -1
+	lastright := length
+	swaper := 0
+
+	var GoesLeft func(int) bool
+
+	switch codedSplit.(type) {
+	case int:
+		cat := codedSplit.(int)
+		if f.NCats() == 2 {
+			GoesLeft = func(i int) bool {
+				return f.CatData[i] != cat
+			}
+		} else {
+			GoesLeft = func(i int) bool {
+				return 0 != (cat & (1 << uint(f.CatData[i])))
+			}
+		}
+	case *big.Int:
+		bigCat := codedSplit.(*big.Int)
+		GoesLeft = func(i int) bool {
+			return 0 != bigCat.Bit(f.CatData[i])
+		}
+
+	}
+
+	//Move left cases to the start and right cases to the end so that missing cases end up
+	//in between.
+
+	for i := 0; i < lastright; i++ {
+		if f.HasMissing && f.IsMissing(cases[i]) {
+			continue
+		}
+		if GoesLeft(cases[i]) {
+			//Left
+			if i != lastleft+1 {
+				lastleft += 1
+				swaper = cases[i]
+				cases[i] = cases[lastleft]
+				cases[lastleft] = swaper
+				i--
+
+			}
+
+		} else {
+			//Right
+			lastright -= 1
+			swaper = cases[i]
+			cases[i] = cases[lastright]
+			cases[lastright] = swaper
+			i -= 1
+
+		}
+
+	}
+
+	l = cases[:lastleft+1]
+	r = cases[lastright:]
+	m = cases[lastleft+1 : lastright]
+
+	return
+}
+
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.
@@ -165,13 +231,6 @@ func (f *DenseCatFeature) DecodeSplit(codedSplit interface{}) (s *Splitter) {
 	s = &Splitter{f.Name, false, 0.0, make(map[string]bool, nCats)}
 
 	switch codedSplit.(type) {
-	case *big.Int:
-		bigCat := codedSplit.(*big.Int)
-		for j := 0; j < nCats; j++ {
-			if 0 != bigCat.Bit(j) {
-				s.Left[f.Back[j]] = true
-			}
-		}
 	case int:
 		cat := codedSplit.(int)
 		for j := 0; j < nCats; j++ {
@@ -181,6 +240,14 @@ func (f *DenseCatFeature) DecodeSplit(codedSplit interface{}) (s *Splitter) {
 			}
 
 		}
+	case *big.Int:
+		bigCat := codedSplit.(*big.Int)
+		for j := 0; j < nCats; j++ {
+			if 0 != bigCat.Bit(j) {
+				s.Left[f.Back[j]] = true
+			}
+		}
+
 	}
 
 	return

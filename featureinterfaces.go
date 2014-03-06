@@ -35,6 +35,7 @@ type Feature interface {
 	ImputeMissing()
 	GetName() string
 	Append(v string)
+	Split(codedSplit interface{}, cases []int) (l []int, r []int, m []int)
 }
 
 //NumFeature contains the methods of Feature plus methods needed to implement

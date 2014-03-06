@@ -88,14 +88,14 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	allocs *BestSplitAllocs) {
 
 	var innercanidates []int
-	t.Root.Recurse(func(n *Node, innercases []int, depth int) {
+	t.Root.CodedRecurse(func(n *Node, innercases []int, depth int) (fi int, split interface{}) {
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&candidates, mTry)
 			innercanidates = candidates[:mTry]
-			best, impDec := fm.BestSplitter(target, &innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs)
-			if best != nil && impDec > minImp {
-				fi := fm.Map[best.Feature]
+			var impDec float64
+			fi, split, impDec = fm.BestSplitter(target, &innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs)
+			if impDec > minImp {
 				if importance != nil {
 					(*importance)[fi].Add(impDec)
 				}
@@ -104,7 +104,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				}
 				//not a leaf node so define the splitter and left and right nodes
 				//so recursion will continue
-				n.Splitter = best
+				n.Splitter = fm.Data[fi].DecodeSplit(split)
 				n.Pred = ""
 				n.Left = new(Node)
 				n.Right = new(Node)
@@ -113,11 +113,14 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				}
 				return
 			}
+
 		}
 
 		//Leaf node so find the predictive value and set it in n.Pred
+		split = nil
 		n.Splitter = nil
 		n.Pred = target.FindPredicted(innercases)
+		return
 
 	}, fm, cases, 0)
 }

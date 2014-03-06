@@ -69,14 +69,14 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	leafSize int,
 	vet bool,
 	evaloob bool,
-	allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (bestFi int, bestSplit interface{}, impurityDecrease float64) {
 
 	impurityDecrease = minImp
 
-	var f, bestF *Feature
+	var f Feature
 	var inerImp float64
 	var vetImp float64
-	var split, bestSplit interface{}
+	var split interface{}
 
 	if vet {
 		target.(Feature).CopyInTo(allocs.ContrastTarget.(Feature))
@@ -85,12 +85,12 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	parentImp := target.Impurity(cases, allocs.Counter)
 
 	for _, i := range *candidates {
-		f = &fm.Data[i]
-		split, inerImp = (*f).BestSplit(target, cases, parentImp, leafSize, allocs)
+		f = fm.Data[i]
+		split, inerImp = f.BestSplit(target, cases, parentImp, leafSize, allocs)
 
 		if evaloob && inerImp > minImp && inerImp > impurityDecrease {
-			spliter := (*f).DecodeSplit(split)
-			l, r, m := spliter.Split(fm, *oob)
+			//spliter := f.DecodeSplit(split)
+			l, r, m := f.Split(split, *oob) //spliter.Split(fm, *oob)
 			inerImp = target.Impurity(oob, allocs.Counter) - target.SplitImpurity(&l, &r, &m, allocs)
 		}
 
@@ -101,19 +101,22 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 			}
 
 			allocs.ContrastTarget.(Feature).ShuffleCases(casept)
-			_, vetImp = (*f).BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, allocs)
+			_, vetImp = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, allocs)
 			inerImp = inerImp - vetImp
 		}
 
 		if inerImp > minImp && inerImp > impurityDecrease {
-			bestF = f
+			bestFi = i
 			impurityDecrease = inerImp
 			bestSplit = split
 		}
 
 	}
-	if impurityDecrease > minImp {
-		s = (*bestF).DecodeSplit(bestSplit)
+
+	if impurityDecrease <= minImp {
+		bestFi = -1
+		impurityDecrease = 0.0
+		bestSplit = nil
 	}
 	return
 }
