@@ -50,6 +50,10 @@ func (f *DenseCatFeature) IsMissing(i int) bool {
 	return f.Missing[i]
 }
 
+func (f *DenseCatFeature) MissingVals() bool {
+	return f.HasMissing
+}
+
 func (f *DenseCatFeature) PutMissing(i int) {
 	f.Missing[i] = true
 	f.HasMissing = true
@@ -490,37 +494,29 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	parentImp float64,
 	maxEx int,
 	leafSize int,
-	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
+	a *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
-	left := *allocs.Left
-	left = left[0:0]
-	right := *allocs.Right
-	right = right[0:0]
-
-	/*
-
-		Exhaustive search of combinations of categories is carried out by iterating an Int and using
-		the bits to define which categories go to the left of the split.
-
-	*/
+	//allocation is happening here
+	a.L = a.L[0:0]
+	a.R = a.R[0:0]
 
 	catdata := f.CatData
 	for _, c := range *cases {
 
 		if catdata[c] == 1 {
-			left = append(left, c)
+			a.L = append(a.L, c)
 		} else {
-			right = append(right, c)
+			a.R = append(a.R, c)
 		}
 
 	}
 
 	//skip cases where the split didn't do any splitting
-	if len(left) < leafSize || len(right) < leafSize {
+	if len(a.L) < leafSize || len(a.R) < leafSize {
 		return
 	}
 
-	impurityDecrease = parentImp - target.SplitImpurity(&left, &right, nil, allocs)
+	impurityDecrease = parentImp - target.SplitImpurity(&a.L, &a.R, nil, a)
 
 	bestSplit = 1
 

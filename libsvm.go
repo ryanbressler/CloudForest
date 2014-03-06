@@ -62,7 +62,7 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 			}
 			//pad out the data to include this feature
 			for xi >= len(data) {
-				data = append(data, &SparseNumFeature{
+				/*data = append(data, &SparseNumFeature{
 					make(map[int]float64),
 					make(map[int]bool),
 					fmt.Sprintf("%v", len(data)),

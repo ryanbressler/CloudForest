@@ -63,9 +63,9 @@ allocs contains pointers to reusable structures for use while searching for the 
 be initialized to the proper size with NewBestSplitAlocs.
 */
 func (fm *FeatureMatrix) BestSplitter(target Target,
-	cases []int,
-	candidates []int,
-	oob []int,
+	cases *[]int,
+	candidates *[]int,
+	oob *[]int,
 	leafSize int,
 	vet bool,
 	evaloob bool,
@@ -82,22 +82,22 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		target.(Feature).CopyInTo(allocs.ContrastTarget.(Feature))
 	}
 
-	parentImp := target.Impurity(&cases, allocs.Counter)
+	parentImp := target.Impurity(cases, allocs.Counter)
 
-	for _, i := range candidates {
+	for _, i := range *candidates {
 		f = &fm.Data[i]
-		split, inerImp = (*f).BestSplit(target, &cases, parentImp, leafSize, allocs)
+		split, inerImp = (*f).BestSplit(target, cases, parentImp, leafSize, allocs)
 
 		if evaloob && inerImp > minImp && inerImp > impurityDecrease {
 			spliter := (*f).DecodeSplit(split)
-			l, r, m := spliter.Split(fm, oob)
-			inerImp = target.Impurity(&oob, allocs.Counter) - target.SplitImpurity(&l, &r, &m, allocs)
+			l, r, m := spliter.Split(fm, *oob)
+			inerImp = target.Impurity(oob, allocs.Counter) - target.SplitImpurity(&l, &r, &m, allocs)
 		}
 
 		if vet && inerImp > minImp && inerImp > impurityDecrease {
-			casept := &cases
+			casept := cases
 			if evaloob {
-				casept = &oob
+				casept = oob
 			}
 
 			allocs.ContrastTarget.(Feature).ShuffleCases(casept)

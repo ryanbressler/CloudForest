@@ -60,6 +60,10 @@ func (f *DenseNumFeature) IsMissing(i int) bool {
 	return f.Missing[i]
 }
 
+func (f *DenseNumFeature) MissingVals() bool {
+	return f.HasMissing
+}
+
 func (f *DenseNumFeature) PutMissing(i int) {
 	f.Missing[i] = true
 	f.HasMissing = true
@@ -181,8 +185,9 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 	if len(*cases) > 2*leafSize {
 		sorter := allocs.Sorter
-		sorter.Feature = f
-		sorter.Cases = *cases
+		//sorter.Vals = f.NumData
+		//sorter.Cases = *cases
+		sorter.Load(&f.NumData, cases)
 		sort.Sort(sorter)
 
 		lastsplit := 0
@@ -191,12 +196,10 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
 		// repeated allocations
 
-		var lc, rc, mc []int
-
 		for i := leafSize; i < (len(sorter.Cases) - leafSize); i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
-			if f.Missing[c] == true || f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
+			if f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
 				continue
 			}
 
@@ -204,15 +207,15 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
 					but it was slower.  */
 			if lastsplit == 0 {
-				lc = sorter.Cases[:i]
-				rc = sorter.Cases[i:]
-				innerimp = parentImp - target.SplitImpurity(&lc, &rc, nil, allocs)
+				allocs.LM = sorter.Cases[:i]
+				allocs.RM = sorter.Cases[i:]
+				innerimp = parentImp - target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
 				lastsplit = i
 			} else {
-				lc = sorter.Cases[:i]
-				rc = sorter.Cases[i:]
-				mc = sorter.Cases[lastsplit:i]
-				innerimp = parentImp - target.UpdateSImpFromAllocs(&lc, &rc, nil, allocs, &mc)
+				allocs.LM = sorter.Cases[:i]
+				allocs.RM = sorter.Cases[i:]
+				allocs.MM = sorter.Cases[lastsplit:i]
+				innerimp = parentImp - target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
 				lastsplit = i
 			}
 

@@ -5,6 +5,11 @@ import ()
 //BestSplitAllocs contains reusable allocations for split searching and evaluation.
 //Seprate instances should be used in each go routing doing learning.
 type BestSplitAllocs struct {
+	L              []int
+	R              []int
+	LM             []int
+	RM             []int
+	MM             []int
 	Left           *[]int           //left cases for potential splits
 	Right          *[]int           //right cases for potential splits
 	NonMissing     *[]int           //non missing cases for potential splits
@@ -28,7 +33,12 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 	counter := make([]int, target.NCats())
 	lcounter := make([]int, target.NCats())
 	rcounter := make([]int, target.NCats())
-	bsa = &BestSplitAllocs{&left,
+	bsa = &BestSplitAllocs{make([]int, 0, nTotalCases),
+		make([]int, 0, nTotalCases),
+		nil,
+		nil,
+		nil,
+		&left,
 		&right,
 		&nonmissing,
 		&counter,
@@ -37,7 +47,8 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 		0.0,
 		0.0,
 		0.0,
-		new(SortableFeature),
+		&SortableFeature{make([]float64, nTotalCases, nTotalCases),
+			nil},
 		target.(Feature).Copy().(Target)}
 	return
 }

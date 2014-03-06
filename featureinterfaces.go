@@ -13,6 +13,7 @@ type Feature interface {
 	Length() (l int)
 	GetStr(i int) (value string)
 	IsMissing(i int) bool
+	MissingVals() bool
 	GoesLeft(i int, splitter *Splitter) bool
 	PutMissing(i int)
 	PutStr(i int, v string)
