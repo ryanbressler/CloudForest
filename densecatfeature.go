@@ -192,27 +192,21 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 		if f.HasMissing && f.IsMissing(cases[i]) {
 			continue
 		}
-		if GoesLeft(cases[i]) {
-			//Left
+		if GoesLeft(cases[i]) { //Left
 			if i != lastleft+1 {
 				lastleft += 1
 				swaper = cases[i]
 				cases[i] = cases[lastleft]
 				cases[lastleft] = swaper
 				i--
-
 			}
-
-		} else {
-			//Right
+		} else { //Right
 			lastright -= 1
 			swaper = cases[i]
 			cases[i] = cases[lastright]
 			cases[lastright] = swaper
 			i -= 1
-
 		}
-
 	}
 
 	l = cases[:lastleft+1]
