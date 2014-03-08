@@ -234,6 +234,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		//sorter.Cases = *cases
 		sorter.Load(&f.NumData, cases)
 		sort.Sort(sorter)
+		//sorter.Sort()
 
 		lastsplit := 0
 		innerimp := 0.0

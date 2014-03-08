@@ -107,6 +107,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				//so recursion will continue
 				n.Splitter = fm.Data[fi].DecodeSplit(split)
 				n.Pred = ""
+				//is this check needed? is it safe to reuse?
 				if n.Left == nil || n.Right == nil {
 					n.Left = new(Node)
 					n.Right = new(Node)
