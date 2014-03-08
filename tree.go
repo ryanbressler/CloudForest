@@ -105,6 +105,8 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				}
 				//not a leaf node so define the splitter and left and right nodes
 				//so recursion will continue
+				n.CodedSplit = split
+				n.Featurei = fi
 				n.Splitter = fm.Data[fi].DecodeSplit(split)
 				n.Pred = ""
 				//is this check needed? is it safe to reuse?

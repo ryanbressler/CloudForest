@@ -115,8 +115,8 @@ func (f *DenseNumFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 		}
 		if f.NumData[cases[i]] <= split {
 			//Left
-			if i != lastleft+1 {
-				lastleft += 1
+			lastleft++
+			if i != lastleft {
 				swaper = cases[i]
 				cases[i] = cases[lastleft]
 				cases[lastleft] = swaper
@@ -238,14 +238,11 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 		lastsplit := 0
 		innerimp := 0.0
-
-		// Note: timsort is slower for my test cases but could potentially be made faster by eliminating
-		// repeated allocations
-
-		for i := leafSize; i < (len(sorter.Cases) - leafSize); i++ {
+		stop := (len(sorter.Cases) - leafSize)
+		for i := leafSize; i < stop; i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
-			if f.NumData[c] == f.NumData[sorter.Cases[i+1]] {
+			if f.NumData[c] == f.NumData[sorter.Cases[i-1]] {
 				continue
 			}
 
@@ -267,7 +264,8 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
-				codedSplit = f.NumData[c]
+				codedSplit = f.NumData[sorter.Cases[i-1]]
+				//fmt.Println(len(sorter.Cases), sorter.Vals, allocs.LM, allocs.RM, codedSplit, impurityDecrease)
 
 			}
 

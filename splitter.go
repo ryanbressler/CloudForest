@@ -1,6 +1,8 @@
 package CloudForest
 
-import ()
+import (
+//"fmt"
+)
 
 //Splitter contains fields that can be used to cases by a single feature. The split
 //can be either numerical in which case it is defined by the Value field or
@@ -36,9 +38,9 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int, m []
 			continue
 		}
 		if f.GoesLeft(cases[i], s) {
-			//Left
-			if i != lastleft+1 {
-				lastleft += 1
+			lastleft++
+			if i != lastleft {
+
 				swaper = cases[i]
 				cases[i] = cases[lastleft]
 				cases[lastleft] = swaper
@@ -52,12 +54,12 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int, m []
 			swaper = cases[i]
 			cases[i] = cases[lastright]
 			cases[lastright] = swaper
-			i -= 1
+			i--
 
 		}
 
 	}
-
+	//fmt.Println(cases, lastleft, lastright)
 	l = cases[:lastleft+1]
 	r = cases[lastright:]
 	m = cases[lastleft+1 : lastright]

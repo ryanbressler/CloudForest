@@ -1,8 +1,8 @@
 package CloudForest
 
 import (
-	//"fmt"
-	"math"
+//"fmt"
+//"math"
 )
 
 /*
@@ -12,7 +12,7 @@ sort.Sort
 */
 type SortableFeature struct {
 	//Feature NumFeature
-	vals  []float64
+	Vals  []float64
 	Cases []int
 }
 
@@ -23,9 +23,9 @@ func (sf *SortableFeature) Len() int {
 
 //Less determines if the ith case is less then the jth case.
 func (sf *SortableFeature) Less(i int, j int) bool {
-	v := sf.vals
+	v := sf.Vals
 	return v[i] < v[j]
-	return sf.vals[i] < sf.vals[j]
+	return sf.Vals[i] < sf.Vals[j]
 	//return sf.Feature.Get(sf.Cases[i]) < sf.Feature.Get(sf.Cases[j])
 
 }
@@ -36,7 +36,7 @@ func (sf *SortableFeature) Swap(i int, j int) {
 	v := c[i]
 	c[i] = c[j]
 	c[j] = v
-	vs := sf.vals
+	vs := sf.Vals
 	w := vs[i]
 	vs[i] = vs[j]
 	vs[j] = w
@@ -46,10 +46,11 @@ func (sf *SortableFeature) Swap(i int, j int) {
 func (sf *SortableFeature) Load(vals *[]float64, cases *[]int) {
 	sf.Cases = *cases
 	for i, p := range *cases {
-		sf.vals[i] = (*vals)[p]
+		sf.Vals[i] = (*vals)[p]
 	}
 }
 
+/*
 //introsort + heapsort as in scikits learn's tree implementaion. For now go's sort is actually faster as it does less comparison
 func (sf *SortableFeature) sort() {
 	n := len(sf.Cases)
@@ -161,4 +162,5 @@ func (sf *SortableFeature) heapsort(s int, e int) {
 		end = end - 1
 	}
 
-}
+
+}*/

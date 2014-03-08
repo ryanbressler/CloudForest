@@ -14,11 +14,13 @@ type CodedRecursable func(*Node, *[]int, int) (int, interface{})
 //Pred is a string containing either the category or a representation of a float
 //(less then ideal)
 type Node struct {
-	Left     *Node
-	Right    *Node
-	Missing  *Node
-	Pred     string
-	Splitter *Splitter
+	CodedSplit interface{}
+	Featurei   int
+	Left       *Node
+	Right      *Node
+	Missing    *Node
+	Pred       string
+	Splitter   *Splitter
 }
 
 //Recurse is used to apply a Recursable function at every downstream node as the cases
@@ -37,20 +39,26 @@ type Node struct {
 func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int, depth int) {
 	r(n, cases, depth)
 	depth++
-	if n.Splitter != nil {
-		ls, rs, ms := n.Splitter.Split(fm, cases)
-		n.Left.Recurse(r, fm, ls, depth)
-		n.Right.Recurse(r, fm, rs, depth)
-		if len(ms) > 0 && n.Missing != nil {
-			n.Missing.Recurse(r, fm, ms, depth)
-		}
+	var ls, rs, ms []int
+	switch {
+	case n.CodedSplit != nil:
+		ls, rs, ms = fm.Data[n.Featurei].Split(n.CodedSplit, cases)
+	case n.Splitter != nil:
+		ls, rs, ms = n.Splitter.Split(fm, cases)
+	default:
+		return
+	}
+	n.Left.Recurse(r, fm, ls, depth)
+	n.Right.Recurse(r, fm, rs, depth)
+	if len(ms) > 0 && n.Missing != nil {
+		n.Missing.Recurse(r, fm, ms, depth)
 	}
 }
 
 func (n *Node) CodedRecurse(r CodedRecursable, fm *FeatureMatrix, cases *[]int, depth int) {
 	fi, codedSplit := r(n, cases, depth)
 	depth++
-	if n.Splitter != nil {
+	if codedSplit != nil {
 		ls, rs, ms := fm.Data[fi].Split(codedSplit, *cases)
 		n.Left.CodedRecurse(r, fm, &ls, depth)
 		n.Right.CodedRecurse(r, fm, &rs, depth)

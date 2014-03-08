@@ -168,15 +168,17 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 	switch codedSplit.(type) {
 	case int:
 		cat := codedSplit.(int)
-		if f.NCats() == 2 {
-			GoesLeft = func(i int) bool {
-				return f.CatData[i] != cat
-			}
-		} else {
-			GoesLeft = func(i int) bool {
-				return 0 != (cat & (1 << uint(f.CatData[i])))
-			}
+		// doesn't account for non slitting case cat = 3
+		// or left vs right simitry which makes tests fail
+		// if f.NCats() == 2 {
+		// 	GoesLeft = func(i int) bool {
+		// 		return f.CatData[i] != cat
+		// 	}
+		// } else {
+		GoesLeft = func(i int) bool {
+			return 0 != (cat & (1 << uint(f.CatData[i])))
 		}
+		// }
 	case *big.Int:
 		bigCat := codedSplit.(*big.Int)
 		GoesLeft = func(i int) bool {
@@ -193,8 +195,9 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 			continue
 		}
 		if GoesLeft(cases[i]) { //Left
-			if i != lastleft+1 {
-				lastleft += 1
+			lastleft++
+			if i != lastleft {
+
 				swaper = cases[i]
 				cases[i] = cases[lastleft]
 				cases[lastleft] = swaper
@@ -557,7 +560,6 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	leafSize int,
 	a *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
-	//allocation is happening here
 	a.L = a.L[0:0]
 	a.R = a.R[0:0]
 
@@ -565,9 +567,9 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	for _, c := range *cases {
 
 		if catdata[c] == 1 {
-			a.L = append(a.L, c)
-		} else {
 			a.R = append(a.R, c)
+		} else {
+			a.L = append(a.L, c)
 		}
 
 	}
