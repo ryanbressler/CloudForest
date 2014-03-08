@@ -22,7 +22,7 @@ func main() {
 	fm := flag.String("train",
 		"featurematrix.afm", "AFM formated feature matrix containing training data.")
 	rf := flag.String("rfpred",
-		"rface.sf", "File name to output predictor forest in sf format.")
+		"", "File name to output predictor forest in sf format.")
 	targetname := flag.String("target",
 		"", "The row header of the target in the feature matrix.")
 	imp := flag.String("importance",
@@ -401,12 +401,15 @@ func main() {
 		}
 	}
 
-	forestfile, err := os.Create(*rf)
-	if err != nil {
-		log.Fatal(err)
+	var forestwriter *CloudForest.ForestWriter
+	if *rf != "" {
+		forestfile, err := os.Create(*rf)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer forestfile.Close()
+		forestwriter = CloudForest.NewForestWriter(forestfile)
 	}
-	defer forestfile.Close()
-	forestwriter := CloudForest.NewForestWriter(forestfile)
 
 	//****************** Needed Collections and vars ******************//
 
@@ -524,8 +527,10 @@ func main() {
 		if tree == nil {
 			break
 		}
+		if forestwriter != nil {
+			forestwriter.WriteTree(tree, i)
+		}
 
-		forestwriter.WriteTree(tree, i)
 		if i < nTrees-1 {
 			treechan <- tree
 		}
@@ -536,7 +541,7 @@ func main() {
 	}
 
 	trainingEnd := time.Now()
-	fmt.Printf("Training model to disk took %v.\n", trainingEnd.Sub(trainingStart))
+	fmt.Printf("Training model took %v.\n", trainingEnd.Sub(trainingStart))
 
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
