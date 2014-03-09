@@ -187,7 +187,7 @@ func TestCatFeature(t *testing.T) {
 	decodedsplit = mediumf.DecodeSplit(split)
 
 	l, r, m = decodedsplit.Split(&mediumfm, cases)
-	fmt.Println(decodedsplit.Left)
+	//fmt.Println(decodedsplit.Left)
 
 	if len(l) != 2 || len(r) != 4 || len(m) != 0 {
 		t.Errorf("After Decoded Boolean Split Left, Right, Missing Lengths = %v %v %v not 1 2 0", len(l), len(r), len(m))

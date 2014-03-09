@@ -80,3 +80,32 @@ func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
 	return
 
 }
+
+//Tally score returns the R2 score
+func (bb *NumBallotBox) TallyR2Score(feature Feature) (e float64) {
+	mean := 0.0
+	r2 := 0.0
+	total := 0
+	for i := 0; i < feature.Length(); i++ {
+		if !feature.IsMissing(i) {
+			mean += feature.(*DenseNumFeature).Get(i)
+			total++
+		}
+	}
+	mean /= float64(total)
+
+	for i := 0; i < feature.Length(); i++ {
+		if !feature.IsMissing(i) {
+			value := feature.(NumFeature).Get(i)
+
+			d := float64(value) - mean
+			r2 += d * d
+		}
+	}
+	r2 /= float64(total)
+
+	e = 1 - bb.TallyError(feature)/r2
+
+	return
+
+}

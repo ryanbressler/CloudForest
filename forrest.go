@@ -58,6 +58,10 @@ func GrowRandomForest(fm *FeatureMatrix,
 
 		f.Trees = append(f.Trees, NewTree())
 		f.Trees[i].Grow(fm, target, cases, candidates, nil, mTry, leafSize, splitmissing, vet, false, importance, nil, allocs)
+		switch target.(type) {
+		case BoostingTarget:
+			f.Trees[i].Weight = target.(BoostingTarget).Boost(f.Trees[i].Partition(fm))
+		}
 	}
 	return
 }
