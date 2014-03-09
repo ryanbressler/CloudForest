@@ -1,6 +1,8 @@
 CloudForest
 ==============
 
+[![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest)
+
 CloudForest implements fast, multithreaded, flexible ensembles of decision trees for machine
 learning in pure Go (golang to search engines). It allows for a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
