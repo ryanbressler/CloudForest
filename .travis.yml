@@ -1,5 +1,6 @@
 language: go
 
 go:
-  - 1.2
-  - tip
+ - 1.2
+ - release
+ - tip
