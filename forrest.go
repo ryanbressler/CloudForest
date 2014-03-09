@@ -30,6 +30,7 @@ with more then 6 categories.
 
 func GrowRandomForest(fm *FeatureMatrix,
 	target Feature,
+	candidates []int,
 	nSamples int,
 	mTry int,
 	nTrees int,
@@ -39,15 +40,6 @@ func GrowRandomForest(fm *FeatureMatrix,
 	importance *[]*RunningMean) (f *Forest) {
 
 	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees)}
-
-	//start with all features but the target as candidates
-	candidates := make([]int, 0, len(fm.Data))
-	targeti := fm.Map[f.Target]
-	for i := 0; i < len(fm.Data); i++ {
-		if i != targeti {
-			candidates = append(candidates, i)
-		}
-	}
 
 	//Slices for reuse during search for best splitter.
 	allocs := NewBestSplitAllocs(nSamples, target)
