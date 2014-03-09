@@ -3,7 +3,7 @@ package CloudForest
 import ()
 
 /*
-GradBoostTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
+GradBoostTarget wraps a numerical feature as a target for us in Gradiant Boosting Trees
 */
 type GradBoostTarget struct {
 	NumFeature

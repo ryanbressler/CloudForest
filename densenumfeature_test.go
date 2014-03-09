@@ -109,6 +109,17 @@ func TestNumFeature(t *testing.T) {
 	_, split, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
+	sorted := true
+	for i := 1; i < len(cases); i++ {
+		if f.NumData[cases[i]] < f.NumData[cases[i-1]] {
+			sorted = false
+		}
+
+	}
+	if !sorted {
+		t.Error("Numerical feature didn't sort cases.")
+	}
+
 	if split.(float64) != 0.1 {
 		t.Errorf("Numerical feature didn't self split correctelly between equal runs. Returned %v not 0.1", split)
 	}

@@ -190,9 +190,99 @@ func TestCatFeature(t *testing.T) {
 	//fmt.Println(decodedsplit.Left)
 
 	if len(l) != 2 || len(r) != 4 || len(m) != 0 {
-		t.Errorf("After Decoded Boolean Split Left, Right, Missing Lengths = %v %v %v not 1 2 0", len(l), len(r), len(m))
+		t.Errorf("After Decoded Boolean Split Left, Right, Missing Lengths = %v %v %v not 2 4 0", len(l), len(r), len(m))
 	}
 
 	//target.Append(v)
+
+}
+
+func TestBigCatFeature(t *testing.T) {
+
+	bigf := &DenseCatFeature{
+		&CatMap{make(map[string]int, 0),
+			make([]string, 0, 0)},
+		make([]int, 0, 0),
+		make([]bool, 0, 0),
+		"big",
+		false,
+		false}
+
+	boolf := &DenseCatFeature{
+		&CatMap{make(map[string]int, 0),
+			make([]string, 0, 0)},
+		make([]int, 0, 0),
+		make([]bool, 0, 0),
+		"bool",
+		false,
+		false}
+
+	cases := make([]int, 40, 40)
+	for i := 0; i < 40; i++ {
+		bigf.Append(fmt.Sprintf("%v", i))
+		boolf.Append(fmt.Sprintf("%v", i < 20))
+		cases[i] = i
+	}
+
+	bigfm := FeatureMatrix{[]Feature{bigf},
+		map[string]int{bigf.Name: 0},
+		[]string{bigf.Name}}
+
+	allocs := NewBestSplitAllocs(40, boolf)
+
+	//split f by medium f should send 1 and 2 to one side, coded 6
+	_, split, _ := bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs)
+
+	l, r, m := bigf.Split(split, cases)
+	if len(l) != 20 || len(r) != 20 || len(m) != 0 {
+		t.Errorf("After Coded big split Left, Right, Missing Lengths = %v %v %v not 20 20 0", len(l), len(r), len(m))
+	}
+
+	decodedsplit := bigf.DecodeSplit(split)
+
+	l, r, m = decodedsplit.Split(&bigfm, cases)
+	//fmt.Println(decodedsplit.Left)
+
+	if len(l) != 20 || len(r) != 20 || len(m) != 0 {
+		t.Errorf("After Decoded big split Left, Right, Missing Lengths = %v %v %v not 20 20 0", len(l), len(r), len(m))
+	}
+
+	bigf.RandomSearch = true
+	_, split, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs)
+
+	l, r, m = bigf.Split(split, cases)
+	//won't perfectelly split but should do okay
+	if len(l) < 18 || len(r) < 18 || len(m) != 0 {
+		t.Errorf("After Coded big random split Left, Right, Missing Lengths = %v %v %v not >=18 >=18 0", len(l), len(r), len(m))
+	}
+
+	bigf.PutMissing(23)
+	bigf.RandomSearch = false
+
+	//split f by medium f should send 1 and 2 to one side, coded 6
+	_, split, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs)
+
+	l, r, m = bigf.Split(split, cases)
+	if len(l) < 19 || len(r) < 19 || len(m) != 1 {
+		t.Errorf("After Coded big missing split Left, Right, Missing Lengths = %v %v %v not 19 20 1", len(l), len(r), len(m))
+	}
+
+	decodedsplit = bigf.DecodeSplit(split)
+
+	l, r, m = decodedsplit.Split(&bigfm, cases)
+	//fmt.Println(decodedsplit.Left)
+
+	if len(l) < 19 || len(r) < 19 || len(m) != 1 {
+		t.Errorf("After Decoded big split Left, Right, Missing Lengths = %v %v %v not 19 20 1", len(l), len(r), len(m))
+	}
+
+	bigf.RandomSearch = true
+	_, split, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs)
+
+	l, r, m = bigf.Split(split, cases)
+	//won't perfectelly split but should do okay
+	if len(l) < 18 || len(r) < 18 || len(m) != 1 {
+		t.Errorf("After Coded big random split Left, Right, Missing Lengths = %v %v %v not >=18 >=18 1", len(l), len(r), len(m))
+	}
 
 }

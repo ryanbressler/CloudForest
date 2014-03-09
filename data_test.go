@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"math/rand"
 	"strings"
 	"testing"
 )
@@ -13,7 +14,17 @@ N:NumTarget	.0	.0	.0	.0	.0	.9	.9	.9
 C:CatTarget	0	0	0	0	0	1	1	1
 C:QuadVar	0	0	1	2	3	4	3	0
 C:BoolVat	0 	0	1	1	1	1	1	1
-C:FloatVar	.1	.2	.3	.4	.5	.6	.1	.2`
+N:FloatVar	.9	.8	.7	.5	.2	.3	.8	.9`
+
+var fmissing = `.	0	1	2	3	4	5	6	7
+N:NumTarget	.0	.0	.0	.0	.0	.9	.9	.9
+C:CatTarget	0	0	0	0	0	1	1	1
+C:QuadVar	0	0	1	2	3	4	3	0
+C:QuadVarM	0	0	1	NA	3	4	3	0
+C:BoolVat	0 	0	1	1	1	1	1	1
+C:BoolVatM	0 	0	1	1	NA	1	1	1
+N:FloatVar	.9	.8	.7	.5	.2	.3	.8	.9
+N:FloatVarM	.9	NA	.7	.5	.2	.3	.8	.9`
 
 //Note: Iris and Boston Housing Data in string literals at end of File.
 
@@ -23,13 +34,13 @@ func GetAllClassificationTargets(f CatFeature) []Target {
 	for _, cat := range f.(*DenseCatFeature).Back {
 		costs[cat] = 1.0
 	}
-	regret := NewRegretTarget(f)
-	regret.SetCosts(costs)
+	//regret := NewRegretTarget(f)
+	//regret.SetCosts(costs)
 	return []Target{f,
-		&EntropyTarget{f},
+		NewEntropyTarget(f),
 		NewAdaBoostTarget(f.Copy().(CatFeature)),
 		NewWRFTarget(f, costs),
-		regret,
+		//regret,
 	}
 
 }
@@ -57,6 +68,7 @@ func TestTreeTargets(t *testing.T) {
 	//regression
 	numtarget := fm.Data[0]
 	regressiontargets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
+	//regressiontargets = append(regressiontargets, &OrdinalTarget{numtarget.(NumFeature), 2, .9})
 	for _, target := range regressiontargets {
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), target)
@@ -97,7 +109,7 @@ func TestTreeTargets(t *testing.T) {
 			}
 
 		case *RegretTarget:
-			if count != 3 {
+			if count != 5 {
 				t.Errorf("Classification tree grown with %T has  has %v nodes not 3", target, count)
 			}
 			continue
@@ -117,6 +129,86 @@ func TestTreeTargets(t *testing.T) {
 		if err != 0.0 {
 			t.Errorf("Sinlge tree clasification on simple case using %T had nonzero error: %v", target, err)
 		}
+	}
+
+}
+
+func TestMissing(t *testing.T) {
+	fmReader := strings.NewReader(fmissing)
+
+	fm := ParseAFM(fmReader)
+
+	if len(fm.Data) != 8 {
+		t.Errorf("Simple feature matrix has %v features not 8", len(fm.Data))
+	}
+
+	cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	canidates := []int{2, 3, 4, 5, 6, 7}
+
+	//regression
+	numtarget := fm.Data[0]
+	regressiontargets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
+	for _, target := range regressiontargets {
+		tree := NewTree()
+		allocs := NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, nil, nil, allocs)
+
+		votes := NewNumBallotBox(numtarget.Length())
+
+		tree.Vote(fm, votes)
+
+		err := votes.TallyError(numtarget)
+		if err != 0.0 {
+			t.Errorf("Error: Single tree regression on with split missing using %T had nonzero  error: %v", target, err)
+		}
+
+		forest := GrowRandomForest(fm, target.(Feature), fm.Data[0].Length(), len(canidates), 20, 1, false, false, nil)
+		votes = NewNumBallotBox(numtarget.Length())
+
+		for _, tree := range forest.Trees {
+			tree.Vote(fm, votes)
+		}
+
+		err = votes.TallyR2Score(numtarget)
+
+		//TODO: get this up to 1!
+		if err < .9 {
+			t.Errorf("Error: Regression from simple missing data set using %T had low R2 score: %v", target, err)
+		}
+		t.Logf("Log: Regression from simple missing data set using %T had R2 score: %v", target, err)
+
+	}
+
+	//clasification
+	cattarget := fm.Data[1]
+	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
+	for _, target := range classtargets {
+		tree := NewTree()
+
+		allocs := NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, nil, nil, allocs)
+
+		catvotes := NewCatBallotBox(cattarget.Length())
+
+		tree.Vote(fm, catvotes)
+
+		err := catvotes.TallyError(cattarget)
+		if err != 0.0 {
+			t.Errorf("Error: Sinlge tree clasification on simple case with split missing using %T had nonzero error: %v", target, err)
+		}
+
+		forest := GrowRandomForest(fm, target.(Feature), fm.Data[0].Length(), len(canidates), 10, 1, false, false, nil)
+		catvotes = NewCatBallotBox(cattarget.Length())
+
+		for _, tree := range forest.Trees {
+			tree.Vote(fm, catvotes)
+		}
+
+		err = catvotes.TallyError(cattarget)
+		if err > 0.0 {
+			t.Errorf("Error: Classification from missing data using %T had error: %v", target, err)
+		}
+		t.Logf("Log: Classification from simple missing data set using %T had error: %v", target, err)
 	}
 
 }
@@ -164,9 +256,34 @@ func TestIris(t *testing.T) {
 
 		err := catvotes.TallyError(cattarget)
 		if err > 0.05 {
-			t.Errorf("Classification of iris using %T had error: %v", target, err)
+			t.Errorf("Error: Classification of iris using %T had error: %v", target, err)
 		}
-		t.Logf("Classification of iris using %T had error: %v", target, err)
+		t.Logf("Log: Classification of iris using %T had error: %v", target, err)
+
+	}
+
+	//put some missing values in
+	for _, Feature := range fm.Data[:4] {
+		for i := 0; i < Feature.Length(); i++ {
+			if rand.Float64() < .05 {
+				Feature.PutStr(i, "NA")
+			}
+		}
+	}
+
+	for _, target := range classtargets {
+		forest := GrowRandomForest(fm, target.(Feature), fm.Data[0].Length(), 3, 10, 1, false, false, nil)
+		catvotes := NewCatBallotBox(cattarget.Length())
+
+		for _, tree := range forest.Trees {
+			tree.Vote(fm, catvotes)
+		}
+
+		err := catvotes.TallyError(cattarget)
+		if err > 0.1 {
+			t.Errorf("Error: Classification of iris with .05 missing using %T had error: %v", target, err)
+		}
+		t.Logf("Log: Classification of iris with .05 missing using %T had error: %v", target, err)
 
 	}
 
@@ -185,21 +302,45 @@ func TestBoston(t *testing.T) {
 		t.Errorf("Boston feature matrix has %v features not 14", len(fm.Data))
 	}
 
-	cattarget := fm.Data[fm.Map["class"]]
-	classtargets := GetAllRegressionTargets(cattarget.(*DenseNumFeature))
-	for _, target := range classtargets {
-		forest := GrowRandomForest(fm, target.(Feature), fm.Data[0].Length(), 4, 100, 1, false, false, nil)
-		catvotes := NewNumBallotBox(cattarget.Length())
+	numtarget := fm.Data[fm.Map["class"]]
+	targets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
+	for _, target := range targets {
+		forest := GrowRandomForest(fm, target.(Feature), fm.Data[0].Length(), 4, 20, 1, false, false, nil)
+		numvotes := NewNumBallotBox(numtarget.Length())
 
 		for _, tree := range forest.Trees {
-			tree.Vote(fm, catvotes)
+			tree.Vote(fm, numvotes)
 		}
 
-		err := catvotes.TallyR2Score(cattarget)
+		err := numvotes.TallyR2Score(numtarget)
 		if err < 0.95 {
-			t.Errorf("Regression of boston housing prices using %T had low R2 score: %v", target, err)
+			t.Errorf("Error: Regression of boston housing prices using %T had low R2 score: %v", target, err)
 		}
-		t.Logf("Regression of boston housing prices %T had R2 score: %v", target, err)
+		t.Logf("Log: Regression of boston housing prices %T had R2 score: %v", target, err)
+	}
+
+	//put some missing values in
+	for _, Feature := range fm.Data[:13] {
+		for i := 0; i < Feature.Length(); i++ {
+			if rand.Float64() < .01 {
+				Feature.PutStr(i, "NA")
+			}
+		}
+	}
+
+	for _, target := range targets {
+		forest := GrowRandomForest(fm, target.(Feature), fm.Data[0].Length(), 4, 20, 1, false, false, nil)
+		numvotes := NewNumBallotBox(numtarget.Length())
+
+		for _, tree := range forest.Trees {
+			tree.Vote(fm, numvotes)
+		}
+
+		err := numvotes.TallyR2Score(numtarget)
+		if err < 0.90 {
+			t.Errorf("Error: Regression of boston housing prices with .01 missing using %T had low R2 score: %v", target, err)
+		}
+		t.Logf("Log: Regression of boston housing prices with .01 missing with %T had R2 score: %v", target, err)
 	}
 
 }
