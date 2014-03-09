@@ -349,6 +349,72 @@ func TestBoston(t *testing.T) {
 
 }
 
+func TestImportance(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping importance test on boston data set.")
+	}
+	boston := strings.NewReader(boston_housing)
+
+	fm := ParseARFF(boston)
+
+	if len(fm.Data) != 14 {
+		t.Errorf("Boston feature matrix has %v features not 14", len(fm.Data))
+	}
+
+	// add artifical contrasts
+	fm.ContrastAll()
+
+	targeti := fm.Map["class"]
+
+	candidates := make([]int, 0, 0)
+
+	for i := 0; i < len(fm.Data); i++ {
+		if i != targeti {
+			candidates = append(candidates, i)
+		}
+	}
+
+	numtarget := fm.Data[targeti]
+
+	imppnt := NewRunningMeans(len(fm.Data))
+
+	nTrees := 20
+	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, false, false, imppnt)
+	//TODO read importance scores and verify RM and LSTAT come out on top
+
+	//Brieman's importance definition
+	imp := func(mean float64, count float64) float64 {
+		return mean * float64(count) / float64(nTrees)
+	}
+
+	roomimp := imp((*imppnt)[fm.Map["RM"]].Read())
+
+	lstatimp := imp((*imppnt)[fm.Map["LSTAT"]].Read())
+
+	beatlstat := 0
+
+	roomswin := true
+
+	for _, rm := range *imppnt {
+		fimp := imp(rm.Read())
+		if fimp > roomimp {
+			roomswin = false
+		}
+
+		if fimp > lstatimp {
+			beatlstat++
+		}
+	}
+
+	if !roomswin {
+		t.Error("RM feature was not most important in boston data set regression.")
+	}
+	if beatlstat != 1 {
+		t.Error("LSTAT feature not second most important in boston data set regression.")
+	}
+
+}
+
 func TestFileFormats(t *testing.T) {
 
 	//Write out a fm and read it back in
