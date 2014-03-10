@@ -4,7 +4,7 @@ Forest Coverage Type Benchmarks vs Scikit.learn
 Learner | CloudForest | scikit.learn 0.14.1 | scikit.learn 0.15 | CloudForest 
 --------|-------------|---------------------|-------------------|------------
 Format  | libsvm      | libsvm              | libsvm            | arff
-Time    | 53 seconds  | ??? seconds         | 30 seconds        | 38 seconds
+Time    | 53 seconds  | ??? seconds         | 30 seconds        | 34 seconds
 
 This data set was chosen to allow comparison with benchmarks by [wise.io](http://about.wise.io/blog/2013/07/15/benchmarking-random-forest-part-1/) and [Alex Rubinsteyn](http://blog.explainmydata.com/2014/03/big-speedup-for-random-forest-learning.html). 
 
