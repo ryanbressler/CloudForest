@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"strings"
 	"testing"
+	"time"
 )
 
 //A toy feature matrix where either of the first
@@ -360,7 +361,9 @@ func TestIris(t *testing.T) {
 	cattarget := fm.Data[targeti]
 	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
 	for _, target := range classtargets {
+		trainingStart := time.Now()
 		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
+		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -371,7 +374,7 @@ func TestIris(t *testing.T) {
 		if err > 0.05 {
 			t.Errorf("Error: Classification of iris using %T had error: %v", target, err)
 		}
-		t.Logf("Log: Classification of iris using %T had error: %v", target, err)
+		t.Logf("Log: 10 tree classification of iris using %T had error: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
 
 	}
 
@@ -390,7 +393,9 @@ func TestIris(t *testing.T) {
 	classtargets = GetAllClassificationTargets(cattarget.(*DenseCatFeature))
 
 	for _, target := range classtargets {
+		trainingStart := time.Now()
 		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, false, false, false, nil)
+		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -401,7 +406,7 @@ func TestIris(t *testing.T) {
 		if err > 0.1 {
 			t.Errorf("Error: Classification of iris with .05 missing using %T had error: %v", target, err)
 		}
-		t.Logf("Log: Classification of iris with .05 missing using %T had error: %v", target, err)
+		t.Logf("Log: 10 tree classification of iris with .05 missing using %T had error: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
 
 	}
 
@@ -425,7 +430,9 @@ func TestBoston(t *testing.T) {
 	numtarget := fm.Data[fm.Map["class"]]
 	targets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 	for _, target := range targets {
+		trainingStart := time.Now()
 		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, nil)
+		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -436,7 +443,7 @@ func TestBoston(t *testing.T) {
 		if err < 0.95 {
 			t.Errorf("Error: Regression of boston housing prices using %T had low R2 score: %v", target, err)
 		}
-		t.Logf("Log: Regression of boston housing prices %T had R2 score: %v", target, err)
+		t.Logf("Log: Regression of boston housing prices %T had R2 score: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
 	}
 
 	//put some missing values in
@@ -452,7 +459,9 @@ func TestBoston(t *testing.T) {
 	targets = GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 
 	for _, target := range targets {
+		trainingStart := time.Now()
 		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, nil)
+		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -463,7 +472,7 @@ func TestBoston(t *testing.T) {
 		if err < 0.90 {
 			t.Errorf("Error: Regression of boston housing prices with .01 missing using %T had low R2 score: %v", target, err)
 		}
-		t.Logf("Log: Regression of boston housing prices with .01 missing with %T had R2 score: %v", target, err)
+		t.Logf("Log: Regression of boston housing prices with .01 missing with %T had R2 score: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
 	}
 
 }
