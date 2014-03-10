@@ -36,6 +36,7 @@ type Feature interface {
 	GetName() string
 	Append(v string)
 	Split(codedSplit interface{}, cases []int) (l []int, r []int, m []int)
+	SplitPoints(codedSplit interface{}, cases *[]int) (lastl int, firstr int)
 }
 
 //NumFeature contains the methods of Feature plus methods needed to implement

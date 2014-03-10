@@ -219,6 +219,67 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 	return
 }
 
+func (f *DenseCatFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, int) {
+	cases := *cs
+	length := len(cases)
+
+	lastleft := -1
+	lastright := length
+	swaper := 0
+
+	var GoesLeft func(int) bool
+
+	switch codedSplit.(type) {
+	case int:
+		cat := codedSplit.(int)
+		// doesn't account for non slitting case cat = 3
+		// or left vs right simitry which makes tests fail
+		// if f.NCats() == 2 {
+		// 	GoesLeft = func(i int) bool {
+		// 		return f.CatData[i] != cat
+		// 	}
+		// } else {
+		GoesLeft = func(i int) bool {
+			return 0 != (cat & (1 << uint(f.CatData[i])))
+		}
+		// }
+	case *big.Int:
+		bigCat := codedSplit.(*big.Int)
+		GoesLeft = func(i int) bool {
+			return 0 != bigCat.Bit(f.CatData[i])
+		}
+
+	}
+
+	//Move left cases to the start and right cases to the end so that missing cases end up
+	//in between.
+
+	for i := 0; i < lastright; i++ {
+		if f.HasMissing && f.IsMissing(cases[i]) {
+			continue
+		}
+		if GoesLeft(cases[i]) { //Left
+			lastleft++
+			if i != lastleft {
+
+				swaper = cases[i]
+				cases[i] = cases[lastleft]
+				cases[lastleft] = swaper
+				i--
+			}
+		} else { //Right
+			lastright -= 1
+			swaper = cases[i]
+			cases[i] = cases[lastright]
+			cases[lastright] = swaper
+			i -= 1
+		}
+	}
+	lastleft++
+
+	return lastleft, lastright
+}
+
 //Decode split builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.
@@ -560,26 +621,41 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	leafSize int,
 	a *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
 
-	a.L = a.L[0:0]
-	a.R = a.R[0:0]
+	cs := *cases
+	//catdata:=
+	length := len(cs)
 
+	l := -1
+	r := length
+	swaper := 0
+
+	//Move left cases to the start and right cases to the end so that missing cases end up
+	//in between.
 	catdata := f.CatData
-	for _, c := range *cases {
-
-		if catdata[c] == 1 {
-			a.R = append(a.R, c)
-		} else {
-			a.L = append(a.L, c)
+	for i, j := range cs {
+		if i >= r {
+			break
 		}
-
+		if catdata[j] == 0 { //Right
+			r -= 1
+			swaper = cs[i]
+			cs[i] = cs[r]
+			cs[r] = swaper
+			i -= 1
+		} else {
+			l++
+		}
 	}
+	l++
 
 	//skip cases where the split didn't do any splitting
-	if len(a.L) < leafSize || len(a.R) < leafSize {
+	if l < leafSize || len(cs)-l < leafSize {
 		return
 	}
+	a.LM = cs[:l]
+	a.RM = cs[r:]
 
-	impurityDecrease = parentImp - target.SplitImpurity(&a.L, &a.R, nil, a)
+	impurityDecrease = parentImp - target.SplitImpurity(&a.LM, &a.RM, nil, a)
 
 	bestSplit = 1
 

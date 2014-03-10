@@ -59,11 +59,14 @@ func (n *Node) CodedRecurse(r CodedRecursable, fm *FeatureMatrix, cases *[]int, 
 	fi, codedSplit := r(n, cases, depth)
 	depth++
 	if codedSplit != nil {
-		ls, rs, ms := fm.Data[fi].Split(codedSplit, *cases)
-		n.Left.CodedRecurse(r, fm, &ls, depth)
-		n.Right.CodedRecurse(r, fm, &rs, depth)
-		if len(ms) > 0 && n.Missing != nil {
-			n.Missing.CodedRecurse(r, fm, &ms, depth)
+		li, ri := fm.Data[fi].SplitPoints(codedSplit, cases)
+		cs := (*cases)[:li]
+		n.Left.CodedRecurse(r, fm, &cs, depth)
+		cs = (*cases)[ri:]
+		n.Right.CodedRecurse(r, fm, &cs, depth)
+		if li != ri && n.Missing != nil {
+			cs = (*cases)[li:ri]
+			n.Missing.CodedRecurse(r, fm, &cs, depth)
 		}
 	}
 }
