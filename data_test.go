@@ -8,20 +8,20 @@ import (
 
 //A toy feature matrix where either of the first
 //two variables should be easilly predictible
-//by the other 3.
+//by the other by a single greedy tree.
 var fm = `.	0	1	2	3	4	5	6	7
 N:NumTarget	.0	.0	.0	.0	.0	.9	.9	.9
 C:CatTarget	0	0	0	0	0	1	1	1
 C:QuadVar	0	0	1	2	3	4	3	0
 C:BoolVar	0 	0	1	1	1	1	1	1
-N:FloatVar	.9	.8	.7	.5	.2	.3	.8	.9`
+N:FloatVar	.9	.9	.9	.9	.2	.9	.9	.9`
 
 var fmissing = `.	0	1	2	3	4	5	6	7
 N:NumTarget	.0	.0	.0	.0	.0	.9	.9	.9
 C:CatTarget	0	0	0	0	0	1	1	1
 C:QuadVar	NA	0	1	2	3	4	3	0
 C:BoolVar	0 	0	1	1	NA	1	1	1
-N:FloatVar	.9	NA	.7	.5	.2	.3	.8	.9`
+N:FloatVar	.9	NA	.9	.9	.2	.9	.9	.9`
 
 //Note: Iris and Boston Housing Data in string literals at end of File.
 
@@ -131,8 +131,8 @@ func TestTreeTargets(t *testing.T) {
 
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
-		if count != 7 {
-			t.Errorf("Regression tree grown with %T has  has %v nodes not 7", target, count)
+		if count != 9 {
+			t.Errorf("Regression tree grown with %T has  has %v nodes not 9", target, count)
 		}
 
 		votes := NewNumBallotBox(numtarget.Length())
@@ -173,16 +173,15 @@ func TestTreeTargets(t *testing.T) {
 			if casecount != len(cases) {
 				t.Error("Leaf did not parition cases.")
 			}
-			if count != 7 {
-				t.Errorf("Classification tree grown with %T has  has %v nodes not 7", target, count)
-			}
-
-		case *AdaBoostTarget:
-			//TODO: figure out why this is
 			if count != 9 {
 				t.Errorf("Classification tree grown with %T has  has %v nodes not 9", target, count)
 			}
 
+		case *EntropyTarget:
+			if count != 7 {
+				t.Errorf("Classification tree grown with %T has  has %v nodes not 3", target, count)
+			}
+			continue
 		case *RegretTarget:
 			if count != 5 {
 				t.Errorf("Classification tree grown with %T has  has %v nodes not 3", target, count)
@@ -190,8 +189,8 @@ func TestTreeTargets(t *testing.T) {
 			continue
 
 		default:
-			if count != 7 {
-				t.Errorf("Classification tree grown with %T has  has %v nodes not 7", target, count)
+			if count != 9 {
+				t.Errorf("Classification tree grown with %T has  has %v nodes not 9", target, count)
 			}
 
 		}
@@ -208,85 +207,113 @@ func TestTreeTargets(t *testing.T) {
 
 }
 
-// func TestMissing(t *testing.T) {
-// 	fmReader := strings.NewReader(fmissing)
+func TestMissing(t *testing.T) {
+	fmimputed := ParseAFM(strings.NewReader(fm))
+	fm := ParseAFM(strings.NewReader(fm))
 
-// 	fm := ParseAFM(fmReader)
+	fmimputed.ImputeMissing()
 
-// 	if len(fm.Data) != 8 {
-// 		t.Errorf("Simple feature matrix has %v features not 8", len(fm.Data))
-// 	}
+	if len(fm.Data) != 5 {
+		t.Errorf("Simple feature matrix has %v features not 5", len(fm.Data))
+	}
 
-// 	cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
-// 	canidates := []int{2, 3, 4, 5, 6, 7}
+	cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	canidates := []int{2, 3, 4}
 
-// 	//regression
-// 	numtarget := fm.Data[0]
-// 	regressiontargets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
-// 	for _, target := range regressiontargets {
-// 		tree := NewTree()
-// 		allocs := NewBestSplitAllocs(len(cases), target)
-// 		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+	//regression
+	numtarget := fm.Data[0]
+	regressiontargets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
+	for _, target := range regressiontargets {
+		tree := NewTree()
+		allocs := NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, nil, nil, allocs)
 
-// 		votes := NewNumBallotBox(numtarget.Length())
+		votes := NewNumBallotBox(numtarget.Length())
 
-// 		tree.Vote(fm, votes)
+		tree.Vote(fm, votes)
 
-// 		err := votes.TallyError(numtarget)
-// 		if err != 0.0 {
-// 			t.Errorf("Error: Single tree regression on with split missing using %T had nonzero  error: %v", target, err)
-// 		}
+		err := votes.TallyError(numtarget)
+		if err != 0.0 {
+			t.Errorf("Error: Single tree regression  with split missing using %T had nonzero  error: %v", target, err)
+		}
 
-// 		forest := GrowRandomForest(fm, target.(Feature), canidates, fm.Data[0].Length(), len(canidates), 10, 1, false, false, false, nil)
-// 		votes = NewNumBallotBox(numtarget.Length())
+		tree = NewTree()
+		allocs = NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
 
-// 		for _, tree := range forest.Trees {
-// 			tree.Vote(fm, votes)
-// 		}
+		votes = NewNumBallotBox(numtarget.Length())
 
-// 		err = votes.TallyR2Score(numtarget)
+		tree.Vote(fm, votes)
 
-// 		//TODO: get this up to 1!
-// 		if err < .9 {
-// 			t.Errorf("Error: Regression from simple missing data set using %T had low R2 score: %v", target, err)
-// 		}
-// 		t.Logf("Log: Regression from simple missing data set using %T had R2 score: %v", target, err)
+		err = votes.TallyError(numtarget)
+		if err != 0.0 {
+			t.Errorf("Error: Single tree regression with penalized missing %T had nonzero  error: %v", target, err)
+		}
 
-// 	}
+		tree = NewTree()
+		allocs = NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
 
-// 	//clasification
-// 	cattarget := fm.Data[1]
-// 	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
-// 	for _, target := range classtargets {
-// 		tree := NewTree()
+		votes = NewNumBallotBox(numtarget.Length())
 
-// 		allocs := NewBestSplitAllocs(len(cases), target)
-// 		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+		tree.Vote(fmimputed, votes)
 
-// 		catvotes := NewCatBallotBox(cattarget.Length())
+		err = votes.TallyError(numtarget)
+		if err != 0.0 {
+			t.Errorf("Error: Single tree regression with imputed missing %T had nonzero  error: %v", target, err)
+		}
 
-// 		tree.Vote(fm, catvotes)
+	}
 
-// 		err := catvotes.TallyError(cattarget)
-// 		if err != 0.0 {
-// 			t.Errorf("Error: Sinlge tree clasification on simple case with split missing using %T had nonzero error: %v", target, err)
-// 		}
+	//clasification
+	cattarget := fm.Data[1]
+	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
+	for _, target := range classtargets {
+		tree := NewTree()
 
-// 		forest := GrowRandomForest(fm, target.(Feature), canidates, fm.Data[0].Length(), len(canidates), 10, 1, false, false, false, nil)
-// 		catvotes = NewCatBallotBox(cattarget.Length())
+		allocs := NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, nil, nil, allocs)
 
-// 		for _, tree := range forest.Trees {
-// 			tree.Vote(fm, catvotes)
-// 		}
+		catvotes := NewCatBallotBox(cattarget.Length())
 
-// 		err = catvotes.TallyError(cattarget)
-// 		if err > 0.0 {
-// 			t.Errorf("Error: Classification from missing data using %T had error: %v", target, err)
-// 		}
-// 		t.Logf("Log: Classification from simple missing data set using %T had error: %v", target, err)
-// 	}
+		tree.Vote(fm, catvotes)
 
-// }
+		err := catvotes.TallyError(cattarget)
+		if err > 0.0 {
+			t.Errorf("Error: Sinlge tree clasification on simple case with split missing using %T had nonzero error: %v", target, err)
+		}
+
+		tree = NewTree()
+
+		allocs = NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+
+		catvotes = NewCatBallotBox(cattarget.Length())
+
+		tree.Vote(fm, catvotes)
+
+		err = catvotes.TallyError(cattarget)
+		if err > 0.0 {
+			t.Errorf("Error: Sinlge tree clasification on simple case with penalized missing %T had nonzero error: %v", target, err)
+		}
+
+		tree = NewTree()
+
+		allocs = NewBestSplitAllocs(len(cases), target)
+		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+
+		catvotes = NewCatBallotBox(cattarget.Length())
+
+		tree.Vote(fmimputed, catvotes)
+
+		err = catvotes.TallyError(cattarget)
+		if err > 0.0 {
+			t.Errorf("Error: Sinlge tree clasification on simple case with imputed missing %T had nonzero error: %v", target, err)
+		}
+
+	}
+
+}
 
 //Test classification target typs on iris data set. Also test arff loading.
 func TestIris(t *testing.T) {

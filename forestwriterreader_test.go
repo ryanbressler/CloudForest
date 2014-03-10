@@ -70,7 +70,7 @@ func TestFileFormats(t *testing.T) {
 
 	score := catvotes.TallyError(cattarget)
 	if score > 0.1 {
-		t.Errorf("Error: Classification of iris from sf file had score: %v", score)
+		t.Errorf("Error: Classification of simpledataset from sf file had score: %v", score)
 	}
 
 }
