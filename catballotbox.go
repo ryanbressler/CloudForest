@@ -117,25 +117,3 @@ func (bb *CatBallotBox) TallyError(feature Feature) (e float64) {
 	return
 
 }
-
-func (bb *CatBallotBox) TallyUnbalancedError(feature Feature) (e float64) {
-	catfeature := feature.(CatFeature)
-	correct := 0
-	total := 0
-
-	for i := 0; i < feature.Length(); i++ {
-		value := catfeature.Geti(i)
-
-		predicted := bb.Tally(i)
-		if !feature.IsMissing(i) {
-			total++
-			if catfeature.NumToCat(value) == predicted {
-				correct++
-			}
-
-		}
-	}
-
-	return 1.0 - float64(correct)/float64(total)
-
-}

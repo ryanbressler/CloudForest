@@ -13,6 +13,10 @@ type DensityTarget struct {
 	N        int
 }
 
+func (target *DensityTarget) GetName() string {
+	return "DensityTarget"
+}
+
 /*
 DensityTarget.SplitImpurity is a density estimating version of SplitImpurity.
 */

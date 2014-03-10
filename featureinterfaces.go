@@ -74,6 +74,7 @@ type CatFeature interface {
 //Target abstracts the methods needed for a feature to be predictable
 //as either a catagroical or numerical feature in a random forest.
 type Target interface {
+	GetName() string
 	NCats() (n int)
 	SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64)
 	UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64)

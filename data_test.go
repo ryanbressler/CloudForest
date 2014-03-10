@@ -55,6 +55,58 @@ func GetAllRegressionTargets(f NumFeature) []Target {
 	}
 }
 
+func TestWierdTargets(t *testing.T) {
+	//wierd targets that don't meat the performance standards
+	//so we check to make sure they at least grow trees
+	fmReader := strings.NewReader(fm)
+
+	fm := ParseAFM(fmReader)
+	cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
+	canidates := []int{2, 3, 4}
+
+	numtarget := fm.Data[0].(*DenseNumFeature)
+	cattarget := fm.Data[1].(*DenseCatFeature)
+
+	costs := make(map[string]float64)
+
+	for _, cat := range cattarget.Back {
+		costs[cat] = 1.0
+	}
+	regret := NewRegretTarget(cattarget)
+	regret.SetCosts(costs)
+
+	targets := []Target{
+		//&DensityTarget{&fm.Data, fm.Data[0].Length()},
+		regret,
+		NewOrdinalTarget(numtarget),
+		&GradBoostTarget{numtarget.Copy().(NumFeature), .1},
+		NewNumAdaBoostTarget(numtarget.Copy().(NumFeature)),
+	}
+
+	for _, target := range targets {
+		forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
+		if len(forest.Trees) != 10 {
+			t.Errorf("%T didn't grow 10 trees.", target)
+		}
+
+		count := 0
+		forest.Trees[0].Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
+		if count < 1 {
+			t.Errorf("Tree grown with %T has only %v nodes.", target, count)
+		}
+	}
+
+	target := &DensityTarget{&fm.Data, fm.Data[0].Length()}
+	tree := NewTree()
+	allocs := NewBestSplitAllocs(len(cases), cattarget)
+	tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, nil, nil, allocs)
+	count := 0
+	tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
+	if count < 1 {
+		t.Errorf("Denisty tree has only %v nodes", count)
+	}
+}
+
 func TestTreeTargets(t *testing.T) {
 	fmReader := strings.NewReader(fm)
 
@@ -164,7 +216,7 @@ func TestTreeTargets(t *testing.T) {
 // 			t.Errorf("Error: Single tree regression on with split missing using %T had nonzero  error: %v", target, err)
 // 		}
 
-// 		forest := GrowRandomForest(fm, target.(Feature), canidates, fm.Data[0].Length(), len(canidates), 10, 1, false, false, nil)
+// 		forest := GrowRandomForest(fm, target.(Feature), canidates, fm.Data[0].Length(), len(canidates), 10, 1, false, false, false, nil)
 // 		votes = NewNumBallotBox(numtarget.Length())
 
 // 		for _, tree := range forest.Trees {
@@ -199,7 +251,7 @@ func TestTreeTargets(t *testing.T) {
 // 			t.Errorf("Error: Sinlge tree clasification on simple case with split missing using %T had nonzero error: %v", target, err)
 // 		}
 
-// 		forest := GrowRandomForest(fm, target.(Feature), canidates, fm.Data[0].Length(), len(canidates), 10, 1, false, false, nil)
+// 		forest := GrowRandomForest(fm, target.(Feature), canidates, fm.Data[0].Length(), len(canidates), 10, 1, false, false, false, nil)
 // 		catvotes = NewCatBallotBox(cattarget.Length())
 
 // 		for _, tree := range forest.Trees {
@@ -260,7 +312,7 @@ func TestIris(t *testing.T) {
 	cattarget := fm.Data[targeti]
 	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
 	for _, target := range classtargets {
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
 		catvotes := NewCatBallotBox(cattarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -290,7 +342,7 @@ func TestIris(t *testing.T) {
 	classtargets = GetAllClassificationTargets(cattarget.(*DenseCatFeature))
 
 	for _, target := range classtargets {
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, false, false, false, nil)
 		catvotes := NewCatBallotBox(cattarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -325,7 +377,7 @@ func TestBoston(t *testing.T) {
 	numtarget := fm.Data[fm.Map["class"]]
 	targets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 	for _, target := range targets {
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, nil)
 		numvotes := NewNumBallotBox(numtarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -352,7 +404,7 @@ func TestBoston(t *testing.T) {
 	targets = GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 
 	for _, target := range targets {
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, nil)
 		numvotes := NewNumBallotBox(numtarget.Length())
 
 		for _, tree := range forest.Trees {
@@ -395,23 +447,20 @@ func TestImportance(t *testing.T) {
 
 	numtarget := fm.Data[targeti]
 
-	imppnt := NewRunningMeans(len(fm.Data))
-
 	nTrees := 20
-	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, false, false, imppnt)
-	//TODO read importance scores and verify RM and LSTAT come out on top
-
 	//Brieman's importance definition
 	imp := func(mean float64, count float64) float64 {
 		return mean * float64(count) / float64(nTrees)
 	}
 
+	//standard
+	imppnt := NewRunningMeans(len(fm.Data))
+	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, false, false, false, imppnt)
+	//TODO read importance scores and verify RM and LSTAT come out on top
+
 	roomimp := imp((*imppnt)[fm.Map["RM"]].Read())
-
 	lstatimp := imp((*imppnt)[fm.Map["LSTAT"]].Read())
-
 	beatlstat := 0
-
 	beatroom := 0
 
 	for _, rm := range *imppnt {
@@ -419,14 +468,59 @@ func TestImportance(t *testing.T) {
 		if fimp > roomimp {
 			beatroom++
 		}
-
 		if fimp > lstatimp {
 			beatlstat++
 		}
 	}
-
 	if beatroom > 1 || beatlstat > 1 {
 		t.Error("RM and LSTAT features  not most important in boston data set regression.")
+	}
+
+	//vetting
+	imppnt = NewRunningMeans(len(fm.Data))
+	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, false, true, false, imppnt)
+	//TODO read importance scores and verify RM and LSTAT come out on top
+
+	roomimp = imp((*imppnt)[fm.Map["RM"]].Read())
+	lstatimp = imp((*imppnt)[fm.Map["LSTAT"]].Read())
+	beatlstat = 0
+	beatroom = 0
+
+	for _, rm := range *imppnt {
+		fimp := imp(rm.Read())
+		if fimp > roomimp {
+			beatroom++
+		}
+		if fimp > lstatimp {
+			beatlstat++
+		}
+	}
+	if beatroom > 1 || beatlstat > 1 {
+		t.Error("RM and LSTAT features  not most important in vetted boston data set regression.")
+	}
+
+	//evaloob
+	//vetting
+	imppnt = NewRunningMeans(len(fm.Data))
+	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, false, false, true, imppnt)
+	//TODO read importance scores and verify RM and LSTAT come out on top
+
+	roomimp = imp((*imppnt)[fm.Map["RM"]].Read())
+	lstatimp = imp((*imppnt)[fm.Map["LSTAT"]].Read())
+	beatlstat = 0
+	beatroom = 0
+
+	for _, rm := range *imppnt {
+		fimp := imp(rm.Read())
+		if fimp > roomimp {
+			beatroom++
+		}
+		if fimp > lstatimp {
+			beatlstat++
+		}
+	}
+	if beatroom > 1 || beatlstat > 1 {
+		t.Error("RM and LSTAT features  not most important in boston data set regression with eval oob.")
 	}
 
 }
@@ -452,7 +546,7 @@ func TestFileFormats(t *testing.T) {
 	}
 
 	cattarget := fm.Data[4]
-	forest := GrowRandomForest(fm, cattarget.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, nil)
+	forest := GrowRandomForest(fm, cattarget.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
 	catvotes := NewCatBallotBox(cattarget.Length())
 
 	pipereader, pipewriter = io.Pipe()

@@ -29,7 +29,7 @@ with more then 6 categories.
 */
 
 func GrowRandomForest(fm *FeatureMatrix,
-	target Feature,
+	target Target,
 	candidates []int,
 	nSamples int,
 	mTry int,
@@ -37,6 +37,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 	leafSize int,
 	splitmissing bool,
 	vet bool,
+	evaloob bool,
 	importance *[]*RunningMean) (f *Forest) {
 
 	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees)}
@@ -49,7 +50,7 @@ func GrowRandomForest(fm *FeatureMatrix,
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())
-		f.Trees[i].Grow(fm, target, cases, candidates, nil, mTry, leafSize, splitmissing, vet, false, importance, nil, allocs)
+		f.Trees[i].Grow(fm, target, cases, candidates, nil, mTry, leafSize, splitmissing, vet, evaloob, importance, nil, allocs)
 		switch target.(type) {
 		case BoostingTarget:
 			f.Trees[i].Weight = target.(BoostingTarget).Boost(f.Trees[i].Partition(fm))

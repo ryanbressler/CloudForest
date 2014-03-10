@@ -19,7 +19,7 @@ numerical / categorical data with missing values. These include:
 * Preliminary Implementation of Density Estimating Trees/Forests
 * Proximity/Affinity Analysis suitable for manifold learning
 
-CloudForest has been optimized to minimize memory use, allow multi-core and multi-machine learning with and perform especially well learning from categorical features with a small number of class labels. This includes binary data and genomic variant data which
+CloudForest has been optimized to minimize memory use, allow multi-core and multi-machine learning with and perform especially well learning from large numebers features and features with a small number of class labels. This includes binary data and genomic variant data which
 may have class labels like "reference", "heterozygous", "homozygous".
 
 File formats have been chosen to allow multi machine parallel learning. 
@@ -32,7 +32,7 @@ This Document covers command line usage, file formats and some algorithmic backg
 Documentation for coding against CloudForest has been generated with godoc and can be viewed live at:
 http://godoc.org/github.com/ryanbressler/CloudForest
 
-Pull requests and bug reports are welcome; Code Repo and Issue tracker can be found at:
+Pull requests, spelling corrections and bug reports are welcome; Code Repo and Issue tracker can be found at:
 https://github.com/ryanbressler/CloudForest
 
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
@@ -211,18 +211,6 @@ Usage of leafcount:
   -fm="featurematrix.afm": AFM formated feature matrix to use.
   -leaves="leaves.tsv": a case by case sparse matrix of leaf co-occurrence in tsv format
   -rfpred="rface.sf": A predictor forest.
-```
-
-DEPRECIATED Errorrate Utility (equivlent to applyforest with no -preds option)
--------------------
-
-errorrate calculates the error of a forest vs a testing data set and reports it to standard out
-
-```
-Usage of errorrate:
-  -fm="featurematrix.afm": AFM formated feature matrix containing test data.
-  -rfpred="rface.sf": A predictor forest.
-
 ```
 
 Importance and Contrasts
