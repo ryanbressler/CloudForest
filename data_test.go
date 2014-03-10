@@ -155,6 +155,23 @@ func TestTreeTargets(t *testing.T) {
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
 		switch target.(type) {
+		case *DenseCatFeature:
+			caseFeatureCounts := new(SparseCounter)
+			leaves := tree.GetLeaves(fm, caseFeatureCounts)
+
+			if caseFeatureCounts.Map[0][2] == 0 || caseFeatureCounts.Map[4][4] == 0 {
+				t.Error("Sparse feature importance result bad.")
+			}
+
+			casecount := 0
+			for _, leaf := range leaves {
+				casecount += len(leaf.Cases)
+
+			}
+			if casecount != len(cases) {
+				t.Error("Leaf did not parition cases.")
+			}
+
 		case *AdaBoostTarget:
 			//TODO: figure out why this is
 			if count != 9 {
