@@ -171,6 +171,9 @@ func TestTreeTargets(t *testing.T) {
 			if casecount != len(cases) {
 				t.Error("Leaf did not parition cases.")
 			}
+			if count != 7 {
+				t.Errorf("Classification tree grown with %T has  has %v nodes not 7", target, count)
+			}
 
 		case *AdaBoostTarget:
 			//TODO: figure out why this is
@@ -1160,4 +1163,7 @@ var boston_housing = `% 1. Title: Boston Housing Data
 0.04527,0,11.93,0,0.573,6.12,76.7,2.2875,1,273,21,396.9,9.08,20.6
 0.06076,0,11.93,0,0.573,6.976,91,2.1675,1,273,21,396.9,5.64,23.9
 0.10959,0,11.93,0,0.573,6.794,89.3,2.3889,1,273,21,393.45,6.48,22
-0.04741,0,11.93,0,0.573,6.03,80.8,2.505,1,273,21,396.9,7.88,11.9`
+0.04741,0,11.93,0,0.573,6.03,80.8,2.505,1,273,21,396.9,7.88,11.9
+%
+%
+%`

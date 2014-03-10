@@ -60,6 +60,7 @@ func ParseARFF(input io.Reader) *FeatureMatrix {
 	fm := &FeatureMatrix{data, lookup, labels}
 
 	csvdata := csv.NewReader(reader)
+	csvdata.Comment = '%'
 	//csvdata.Comma = ','
 
 	fm.LoadCases(csvdata, false)
