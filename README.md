@@ -3,7 +3,7 @@ CloudForest
 
 [![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest) 
 
-(Build status includes accuracy tests on iris and boston housing price datasets and multiple go versions.)
+([Build status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master) includes accuracy tests on iris and boston housing price datasets and multiple go versions.)
 
 CloudForest implements fast, multithreaded, flexible ensembles of decision trees for machine
 learning in pure Go (golang to search engines). It allows for a number of related algorithms
