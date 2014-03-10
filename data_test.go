@@ -19,12 +19,9 @@ N:FloatVar	.9	.8	.7	.5	.2	.3	.8	.9`
 var fmissing = `.	0	1	2	3	4	5	6	7
 N:NumTarget	.0	.0	.0	.0	.0	.9	.9	.9
 C:CatTarget	0	0	0	0	0	1	1	1
-C:QuadVar	0	0	1	2	3	4	3	0
-C:QuadVarM	0	0	1	2	3	4	3	0
-C:BoolVar	0 	0	1	1	1	1	1	1
-C:BoolVatM	0 	0	1	1	1	1	1	1
-N:FloatVar	.9	.8	.7	.5	.2	.3	.8	.9
-N:FloatVarM	.9	.8	.7	.5	.2	.3	.8	.9`
+C:QuadVar	NA	0	1	2	3	4	3	0
+C:BoolVar	0 	0	1	1	NA	1	1	1
+N:FloatVar	.9	NA	.7	.5	.2	.3	.8	.9`
 
 //Note: Iris and Boston Housing Data in string literals at end of File.
 
@@ -59,50 +56,55 @@ func TestWierdTargets(t *testing.T) {
 	//so we check to make sure they at least grow trees
 	fmReader := strings.NewReader(fm)
 
-	fm := ParseAFM(fmReader)
-	cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
-	canidates := []int{2, 3, 4}
+	fm1 := ParseAFM(fmReader)
+	fm2 := ParseAFM(strings.NewReader(fmissing))
 
-	numtarget := fm.Data[0].(*DenseNumFeature)
-	cattarget := fm.Data[1].(*DenseCatFeature)
+	for _, fm := range []*FeatureMatrix{fm1, fm2} {
 
-	costs := make(map[string]float64)
+		cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
+		canidates := []int{2, 3, 4}
 
-	for _, cat := range cattarget.Back {
-		costs[cat] = 1.0
-	}
-	regret := NewRegretTarget(cattarget)
-	regret.SetCosts(costs)
+		numtarget := fm.Data[0].(*DenseNumFeature)
+		cattarget := fm.Data[1].(*DenseCatFeature)
 
-	targets := []Target{
-		//&DensityTarget{&fm.Data, fm.Data[0].Length()},
-		regret,
-		NewOrdinalTarget(numtarget),
-		&GradBoostTarget{numtarget.Copy().(NumFeature), .1},
-		NewNumAdaBoostTarget(numtarget.Copy().(NumFeature)),
-	}
+		costs := make(map[string]float64)
 
-	for _, target := range targets {
-		forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
-		if len(forest.Trees) != 10 {
-			t.Errorf("%T didn't grow 10 trees.", target)
+		for _, cat := range cattarget.Back {
+			costs[cat] = 1.0
+		}
+		regret := NewRegretTarget(cattarget)
+		regret.SetCosts(costs)
+
+		targets := []Target{
+			//&DensityTarget{&fm.Data, fm.Data[0].Length()},
+			regret,
+			NewOrdinalTarget(numtarget),
+			&GradBoostTarget{numtarget.Copy().(NumFeature), .1},
+			NewNumAdaBoostTarget(numtarget.Copy().(NumFeature)),
 		}
 
+		for _, target := range targets {
+			forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
+			if len(forest.Trees) != 10 {
+				t.Errorf("%T didn't grow 10 trees.", target)
+			}
+
+			count := 0
+			forest.Trees[0].Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
+			if count < 1 {
+				t.Errorf("Tree grown with %T has only %v nodes.", target, count)
+			}
+		}
+
+		target := &DensityTarget{&fm.Data, fm.Data[0].Length()}
+		tree := NewTree()
+		allocs := NewBestSplitAllocs(len(cases), cattarget)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, nil, nil, allocs)
 		count := 0
-		forest.Trees[0].Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
+		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
 		if count < 1 {
-			t.Errorf("Tree grown with %T has only %v nodes.", target, count)
+			t.Errorf("Denisty tree has only %v nodes", count)
 		}
-	}
-
-	target := &DensityTarget{&fm.Data, fm.Data[0].Length()}
-	tree := NewTree()
-	allocs := NewBestSplitAllocs(len(cases), cattarget)
-	tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, nil, nil, allocs)
-	count := 0
-	tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
-	if count < 1 {
-		t.Errorf("Denisty tree has only %v nodes", count)
 	}
 }
 
