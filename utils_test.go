@@ -44,4 +44,13 @@ func TestParseAsIntOrFractionOfTotal(t *testing.T) {
 	if p := ParseAsIntOrFractionOfTotal(".7", 100); p != 70 {
 		t.Errorf("ParseAsIntOrFractionOfTotal parsed .7 as %v / 100", p)
 	}
+
+	if p := ParseAsIntOrFractionOfTotal("blah.7", 100); p != 0 {
+		t.Errorf("ParseAsIntOrFractionOfTotal parsed blah.7 as %v / 100", p)
+	}
+
+	if p := ParseAsIntOrFractionOfTotal("blah", 100); p != 0 {
+		t.Errorf("ParseAsIntOrFractionOfTotal parsed blah as %v / 100", p)
+	}
+
 }
