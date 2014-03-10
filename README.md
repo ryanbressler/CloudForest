@@ -1,7 +1,7 @@
 CloudForest
 ==============
 
-[![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest)
+[![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest) (Status includes builds on go 1.2, release and tip and accuracy tests on iris and boston housing price datasets)
 
 CloudForest implements fast, multithreaded, flexible ensembles of decision trees for machine
 learning in pure Go (golang to search engines). It allows for a number of related algorithms
@@ -343,8 +343,6 @@ LibSvm Files
 
 There is also basic support for sparse data in libsvm's file format. This format will be detected by the ".libsvm" file format and has some limitations.
 The target field will be given the designation "0" and be in the "0" position of the matrix. No other feature can have this designation.
-Data will be parsed intto the new SparseNumFeature data structure which, for the time being, has better memory performance but worse computational performance due to hash lookups. 
-
 
 Models - Stochastic Forest Files
 --------------------------------
