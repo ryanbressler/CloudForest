@@ -151,8 +151,12 @@ func medianOfThree(cases *[]int, vals *[]float64, a, b, c int) {
 }
 
 func swapRange(cases *[]int, vals *[]float64, a, b, n int) {
+	vs := *vals
+	cs := *cases
 	for i := 0; i < n; i++ {
-		swap(cases, vals, a+i, b+i)
+		//swap(cases, vals, a+i, b+i)
+		vs[a+i], vs[b+i] = vs[b+i], vs[a+i]
+		cs[a+i], cs[b+i] = cs[b+i], cs[a+i]
 	}
 }
 
