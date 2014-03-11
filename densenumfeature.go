@@ -159,11 +159,12 @@ func (f *DenseNumFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, i
 		if f.HasMissing && f.IsMissing(cases[i]) {
 			continue
 		}
-		if f.NumData[cases[i]] <= split {
+		swaper = cases[i]
+		if f.NumData[swaper] <= split {
 			//Left
 			lastleft++
 			if i != lastleft {
-				swaper = cases[i]
+				//swaper = cases[i]
 				cases[i] = cases[lastleft]
 				cases[lastleft] = swaper
 				i--
@@ -172,11 +173,11 @@ func (f *DenseNumFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, i
 
 		} else {
 			//Right
-			lastright -= 1
-			swaper = cases[i]
+			lastright--
+			//swaper = cases[i]
 			cases[i] = cases[lastright]
 			cases[lastright] = swaper
-			i -= 1
+			i--
 
 		}
 

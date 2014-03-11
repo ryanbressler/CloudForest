@@ -258,21 +258,22 @@ func (f *DenseCatFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, i
 		if f.HasMissing && f.IsMissing(cases[i]) {
 			continue
 		}
-		if GoesLeft(cases[i]) { //Left
+		swaper = cases[i]
+		if GoesLeft(swaper) { //Left
 			lastleft++
 			if i != lastleft {
 
-				swaper = cases[i]
+				//swaper = cases[i]
 				cases[i] = cases[lastleft]
 				cases[lastleft] = swaper
 				i--
 			}
 		} else { //Right
-			lastright -= 1
-			swaper = cases[i]
+			lastright--
+			//swaper = cases[i]
 			cases[i] = cases[lastright]
 			cases[lastright] = swaper
-			i -= 1
+			i--
 		}
 	}
 	lastleft++
@@ -634,48 +635,26 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	//in between.
 
 	for i := 0; i < r; i++ {
-		if catdata[cs[i]] == 1 { //Left
+		swaper = cs[i]
+		if catdata[swaper] == 1 { //Left
 			l++
-			if i != l {
+			//Never used for two way splie
+			// if i != l {
 
-				swaper = cs[i]
-				cs[i] = cs[l]
-				cs[l] = swaper
-				i--
-			}
+			// 	swaper = cs[i]
+			// 	cs[i] = cs[l]
+			// 	cs[l] = swaper
+			// 	i--
+			// }
 		} else { //Right
-			r -= 1
-			swaper = cs[i]
+			r--
+			//swaper = cs[i]
 			cs[i] = cs[r]
 			cs[r] = swaper
-			i -= 1
+			i--
 		}
 	}
 	l++
-
-	//BAD:
-	// length := len(cs)
-	// l := -1
-	// r := length
-	// swaper := 0
-	// //Move left cases to the start and right cases to the end so that missing cases end up
-	// //in between.
-	// catdata := f.CatData
-	// for i, j := range cs {
-	// 	if i >= r {
-	// 		break
-	// 	}
-	// 	if catdata[j] == 0 { //Right
-	// 		r -= 1
-	// 		swaper = cs[i]
-	// 		cs[i] = cs[r]
-	// 		cs[r] = swaper
-	// 		i -= 1
-	// 	} else {
-	// 		l++
-	// 	}
-	// }
-	// l++
 
 	//skip cases where the split didn't do any splitting
 	if l < leafSize || len(cs)-l < leafSize {
