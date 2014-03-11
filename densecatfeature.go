@@ -638,7 +638,7 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 		swaper = cs[i]
 		if catdata[swaper] == 1 { //Left
 			l++
-			//Never used for two way splie
+			//Never used for two way split
 			// if i != l {
 
 			// 	swaper = cs[i]

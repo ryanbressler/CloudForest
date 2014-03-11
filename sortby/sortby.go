@@ -61,6 +61,8 @@ func quickSort(cases *[]int, vals *[]float64, a, b, maxDepth int) {
 func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 	cs := *cases
 	vs := *vals
+	var swapi int
+	var swapf float64
 	m := lo + (hi-lo)/2 // Written like this to avoid integer overflow.
 	if hi-lo > 40 {
 		// Tukey's ``Ninther,'' median of three medians of three.
@@ -89,8 +91,16 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 				b++
 			} else if pivotv == vs[b] { // data[b] = pivot
 				//swap(cases, vals, a, b)
-				vs[a], vs[b] = vs[b], vs[a]
-				cs[a], cs[b] = cs[b], cs[a]
+				//vs[a], vs[b] = vs[b], vs[a]
+				//cs[a], cs[b] = cs[b], cs[a]
+				swapf = vs[a]
+				vs[a] = vs[b]
+				vs[b] = swapf
+
+				swapi = cs[a]
+				cs[a] = cs[b]
+				cs[b] = swapi
+
 				a++
 				b++
 			} else {
@@ -104,8 +114,15 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 				c--
 				d--
 				//swap(cases, vals, c, d)
-				vs[c], vs[d] = vs[d], vs[c]
-				cs[c], cs[d] = cs[d], cs[c]
+				// vs[c], vs[d] = vs[d], vs[c]
+				// cs[c], cs[d] = cs[d], cs[c]
+				swapf = vs[c]
+				vs[c] = vs[d]
+				vs[d] = swapf
+
+				swapi = cs[c]
+				cs[c] = cs[d]
+				cs[d] = swapi
 
 			} else {
 				break
@@ -118,8 +135,15 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 
 		c--
 		//swap(cases, vals, b, c)
-		vs[b], vs[c] = vs[c], vs[b]
-		cs[b], cs[c] = cs[c], cs[b]
+		// vs[b], vs[c] = vs[c], vs[b]
+		// cs[b], cs[c] = cs[c], cs[b]
+		swapf = vs[c]
+		vs[c] = vs[b]
+		vs[b] = swapf
+
+		swapi = cs[c]
+		cs[c] = cs[b]
+		cs[b] = swapi
 		b++
 
 	}
@@ -156,10 +180,25 @@ func medianOfThree(cases *[]int, vals *[]float64, a, b, c int) {
 func swapRange(cases *[]int, vals *[]float64, a, b, n int) {
 	vs := *vals
 	cs := *cases
+	//var api, bpi = a, b
+	// var swapi int
+	// var swapf float64
 	for i := 0; i < n; i++ {
-		//swap(cases, vals, a+i, b+i)
-		vs[a+i], vs[b+i] = vs[b+i], vs[a+i]
-		cs[a+i], cs[b+i] = cs[b+i], cs[a+i]
+		//swap(cases, vals, a, b+i)
+		// vs[a+i], vs[b+i] = vs[b+i], vs[a+i]
+		// cs[a+i], cs[b+i] = cs[b+i], cs[a+i]
+		// swapf = vs[a]
+		// vs[a] = vs[b]
+		// vs[b] = swapf
+
+		// swapi = cs[a]
+		// cs[a] = cs[b]
+		// cs[b] = swapi
+
+		vs[a], vs[b] = vs[b], vs[a]
+		cs[a], cs[b] = cs[b], cs[a]
+		a++
+		b++
 	}
 }
 
@@ -218,124 +257,3 @@ func min(a, b int) int {
 	}
 	return b
 }
-
-// func median3(vals *[]float64, start int, end int) float64 {
-// 	vs := *vals
-// 	a := vs[start]
-// 	b := vs[start+(end-start)/2] //avoid int overflows
-// 	c := vs[end-1]
-// 	switch {
-// 	case a < b:
-// 		switch {
-// 		case b < c:
-// 			return b
-// 		case a < c:
-// 			return c
-// 		default:
-// 			return a
-// 		}
-// 	case b < c:
-// 		if a < c {
-// 			return a
-// 		} else {
-// 			return c
-// 		}
-// 	default:
-// 		return b
-// 	}
-
-// }
-
-// func introsort(cases *[]int, vals *[]float64, start int, end int, maxd int) {
-// 	//cs := *cases
-// 	vs := *vals
-// 	var pivot float64
-// 	var i, l, r int
-
-// 	for (end - start) > 1 {
-// 		if maxd <= 0 {
-// 			//fmt.Println("heap sorting !! ", start, " ", end)
-// 			heapsort(cases, vals, start, end)
-// 			return
-// 		}
-
-// 		maxd--
-// 		pivot = median3(vals, start, end)
-// 		//i = l = 0
-// 		i = start
-// 		l = start
-// 		r = end
-// 		for i < r {
-// 			switch {
-// 			case vs[i] < pivot:
-// 				swap(cases, vals, i, l)
-// 				// vs[i], vs[l] = vs[l], vs[i]
-// 				// cs[i], cs[l] = cs[l], cs[i]
-
-// 				i++
-// 				l++
-// 			case vs[i] >= pivot:
-// 				r--
-// 				swap(cases, vals, i, r)
-// 				// vs[i], vs[r] = vs[r], vs[i]
-// 				// cs[i], cs[r] = cs[r], cs[i]
-// 			default:
-// 				i++
-// 			}
-
-// 		}
-// 		introsort(cases, vals, start, l, maxd)
-// 		start = r
-// 	}
-
-// }
-
-// func siftdown(cases *[]int, vals *[]float64, start int, end int) {
-// 	cs := *cases
-// 	vs := *vals
-// 	var child, maxind, root int
-// 	root = start
-// 	for {
-// 		child = root*2 + 1
-// 		maxind = root
-// 		if child < end && vs[maxind] < vs[child] {
-// 			maxind = child
-// 		}
-// 		if child+1 < end && vs[maxind] < vs[child+1] {
-// 			maxind = child + 1
-// 		}
-
-// 		if maxind == root {
-// 			return
-// 		} else {
-// 			//swap(cases, vals, root, maxind)
-// 			vs[root], vs[maxind] = vs[maxind], vs[root]
-// 			cs[root], cs[maxind] = cs[maxind], cs[root]
-// 			root = maxind
-// 		}
-// 	}
-// }
-
-// func heapsort(cases *[]int, vals *[]float64, s int, e int) {
-// 	cs := *cases
-// 	vs := *vals
-// 	var start, end int
-// 	start = s + (e-s-2)/2 //avoid integer overflows
-// 	end = e
-// 	for {
-// 		siftdown(cases, vals, start, end)
-// 		if start == s {
-// 			break
-// 		}
-// 		start--
-// 	}
-// 	end = e - 1
-// 	for end > s {
-// 		//swap(cases, vals, s, end)
-// 		vs[s], vs[end] = vs[end], vs[s]
-// 		cs[s], cs[end] = cs[end], cs[s]
-// 		siftdown(cases, vals, s, end)
-// 		end = end - 1
-// 	}
-
-// }

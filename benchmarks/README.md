@@ -4,7 +4,7 @@ Benchmarks on Forest Coverage Data
 Learner | CloudForest | scikit.learn 0.14.1 | scikit.learn 0.15 | CloudForest 
 --------|-------------|---------------------|-------------------|------------
 Format  | libsvm      | libsvm              | libsvm            | arff
-Time    | 53 seconds  | ??? seconds         | 30 seconds        | 34 seconds
+Time    | 38 seconds  | ??? seconds         | 30 seconds        | 29 seconds
 
 The arff format records which variables are binary or catagorical allowing cloudforest to use appropriate splitters for greater speed. Scikit.learn treats all data as numerical. This data set was chosen to allow comparison with benchmarks by [wise.io](http://about.wise.io/blog/2013/07/15/benchmarking-random-forest-part-1/) and [Alex Rubinsteyn](http://blog.explainmydata.com/2014/03/big-speedup-for-random-forest-learning.html). 
 
