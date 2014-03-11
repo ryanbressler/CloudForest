@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"sort"
+	//"sort"
 	"strconv"
 )
 
@@ -276,8 +276,8 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		//sorter.Vals = f.NumData
 		//sorter.Cases = *cases
 		sorter.Load(&f.NumData, cases)
-		sort.Sort(sorter)
-		//sorter.Sort()
+		//sort.Sort(sorter)
+		sorter.Sort()
 
 		lastsplit := 0
 		innerimp := 0.0

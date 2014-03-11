@@ -1,8 +1,10 @@
 package CloudForest
 
 import (
-//"fmt"
-//"math"
+	//"fmt"
+	//"math"
+	"github.com/ryanbressler/CloudForest/sortby"
+	//"sort"
 )
 
 /*
@@ -14,6 +16,16 @@ type SortableFeature struct {
 	//Feature NumFeature
 	Vals  []float64
 	Cases []int
+}
+
+//introsort + heapsort as in scikits learn's tree implementaion. For now go's sort is actually faster as it does less comparison
+func (sf *SortableFeature) Sort() {
+	//n := len(sf.Cases)
+	// maxd := 2 * int(math.Log(float64(n)))
+	// sf.introsort(0, n, maxd)
+	sortby.SortBy(&sf.Cases, &sf.Vals)
+	//sf.heapsort(0, n)
+	//sort.Sort(sf)
 }
 
 //Len returns the number of cases.
@@ -50,19 +62,10 @@ func (sf *SortableFeature) Load(vals *[]float64, cases *[]int) {
 	}
 }
 
-/*
-//introsort + heapsort as in scikits learn's tree implementaion. For now go's sort is actually faster as it does less comparison
-func (sf *SortableFeature) sort() {
-	n := len(sf.Cases)
-	maxd := 2 * int(math.Log(float64(n)))
-	sf.introsort(0, n, maxd)
-	//sf.heapsort(0, n)
-}
-
 func (sf *SortableFeature) median3(start int, end int) float64 {
-	a := sf.vals[start]
-	b := sf.vals[(start+end)/2]
-	c := sf.vals[end-1]
+	a := sf.Vals[start]
+	b := sf.Vals[(start+end)/2]
+	c := sf.Vals[end-1]
 	switch {
 	case a < b:
 		switch {
@@ -104,11 +107,11 @@ func (sf *SortableFeature) introsort(start int, end int, maxd int) {
 		r = end
 		for i < r {
 			switch {
-			case sf.vals[i] < pivot:
+			case sf.Vals[i] < pivot:
 				sf.Swap(i, l)
 				i++
 				l++
-			case sf.vals[i] >= pivot:
+			case sf.Vals[i] >= pivot:
 				r--
 				sf.Swap(i, r)
 			default:
@@ -128,10 +131,10 @@ func (sf *SortableFeature) siftdown(start int, end int) {
 	for {
 		child = root*2 + 1
 		maxind = root
-		if child < end && sf.vals[maxind] < sf.vals[child] {
+		if child < end && sf.Vals[maxind] < sf.Vals[child] {
 			maxind = child
 		}
-		if child+1 < end && sf.vals[maxind] < sf.vals[child+1] {
+		if child+1 < end && sf.Vals[maxind] < sf.Vals[child+1] {
 			maxind = child + 1
 		}
 
@@ -162,5 +165,4 @@ func (sf *SortableFeature) heapsort(s int, e int) {
 		end = end - 1
 	}
 
-
-}*/
+}
