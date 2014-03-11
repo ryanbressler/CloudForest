@@ -57,8 +57,10 @@ func (sf *SortableFeature) Swap(i int, j int) {
 
 func (sf *SortableFeature) Load(vals *[]float64, cases *[]int) {
 	sf.Cases = *cases
+	sfvals := sf.Vals
+	vs := *vals
 	for i, p := range *cases {
-		sf.Vals[i] = (*vals)[p]
+		sfvals[i] = vs[p]
 	}
 }
 

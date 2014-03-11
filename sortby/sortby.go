@@ -87,7 +87,7 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 		for b < c {
 			if vs[b] < pivotv { // data[b] < pivot
 				b++
-			} else if pivotv >= vs[b] { // data[b] = pivot
+			} else if pivotv == vs[b] { // data[b] = pivot
 				//swap(cases, vals, a, b)
 				vs[a], vs[b] = vs[b], vs[a]
 				cs[a], cs[b] = cs[b], cs[a]
@@ -100,12 +100,13 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 		for b < c {
 			if pivotv < vs[c-1] { // data[c-1] > pivot
 				c--
-			} else if vs[c-1] >= pivotv { // data[c-1] = pivot
-				//swap(cases, vals, c-1, d-1)
-				vs[c-1], vs[d-1] = vs[d-1], vs[c-1]
-				cs[c-1], cs[d-1] = cs[d-1], cs[c-1]
+			} else if vs[c-1] == pivotv { // data[c-1] = pivot
 				c--
 				d--
+				//swap(cases, vals, c, d)
+				vs[c], vs[d] = vs[d], vs[c]
+				cs[c], cs[d] = cs[d], cs[c]
+
 			} else {
 				break
 			}
@@ -114,11 +115,13 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 			break
 		}
 		// data[b] > pivot; data[c-1] < pivot
-		//swap(cases, vals, b, c-1)
-		vs[b], vs[c-1] = vs[c-1], vs[b]
-		cs[b], cs[c-1] = cs[c-1], cs[b]
-		b++
+
 		c--
+		//swap(cases, vals, b, c)
+		vs[b], vs[c] = vs[c], vs[b]
+		cs[b], cs[c] = cs[c], cs[b]
+		b++
+
 	}
 
 	n := min(b-a, a-lo)
