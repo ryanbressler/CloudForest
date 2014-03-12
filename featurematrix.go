@@ -19,6 +19,27 @@ type FeatureMatrix struct {
 	CaseLabels []string
 }
 
+func (fm *FeatureMatrix) EncodeToNum() *FeatureMatrix {
+	out := &FeatureMatrix{make([]Feature, 0, len(fm.Data)),
+		make(map[string]int),
+		fm.CaseLabels}
+
+	for _, f := range fm.Data {
+		switch f.(type) {
+		case NumFeature:
+			out.Map[f.GetName()] = len(out.Map)
+			out.Data = append(out.Data, f)
+		case CatFeature:
+			fns := f.(CatFeature).EncodeToNum()
+			for _, fn := range fns {
+				out.Map[fn.GetName()] = len(out.Map)
+				out.Data = append(out.Data, fn)
+			}
+		}
+	}
+	return out
+}
+
 //WriteCases writes a new feature matrix with the specified cases to the the provided writer.
 func (fm *FeatureMatrix) WriteCases(w io.Writer, cases []int) (err error) {
 	vals := make([]string, 0, len(cases)+1)

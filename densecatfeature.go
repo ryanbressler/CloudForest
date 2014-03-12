@@ -23,6 +23,37 @@ type DenseCatFeature struct {
 	HasMissing   bool
 }
 
+func (f *DenseCatFeature) EncodeToNum() (fs []Feature) {
+	l := f.Length()
+	if f.NCats() <= 2 {
+		fn := &DenseNumFeature{
+			make([]float64, l, l),
+			f.Missing,
+			f.Name,
+			f.HasMissing}
+		for i, v := range f.CatData {
+			fn.NumData[i] = float64(v)
+		}
+		fs = []Feature{fn}
+	} else {
+		fs = make([]Feature, 0, f.NCats())
+		for j, sv := range f.Back {
+			fn := &DenseNumFeature{
+				make([]float64, l, l),
+				f.Missing,
+				f.Name + "==" + sv,
+				f.HasMissing}
+			for i, v := range f.CatData {
+				if j == v {
+					fn.NumData[i] = 1.0
+				}
+			}
+			fs = append(fs, fn)
+		}
+	}
+	return
+}
+
 //Append will parse and append a single value to the end of the feature. It is generally only used
 //during data parseing.
 func (f *DenseCatFeature) Append(v string) {
@@ -631,9 +662,7 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	r := length
 	swaper := 0
 
-	//Move left cases to the start and right cases to the end so that missing cases end up
-	//in between.
-
+	//for range here passes tests but doesn't have good accuracy on larger forest coverage dataset
 	for i := 0; i < r; i++ {
 		swaper = cs[i]
 		if catdata[swaper] == 1 { //Left

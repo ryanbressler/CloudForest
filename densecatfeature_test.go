@@ -35,6 +35,13 @@ func TestCatFeature(t *testing.T) {
 		t.Errorf("Boolean NCats = %(v) != 2", x)
 	}
 
+	fns := f.EncodeToNum()
+	fn := fns[0].(NumFeature)
+
+	if len(fns) != 1 || fn.Get(0) != 0.0 || fn.Get(1) != 1.0 || fn.Get(2) != 1.0 {
+		t.Errorf("Error: cat feature %v encoded to %v", f.CatData, fn.(*DenseNumFeature).NumData)
+	}
+
 	codedSplit := 1
 	cases := []int{0, 1, 2}
 

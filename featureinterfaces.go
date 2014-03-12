@@ -70,6 +70,7 @@ type CatFeature interface {
 	Mode(cases *[]int) string
 	Gini(cases *[]int) float64
 	GiniWithoutAlocate(cases *[]int, counts *[]int) (e float64)
+	EncodeToNum() (fs []Feature)
 }
 
 //Target abstracts the methods needed for a feature to be predictable
