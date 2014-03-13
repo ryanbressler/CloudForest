@@ -103,18 +103,29 @@ deck are randomly drawn from all entries without replacement for use in selectin
 features to split on. It accepts a pointer to the deck so that it can be used repeatedly on
 the same deck avoiding reallocations.
 */
-func SampleFirstN(deck *[]int, n int) {
+func SampleFirstN(deck *[]int, samples *[]int, n int, nconstants int) {
 	cards := *deck
 	length := len(cards)
 	old := 0
 	randi := 0
-	for i := 0; i < n; i++ {
-		old = cards[i]
-		randi = i + rand.Intn(length-i)
-		cards[i] = cards[randi]
-		cards[randi] = old
+	lastSample := 0
+	nDrawnConstants := 0
+	nnonconstant := length - nconstants
+	for i := 0; i < n && i < nnonconstant; i++ {
 
+		randi = lastSample + rand.Intn(length-nDrawnConstants-lastSample)
+		if randi >= nnonconstant {
+			nDrawnConstants++
+			continue
+		}
+
+		old = cards[lastSample]
+		cards[lastSample] = cards[randi]
+		cards[randi] = old
+		lastSample++
 	}
+	(*samples) = cards[:lastSample]
+
 }
 
 /*

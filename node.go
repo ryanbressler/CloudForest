@@ -8,7 +8,7 @@ import ()
 //have not been split away.
 type Recursable func(*Node, []int, int)
 
-type CodedRecursable func(*Node, *[]int, int) (int, interface{})
+type CodedRecursable func(*Node, *[]int, int, int) (int, interface{}, int)
 
 //A node of a decision tree.
 //Pred is a string containing either the category or a representation of a float
@@ -55,18 +55,18 @@ func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int, depth int) 
 	}
 }
 
-func (n *Node) CodedRecurse(r CodedRecursable, fm *FeatureMatrix, cases *[]int, depth int) {
-	fi, codedSplit := r(n, cases, depth)
+func (n *Node) CodedRecurse(r CodedRecursable, fm *FeatureMatrix, cases *[]int, depth int, nconstantsbefore int) {
+	fi, codedSplit, nconstants := r(n, cases, depth, nconstantsbefore)
 	depth++
 	if codedSplit != nil {
 		li, ri := fm.Data[fi].SplitPoints(codedSplit, cases)
 		cs := (*cases)[:li]
-		n.Left.CodedRecurse(r, fm, &cs, depth)
+		n.Left.CodedRecurse(r, fm, &cs, depth, nconstants)
 		cs = (*cases)[ri:]
-		n.Right.CodedRecurse(r, fm, &cs, depth)
+		n.Right.CodedRecurse(r, fm, &cs, depth, nconstants)
 		if li != ri && n.Missing != nil {
 			cs = (*cases)[li:ri]
-			n.Missing.CodedRecurse(r, fm, &cs, depth)
+			n.Missing.CodedRecurse(r, fm, &cs, depth, nconstants)
 		}
 	}
 }

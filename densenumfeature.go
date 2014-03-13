@@ -272,7 +272,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	impurityDecrease = minImp
 	codedSplit = 0.0
 
-	if len(*cases) > 2*leafSize {
+	if len(*cases) >= 2*leafSize {
 		sorter := allocs.Sorter
 		//sorter.Vals = f.NumData
 		//sorter.Cases = *cases

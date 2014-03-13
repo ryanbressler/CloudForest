@@ -5,6 +5,29 @@ import (
 	"testing"
 )
 
+func TestSampleFirstN(t *testing.T) {
+	deck := []int{0, 1, 2, 3}
+	var samples []int
+	SampleFirstN(&deck, &samples, 2, 0)
+	if len(samples) != 2 {
+		t.Errorf("Error: sampeling 2 items returned %v samples", len(samples))
+	}
+	deck = []int{0, 1, 2, 3}
+	SampleFirstN(&deck, &samples, 2, 2)
+
+	if deck[2] != 2 || deck[3] != 3 {
+		t.Errorf("Sampeling 2 items with 2 constant resulted in %v %v", deck, samples)
+	}
+
+	deck = []int{0, 1, 2, 3}
+	SampleFirstN(&deck, &samples, 2, 3)
+
+	if deck[1] != 1 || deck[2] != 2 || deck[3] != 3 {
+		t.Errorf("Sampeling 2 items with 3 constant resulted in %v %v", deck, samples)
+	}
+
+}
+
 var bfm = `.	0	1	2	3	4	5	6	7
 C:1	0	0	1	1	1	1	1	1
 C:2	0	1	0	1	0	1	0	1`

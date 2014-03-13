@@ -68,7 +68,7 @@ func TestNumFeature(t *testing.T) {
 
 	allocs := NewBestSplitAllocs(5, f)
 
-	_, split, _ := fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs)
+	_, split, _, _ := fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
 	if split.(float64) != 0.1 {
@@ -88,7 +88,7 @@ func TestNumFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(7, f)
 
-	_, split, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs)
+	_, split, _, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
 	if split.(float64) != 0.1 {
@@ -106,7 +106,7 @@ func TestNumFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(8, f)
 
-	_, split, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs)
+	_, split, _, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
 	sorted := true

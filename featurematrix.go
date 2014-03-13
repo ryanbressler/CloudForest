@@ -90,7 +90,8 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	leafSize int,
 	vet bool,
 	evaloob bool,
-	allocs *BestSplitAllocs) (bestFi int, bestSplit interface{}, impurityDecrease float64) {
+	allocs *BestSplitAllocs,
+	nConstantsBefore int) (bestFi int, bestSplit interface{}, impurityDecrease float64, nConstants int) {
 
 	impurityDecrease = minImp
 
@@ -109,13 +110,13 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		f = fm.Data[i]
 		split, inerImp = f.BestSplit(target, cases, parentImp, leafSize, allocs)
 
-		if evaloob && inerImp > minImp && inerImp > impurityDecrease {
+		if evaloob && inerImp > impurityDecrease {
 			//spliter := f.DecodeSplit(split)
 			l, r, m := f.Split(split, *oob) //spliter.Split(fm, *oob)
 			inerImp = target.Impurity(oob, allocs.Counter) - target.SplitImpurity(&l, &r, &m, allocs)
 		}
 
-		if vet && inerImp > minImp && inerImp > impurityDecrease {
+		if vet && inerImp > impurityDecrease {
 			casept := cases
 			if evaloob {
 				casept = oob
@@ -126,7 +127,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 			inerImp = inerImp - vetImp
 		}
 
-		if inerImp > minImp && inerImp > impurityDecrease {
+		if inerImp > impurityDecrease {
 			bestFi = i
 			impurityDecrease = inerImp
 			bestSplit = split
@@ -134,11 +135,11 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	}
 
-	if impurityDecrease <= minImp {
-		bestFi = -1
-		impurityDecrease = 0.0
-		bestSplit = nil
-	}
+	// if impurityDecrease <= minImp {
+	// 	bestFi = -1
+	// 	impurityDecrease = 0.0
+	// 	bestSplit = nil
+	// }
 	return
 }
 

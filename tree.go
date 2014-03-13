@@ -89,14 +89,15 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 	var innercanidates []int
 	var impDec float64
-	t.Root.CodedRecurse(func(n *Node, innercases *[]int, depth int) (fi int, split interface{}) {
+	t.Root.CodedRecurse(func(n *Node, innercases *[]int, depth int, nconstantsbefore int) (fi int, split interface{}, nconstants int) {
 
+		//nconstants = nconstantsbefore
 		if (2 * leafSize) <= len(*innercases) {
-			SampleFirstN(&candidates, mTry)
-			innercanidates = candidates[:mTry]
+			SampleFirstN(&candidates, &innercanidates, mTry, nconstants)
+			//innercanidates = candidates[:mTry]
 
-			fi, split, impDec = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs)
-			if impDec > minImp {
+			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
+			if split != nil { //impDec > minImp {
 				if importance != nil {
 					(*importance)[fi].Add(impDec)
 				}
@@ -128,7 +129,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 		n.Pred = target.FindPredicted(*innercases)
 		return
 
-	}, fm, &cases, 0)
+	}, fm, &cases, 0, 0)
 }
 
 //GetLeaves is called by the leaf count utility to
