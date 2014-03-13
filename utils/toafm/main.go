@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
+	"fmt"
 	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
@@ -14,6 +16,9 @@ func main() {
 
 	outfn := flag.String("out",
 		"", "The name of a file to write feature matrix too.")
+
+	libsvmtarget := flag.String("libsvmtarget",
+		"", "Output lib svm with the named feature in the first position.")
 
 	flag.Parse()
 
@@ -53,9 +58,48 @@ func main() {
 	}
 	defer outfile.Close()
 
-	err = data.WriteCases(outfile, cases)
-	if err != nil {
-		log.Fatal(err)
+	if *libsvmtarget == "" {
+
+		err = data.WriteCases(outfile, cases)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		targeti, ok := data.Map[*libsvmtarget]
+		if !ok {
+			log.Fatalf("Target '%v' not found in data.", *libsvmtarget)
+		}
+		target := data.Data[targeti]
+
+		data.Data = append(data.Data[:targeti], data.Data[targeti+1:]...)
+
+		encodedfm := data.EncodeToNum()
+
+		oucsv := csv.NewWriter(outfile)
+		oucsv.Comma = ' '
+
+		for i := 0; i < target.Length(); i++ {
+			entries := make([]string, 0, 10)
+			switch target.(type) {
+			case CloudForest.NumFeature:
+				entries = append(entries, target.GetStr(i))
+			case CloudForest.CatFeature:
+				entries = append(entries, fmt.Sprintf("%v", target.(CloudForest.CatFeature).Geti(i)))
+			}
+
+			for j, f := range encodedfm.Data {
+				v := f.(CloudForest.NumFeature).Get(i)
+				if v != 0.0 {
+					entries = append(entries, fmt.Sprintf("%v:%v", j+1, v))
+				}
+			}
+			err := oucsv.Write(entries)
+			if err != nil {
+				log.Fatalf("Error writing libsvm:\n%v", err)
+			}
+
+		}
+
 	}
 
 }
