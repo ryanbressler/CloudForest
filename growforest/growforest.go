@@ -122,6 +122,9 @@ func main() {
 	var permutate bool
 	flag.BoolVar(&permutate, "permute", false, "Permute the target feature (to establish random predictive power).")
 
+	var dotest bool
+	flag.BoolVar(&dotest, "test", false, "Test the forest on the data and report accuracy.")
+
 	flag.Parse()
 
 	if *cpuprofile != "" {
@@ -412,6 +415,8 @@ func main() {
 	}
 
 	//****************** Needed Collections and vars ******************//
+	var trees []*CloudForest.Tree
+	trees = make([]*CloudForest.Tree, 0, nTrees)
 
 	var imppnt *[]*CloudForest.RunningMean
 	var mmdpnt *[]*CloudForest.RunningMean
@@ -531,8 +536,17 @@ func main() {
 			forestwriter.WriteTree(tree, i)
 		}
 
-		if i < nTrees-1 {
-			treechan <- tree
+		if dotest {
+			trees = append(trees, tree)
+
+			if i < nTrees-1 {
+				//newtree := new(CloudForest.Tree)
+				treechan <- CloudForest.NewTree()
+			}
+		} else {
+			if i < nTrees-1 {
+				treechan <- tree
+			}
 		}
 		if progress {
 			fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(unboostedTarget))
@@ -569,6 +583,37 @@ func main() {
 			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\t%v\t%v\t%v\n", data.Data[i].GetName(), mean, count, mean*float64(count)/float64(nTrees), mean*float64(count)/float64(treeCount), treeCount, meanMinDepth)
 
 		}
+	}
+
+	if dotest {
+		var bb CloudForest.VoteTallyer
+
+		if unboostedTarget.NCats() == 0 {
+			//regression
+			bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
+		} else {
+			//classification
+			bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
+		}
+
+		for _, tree := range trees {
+			tree.Vote(data, bb)
+		}
+
+		fmt.Printf("Error: %v\n", bb.TallyError(unboostedTarget))
+
+		if unboostedTarget.NCats() != 0 {
+			correct := 0
+			length := unboostedTarget.Length()
+			for i := 0; i < length; i++ {
+				if bb.Tally(i) == unboostedTarget.GetStr(i) {
+					correct++
+				}
+
+			}
+			fmt.Printf("Classified: %v / %v = %v\n", correct, length, float64(correct)/float64(length))
+		}
+
 	}
 
 }
