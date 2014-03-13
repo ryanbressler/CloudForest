@@ -49,14 +49,14 @@ func (bb *NumBallotBox) Tally(i int) (predicted string) {
 	return
 }
 
-//Tally error returns the error of the votes vs the provided feature.
+//TallySquareError returns the error of the votes vs the provided feature.
 //For categorical features it returns the error rate
 //For numerical features it returns mean squared error.
 //The provided feature must use the same index as the feature matrix
 //the ballot box was constructed with.
 //Missing values are ignored.
 //Gini impurity is not used so this is not for use in rf implementations.
-func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
+func (bb *NumBallotBox) TallySquaredError(feature Feature) (e float64) {
 	e = 0.0
 
 	// Numerical feature. Calculate mean squared
@@ -81,8 +81,8 @@ func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
 
 }
 
-//Tally score returns the R2 score
-func (bb *NumBallotBox) TallyR2Score(feature Feature) (e float64) {
+//TallyScore returns the squared error (unexplained variance) divided by the data variance.
+func (bb *NumBallotBox) TallyError(feature Feature) (e float64) {
 	mean := 0.0
 	r2 := 0.0
 	total := 0
@@ -104,7 +104,16 @@ func (bb *NumBallotBox) TallyR2Score(feature Feature) (e float64) {
 	}
 	r2 /= float64(total)
 
-	e = 1 - bb.TallyError(feature)/r2
+	e = bb.TallySquaredError(feature) / r2
+
+	return
+
+}
+
+//Tally score returns the R2 score or coefichent of determination.
+func (bb *NumBallotBox) TallyR2Score(feature Feature) (e float64) {
+
+	e = 1 - bb.TallyError(feature)
 
 	return
 
