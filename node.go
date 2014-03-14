@@ -23,6 +23,20 @@ type Node struct {
 	Splitter   *Splitter
 }
 
+//vist each child node with the supplied function
+func (n *Node) Climb(c func(*Node)) {
+	c(n)
+	if n.Left != nil {
+		n.Left.Climb(c)
+	}
+	if n.Right != nil {
+		n.Right.Climb(c)
+	}
+	if n.Missing != nil {
+		n.Missing.Climb(c)
+	}
+}
+
 //Recurse is used to apply a Recursable function at every downstream node as the cases
 //specified by case []int are split using the data in fm *Featurematrix. Recursion
 //down a branch stops when a a node with n.Splitter == nil is reached. Recursion down

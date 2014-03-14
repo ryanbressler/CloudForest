@@ -7,7 +7,7 @@ import (
 
 func BenchmarkIris(b *testing.B) {
 
-	candidates := []int{0, 1, 2, 3}
+	candidates := []int{1, 2, 3, 4}
 	// irisreader := strings.NewReader(irisarff)
 	// fm := ParseARFF(irisreader)
 	// targeti := 4
@@ -28,6 +28,33 @@ func BenchmarkIris(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		tree := NewTree()
 		tree.Grow(fm, target, cases, candidates, nil, 2, 1, false, false, false, nil, nil, allocs)
+
+	}
+}
+
+func BenchmarkBestNumSplit(b *testing.B) {
+
+	// irisreader := strings.NewReader(irisarff)
+	// fm := ParseARFF(irisreader)
+	// targeti := 4
+
+	irisreader := strings.NewReader(irislibsvm)
+	fm := ParseLibSVM(irisreader)
+	targeti := 0
+
+	targetf := fm.Data[targeti]
+
+	cases := make([]int, 0, 150)
+	for i := 0; i < fm.Data[0].Length(); i++ {
+		cases = append(cases, i)
+	}
+	allocs := NewBestSplitAllocs(len(cases), targetf)
+
+	parentImp := targetf.Impurity(&cases, allocs.Counter)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = fm.Data[1].BestSplit(targetf, &cases, parentImp, 1, allocs)
 
 	}
 }

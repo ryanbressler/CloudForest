@@ -93,10 +93,12 @@ func main() {
 					entries = append(entries, fmt.Sprintf("%v:%v", j+1, v))
 				}
 			}
+			//fmt.Println(entries)
 			err := oucsv.Write(entries)
 			if err != nil {
 				log.Fatalf("Error writing libsvm:\n%v", err)
 			}
+			oucsv.Flush()
 
 		}
 

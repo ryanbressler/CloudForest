@@ -56,10 +56,11 @@ func main() {
 	bSampler := CloudForest.NewBalancedSampler(targetf.(*CloudForest.DenseCatFeature))
 
 	fmt.Printf("Stratifying by %v classes.\n", len(bSampler.Cases))
+	var samples []int
 	for i := 0; i < len(bSampler.Cases); i++ {
 		fmt.Printf("%v cases in class %v.\n", len(bSampler.Cases[i]), i)
 		//shuffle in place
-		CloudForest.SampleFirstN(&bSampler.Cases[i], len(bSampler.Cases[i]))
+		CloudForest.SampleFirstN(&bSampler.Cases[i], &samples, len(bSampler.Cases[i]), 0)
 		stratFoldSize := len(bSampler.Cases[i]) / folds
 		for j := 0; j < folds; j++ {
 			for k := j * stratFoldSize; k < (j+1)*stratFoldSize; k++ {

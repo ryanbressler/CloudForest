@@ -321,7 +321,7 @@ func TestIris(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping classification tests on iris data set.")
 	}
-	candidates := []int{0, 1, 2, 3}
+	candidates := []int{1, 2, 3, 4}
 	// irisreader := strings.NewReader(irisarff)
 	// fm := ParseARFF(irisreader)
 	// targeti := 4

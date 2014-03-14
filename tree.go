@@ -52,6 +52,14 @@ func (t *Tree) AddNode(path string, pred string, splitter *Splitter) {
 
 }
 
+func (t *Tree) StripCodes() {
+	t.Root.Climb(func(n *Node) {
+		if n.CodedSplit != nil {
+			n.CodedSplit = nil
+		}
+	})
+}
+
 /*
 tree.Grow grows the receiver tree through recursion. It uses impurity decrease to select splitters at
 each node as in Brieman's Random Forest. It should be called on a tree with only a root node defined.
@@ -89,6 +97,16 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 	var innercanidates []int
 	var impDec float64
+	for i := 0; i < len(allocs.Weights); i++ {
+		allocs.Weights[i] = 0
+	}
+	allocs.Cases = allocs.Cases[0:0]
+	for _, i := range cases {
+		if allocs.Weights[i] == 0 {
+			allocs.Cases = append(allocs.Cases, i)
+		}
+		allocs.Weights[i]++
+	}
 	t.Root.CodedRecurse(func(n *Node, innercases *[]int, depth int, nconstantsbefore int) (fi int, split interface{}, nconstants int) {
 
 		//nconstants = nconstantsbefore
@@ -97,7 +115,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 			//innercanidates = candidates[:mTry]
 
 			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
-			if split != nil { //impDec > minImp {
+			if impDec > minImp {
 				if importance != nil {
 					(*importance)[fi].Add(impDec)
 				}
@@ -129,7 +147,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 		n.Pred = target.FindPredicted(*innercases)
 		return
 
-	}, fm, &cases, 0, 0)
+	}, fm, &allocs.Cases, 0, 0)
 }
 
 //GetLeaves is called by the leaf count utility to

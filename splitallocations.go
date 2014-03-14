@@ -10,6 +10,8 @@ type BestSplitAllocs struct {
 	LM             []int
 	RM             []int
 	MM             []int
+	Cases          []int
+	Weights        []int
 	Left           *[]int  //left cases for potential splits
 	Right          *[]int  //right cases for potential splits
 	NonMissing     *[]int  //non missing cases for potential splits
@@ -39,6 +41,8 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 		nil,
 		nil,
 		nil,
+		make([]int, 0, nTotalCases),
+		make([]int, nTotalCases, nTotalCases),
 		&left,
 		&right,
 		&nonmissing,
