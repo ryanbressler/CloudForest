@@ -454,7 +454,9 @@ func main() {
 
 			if nobag {
 				for i := 0; i < nSamples; i++ {
-					cases = append(cases, i)
+					if !targetf.IsMissing(i) {
+						cases = append(cases, i)
+					}
 				}
 			}
 
@@ -483,6 +485,16 @@ func main() {
 						}
 					}
 
+				}
+
+				if nobag && nSamples != nCases {
+					cases = cases[0:0]
+					for i := 0; i < nSamples; i++ {
+						if !targetf.IsMissing(i) {
+							cases = append(cases, i)
+						}
+					}
+					CloudForest.SampleFirstN(&cases, nil, nCases, 0)
 				}
 
 				if oob || evaloob {
@@ -616,6 +628,9 @@ func main() {
 				log.Fatal("Target not found in test data.")
 			}
 			testtarget = testdata.Data[targeti]
+			for _, tree := range trees {
+				tree.StripCodes()
+			}
 		}
 
 		for _, tree := range trees {

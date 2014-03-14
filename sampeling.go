@@ -114,6 +114,7 @@ func SampleFirstN(deck *[]int, samples *[]int, n int, nconstants int) {
 	for i := 0; i < n && i < nnonconstant; i++ {
 
 		randi = lastSample + rand.Intn(length-nDrawnConstants-lastSample)
+		//randi = lastSample + rand.Intn(nnonconstant-lastSample)
 		if randi >= nnonconstant {
 			nDrawnConstants++
 			continue
@@ -124,7 +125,9 @@ func SampleFirstN(deck *[]int, samples *[]int, n int, nconstants int) {
 		cards[randi] = old
 		lastSample++
 	}
-	(*samples) = cards[:lastSample]
+	if samples != nil {
+		(*samples) = cards[:lastSample]
+	}
 
 }
 

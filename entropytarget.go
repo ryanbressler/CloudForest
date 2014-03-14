@@ -47,7 +47,7 @@ func (target *EntropyTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, 
 	impurityDecrease = nl * target.ImpFromCounts(len(*l), allocs.LCounter)
 	impurityDecrease += nr * target.ImpFromCounts(len(*r), allocs.RCounter)
 	if m != nil && len(*m) > 0 {
-		nm := float64(len(*m))
+		nm = float64(len(*m))
 		impurityDecrease += nm * target.ImpFromCounts(len(*m), allocs.Counter)
 	}
 
