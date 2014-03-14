@@ -123,7 +123,10 @@ func main() {
 	flag.BoolVar(&permutate, "permute", false, "Permute the target feature (to establish random predictive power).")
 
 	var dotest bool
-	flag.BoolVar(&dotest, "test", false, "Test the forest on the data and report accuracy.")
+	flag.BoolVar(&dotest, "selftest", false, "Test the forest on the data and report accuracy.")
+
+	var testfm string
+	flag.StringVar(&testfm, "test", "", "Data to test the model on.")
 
 	flag.Parse()
 
@@ -134,6 +137,10 @@ func main() {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
+	}
+
+	if testfm != "" {
+		dotest = true
 	}
 
 	if multiboost {
@@ -596,17 +603,32 @@ func main() {
 			bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
 		}
 
-		for _, tree := range trees {
-			tree.Vote(data, bb)
+		testdata := data
+		testtarget := unboostedTarget
+		if testfm != "" {
+			var err error
+			testdata, err = CloudForest.LoadAFM(testfm)
+			if err != nil {
+				log.Fatal(err)
+			}
+			targeti, ok = testdata.Map[*targetname]
+			if !ok {
+				log.Fatal("Target not found in test data.")
+			}
+			testtarget = testdata.Data[targeti]
 		}
 
-		fmt.Printf("Error: %v\n", bb.TallyError(unboostedTarget))
+		for _, tree := range trees {
+			tree.Vote(testdata, bb)
+		}
 
-		if unboostedTarget.NCats() != 0 {
+		fmt.Printf("Error: %v\n", bb.TallyError(testtarget))
+
+		if testtarget.NCats() != 0 {
 			correct := 0
-			length := unboostedTarget.Length()
+			length := testtarget.Length()
 			for i := 0; i < length; i++ {
-				if bb.Tally(i) == unboostedTarget.GetStr(i) {
+				if bb.Tally(i) == testtarget.GetStr(i) {
 					correct++
 				}
 

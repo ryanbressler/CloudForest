@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/csv"
 	"flag"
-	"fmt"
 	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
@@ -65,41 +63,45 @@ func main() {
 			log.Fatal(err)
 		}
 	} else {
-		targeti, ok := data.Map[*libsvmtarget]
-		if !ok {
-			log.Fatalf("Target '%v' not found in data.", *libsvmtarget)
-		}
-		target := data.Data[targeti]
+		// targeti, ok := data.Map[*libsvmtarget]
+		// if !ok {
+		// 	log.Fatalf("Target '%v' not found in data.", *libsvmtarget)
+		// }
+		// target := data.Data[targeti]
 
-		data.Data = append(data.Data[:targeti], data.Data[targeti+1:]...)
+		// data.Data = append(data.Data[:targeti], data.Data[targeti+1:]...)
 
-		encodedfm := data.EncodeToNum()
+		// encodedfm := data.EncodeToNum()
 
-		oucsv := csv.NewWriter(outfile)
-		oucsv.Comma = ' '
+		// oucsv := csv.NewWriter(outfile)
+		// oucsv.Comma = ' '
 
-		for i := 0; i < target.Length(); i++ {
-			entries := make([]string, 0, 10)
-			switch target.(type) {
-			case CloudForest.NumFeature:
-				entries = append(entries, target.GetStr(i))
-			case CloudForest.CatFeature:
-				entries = append(entries, fmt.Sprintf("%v", target.(CloudForest.CatFeature).Geti(i)))
-			}
+		// for i := 0; i < target.Length(); i++ {
+		// 	entries := make([]string, 0, 10)
+		// 	switch target.(type) {
+		// 	case CloudForest.NumFeature:
+		// 		entries = append(entries, target.GetStr(i))
+		// 	case CloudForest.CatFeature:
+		// 		entries = append(entries, fmt.Sprintf("%v", target.(CloudForest.CatFeature).Geti(i)))
+		// 	}
 
-			for j, f := range encodedfm.Data {
-				v := f.(CloudForest.NumFeature).Get(i)
-				if v != 0.0 {
-					entries = append(entries, fmt.Sprintf("%v:%v", j+1, v))
-				}
-			}
-			//fmt.Println(entries)
-			err := oucsv.Write(entries)
-			if err != nil {
-				log.Fatalf("Error writing libsvm:\n%v", err)
-			}
-			oucsv.Flush()
+		// 	for j, f := range encodedfm.Data {
+		// 		v := f.(CloudForest.NumFeature).Get(i)
+		// 		if v != 0.0 {
+		// 			entries = append(entries, fmt.Sprintf("%v:%v", j+1, v))
+		// 		}
+		// 	}
+		// 	//fmt.Println(entries)
+		// 	err := oucsv.Write(entries)
+		// 	if err != nil {
+		// 		log.Fatalf("Error writing libsvm:\n%v", err)
+		// 	}
 
+		// }
+		// oucsv.Flush()
+		err = CloudForest.WriteLibSvm(data, *libsvmtarget, outfile)
+		if err != nil {
+			log.Fatalf("Error writing libsvm:\n%v", err)
 		}
 
 	}

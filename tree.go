@@ -97,16 +97,16 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 	var innercanidates []int
 	var impDec float64
-	for i := 0; i < len(allocs.Weights); i++ {
-		allocs.Weights[i] = 0
-	}
-	allocs.Cases = allocs.Cases[0:0]
-	for _, i := range cases {
-		if allocs.Weights[i] == 0 {
-			allocs.Cases = append(allocs.Cases, i)
-		}
-		allocs.Weights[i]++
-	}
+	// for i := 0; i < len(allocs.Weights); i++ {
+	// 	allocs.Weights[i] = 0
+	// }
+	// allocs.Cases = allocs.Cases[0:0]
+	// for _, i := range cases {
+	// 	if allocs.Weights[i] == 0 {
+	// 		allocs.Cases = append(allocs.Cases, i)
+	// 	}
+	// 	allocs.Weights[i]++
+	// }
 	t.Root.CodedRecurse(func(n *Node, innercases *[]int, depth int, nconstantsbefore int) (fi int, split interface{}, nconstants int) {
 
 		//nconstants = nconstantsbefore
@@ -147,7 +147,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 		n.Pred = target.FindPredicted(*innercases)
 		return
 
-	}, fm, &allocs.Cases, 0, 0)
+	}, fm, &cases, 0, 0)
 }
 
 //GetLeaves is called by the leaf count utility to

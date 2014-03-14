@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"log"
@@ -89,4 +90,102 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 
 	return fm
 
+}
+
+func WriteLibSvm(data *FeatureMatrix, targetn string, outfile io.Writer) error {
+	targeti, ok := data.Map[targetn]
+	if !ok {
+		return fmt.Errorf("Target '%v' not found in data.", targetn)
+	}
+	target := data.Data[targeti]
+
+	//data.Data = append(data.Data[:targeti], data.Data[targeti+1:]...)
+
+	noTargetFm := &FeatureMatrix{make([]Feature, 0, len(data.Data)), make(map[string]int), data.CaseLabels}
+
+	for i, f := range data.Data {
+		if i != targeti {
+			noTargetFm.Map[f.GetName()] = len(noTargetFm.Data)
+			noTargetFm.Data = append(noTargetFm.Data, f)
+
+		}
+	}
+
+	encodedfm := noTargetFm.EncodeToNum()
+
+	oucsv := csv.NewWriter(outfile)
+	oucsv.Comma = ' '
+
+	for i := 0; i < target.Length(); i++ {
+		entries := make([]string, 0, 10)
+		switch target.(type) {
+		case NumFeature:
+			entries = append(entries, target.GetStr(i))
+		case CatFeature:
+			entries = append(entries, fmt.Sprintf("%v", target.(CatFeature).Geti(i)))
+		}
+
+		for j, f := range encodedfm.Data {
+			v := f.(NumFeature).Get(i)
+			if v != 0.0 {
+				entries = append(entries, fmt.Sprintf("%v:%v", j+1, v))
+			}
+		}
+		//fmt.Println(entries)
+		err := oucsv.Write(entries)
+		if err != nil {
+			return err
+		}
+
+	}
+	oucsv.Flush()
+	return nil
+}
+
+func WriteLibSvmCases(data *FeatureMatrix, cases []int, targetn string, outfile io.Writer) error {
+	targeti, ok := data.Map[targetn]
+	if !ok {
+		return fmt.Errorf("Target '%v' not found in data.", targetn)
+	}
+	target := data.Data[targeti]
+
+	noTargetFm := &FeatureMatrix{make([]Feature, 0, len(data.Data)), make(map[string]int), data.CaseLabels}
+
+	for i, f := range data.Data {
+		if i != targeti {
+			noTargetFm.Map[f.GetName()] = len(noTargetFm.Data)
+			noTargetFm.Data = append(noTargetFm.Data, f)
+
+		}
+	}
+
+	encodedfm := noTargetFm.EncodeToNum()
+
+	oucsv := csv.NewWriter(outfile)
+	oucsv.Comma = ' '
+
+	for _, i := range cases {
+		entries := make([]string, 0, 10)
+		switch target.(type) {
+		case NumFeature:
+			entries = append(entries, fmt.Sprintf("%g", target.(NumFeature).Get(i)))
+		case CatFeature:
+			entries = append(entries, fmt.Sprintf("%v", target.(CatFeature).Geti(i)))
+		}
+
+		for j, f := range encodedfm.Data {
+			v := f.(NumFeature).Get(i)
+			if v != 0.0 {
+				entries = append(entries, fmt.Sprintf("%v:%v", j+1, v))
+			}
+		}
+		//fmt.Println(entries)
+		err := oucsv.Write(entries)
+		if err != nil {
+			return err
+		}
+
+	}
+	oucsv.Flush()
+	return nil
 }

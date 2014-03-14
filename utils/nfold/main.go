@@ -23,6 +23,9 @@ func main() {
 
 	var zipoutput bool
 	flag.BoolVar(&zipoutput, "zip", false, "Output ziped files.")
+	var writelibsvm bool
+	flag.BoolVar(&writelibsvm, "writelibsvm", false, "Output libsvm.")
+
 	var folds int
 	flag.IntVar(&folds, "folds", 5, "Number of folds to generate.")
 
@@ -103,14 +106,21 @@ func main() {
 			defer testz.Close()
 		}
 
-		data.WriteCases(testW, foldis[i])
 		trainis = trainis[0:0]
 		for j := 0; j < folds; j++ {
 			if i != j {
 				trainis = append(trainis, foldis[j]...)
 			}
 		}
-		data.WriteCases(trainW, trainis)
+
+		if writelibsvm {
+			CloudForest.WriteLibSvmCases(data, foldis[i], *targetname, testW)
+			CloudForest.WriteLibSvmCases(data, trainis, *targetname, trainW)
+		} else {
+			data.WriteCases(testW, foldis[i])
+			data.WriteCases(trainW, trainis)
+		}
+
 		fmt.Printf("Wrote fold %v. %v testing cases and %v training cases.\n", i, len(foldis[i]), len(trainis))
 	}
 
