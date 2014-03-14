@@ -132,7 +132,7 @@ func (f *DenseCatFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	leafSize int,
-	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	var nmissing, nonmissing, total int
 	var nonmissingparentImp, missingimp float64
@@ -169,15 +169,15 @@ func (f *DenseCatFeature) BestSplit(target Target,
 	//TODO: reverse this list, common cases first and maybe make it a switch statement
 	nCats := f.NCats()
 	if f.RandomSearch == false && nCats > maxNonBigCats {
-		codedSplit, impurityDecrease = f.BestCatSplitIterBig(target, tosplit, nonmissingparentImp, leafSize, allocs)
+		codedSplit, impurityDecrease, constant = f.BestCatSplitIterBig(target, tosplit, nonmissingparentImp, leafSize, allocs)
 	} else if f.RandomSearch == false && nCats > maxExhaustiveCats {
-		codedSplit, impurityDecrease = f.BestCatSplitIter(target, tosplit, nonmissingparentImp, leafSize, allocs)
+		codedSplit, impurityDecrease, constant = f.BestCatSplitIter(target, tosplit, nonmissingparentImp, leafSize, allocs)
 	} else if nCats > maxNonBigCats {
-		codedSplit, impurityDecrease = f.BestCatSplitBig(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+		codedSplit, impurityDecrease, constant = f.BestCatSplitBig(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	} else if nCats == 2 {
-		codedSplit, impurityDecrease = f.BestBinSplit(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+		codedSplit, impurityDecrease, constant = f.BestBinSplit(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	} else {
-		codedSplit, impurityDecrease = f.BestCatSplit(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
+		codedSplit, impurityDecrease, constant = f.BestCatSplit(target, tosplit, nonmissingparentImp, maxNonRandomExahustive, leafSize, allocs)
 	}
 
 	if f.HasMissing && nmissing > 0 && impurityDecrease > minImp {
@@ -358,7 +358,7 @@ categories may have changed.
 allocs contains pointers to reusable structures for use while searching for the best split and should
 be initialized to the proper size with NewBestSplitAlocs.
 */
-func (f *DenseCatFeature) BestCatSplitIterBig(target Target, cases *[]int, parentImp float64, leafSize int, allocs *BestSplitAllocs) (bestSplit *big.Int, impurityDecrease float64) {
+func (f *DenseCatFeature) BestCatSplitIterBig(target Target, cases *[]int, parentImp float64, leafSize int, allocs *BestSplitAllocs) (bestSplit *big.Int, impurityDecrease float64, constant bool) {
 
 	left := *allocs.Left
 	right := *allocs.Right
@@ -452,7 +452,7 @@ categories may have changed.
 allocs contains pointers to reusable structures for use while searching for the best split and should
 be initialized to the proper size with NewBestSplitAlocs.
 */
-func (f *DenseCatFeature) BestCatSplitIter(target Target, cases *[]int, parentImp float64, leafSize int, allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
+func (f *DenseCatFeature) BestCatSplitIter(target Target, cases *[]int, parentImp float64, leafSize int, allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64, constant bool) {
 
 	left := *allocs.Left
 	right := *allocs.Right
@@ -557,7 +557,7 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 	parentImp float64,
 	maxEx int,
 	leafSize int,
-	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64, constant bool) {
 
 	impurityDecrease = minImp
 	left := *allocs.Left
@@ -651,7 +651,7 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	parentImp float64,
 	maxEx int,
 	leafSize int,
-	a *BestSplitAllocs) (bestSplit int, impurityDecrease float64) {
+	a *BestSplitAllocs) (bestSplit int, impurityDecrease float64, constant bool) {
 
 	cs := *cases
 	catdata := f.CatData
@@ -683,6 +683,7 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 			i--
 		}
 	}
+	constant = l > -1 && r < length
 	l++
 
 	//skip cases where the split didn't do any splitting
@@ -713,7 +714,7 @@ categories may have changed.
 allocs contains pointers to reusable structures for use while searching for the best split and should
 be initialized to the proper size with NewBestSplitAlocs.
 */
-func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp float64, maxEx int, leafSize int, allocs *BestSplitAllocs) (bestSplit *big.Int, impurityDecrease float64) {
+func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp float64, maxEx int, leafSize int, allocs *BestSplitAllocs) (bestSplit *big.Int, impurityDecrease float64, constant bool) {
 
 	left := *allocs.Left
 	right := *allocs.Right

@@ -208,7 +208,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	leafSize int,
-	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	var nmissing, nonmissing, total int
 	var nonmissingparentImp, missingimp float64
@@ -242,7 +242,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 		tosplit = cases
 	}
 
-	codedSplit, impurityDecrease = f.BestNumSplit(target, tosplit, nonmissingparentImp, leafSize, allocs)
+	codedSplit, impurityDecrease, constant = f.BestNumSplit(target, tosplit, nonmissingparentImp, leafSize, allocs)
 
 	if f.HasMissing && nmissing > 0 && impurityDecrease > minImp {
 		impurityDecrease = parentImp + ((float64(nonmissing)*(impurityDecrease-nonmissingparentImp) - float64(nmissing)*missingimp) / float64(total))
@@ -267,7 +267,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	leafSize int,
-	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64) {
+	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	impurityDecrease = minImp
 	codedSplit = 0.0
@@ -283,12 +283,14 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		lastsplit := 0
 		innerimp := 0.0
 		stop := (len(sorter.Cases) - leafSize)
+		constant = true
 		for i := leafSize; i < stop; i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
 			if f.NumData[c] == f.NumData[sorter.Cases[i-1]] {
 				continue
 			}
+			constant = false
 
 			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r

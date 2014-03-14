@@ -5,7 +5,7 @@ import ()
 const maxExhaustiveCats = 5
 const maxNonRandomExahustive = 10
 const maxNonBigCats = 30
-const minImp = 0.0 //1e-12
+const minImp = 1e-12
 
 //Feature contains all methods needed for a predictor feature.
 type Feature interface {
@@ -25,7 +25,7 @@ type Feature interface {
 		cases *[]int,
 		parentImp float64,
 		leafSize int,
-		allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64)
+		allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool)
 	DecodeSplit(codedSplit interface{}) (s *Splitter)
 	ShuffledCopy() (fake Feature)
 	Copy() (copy Feature)

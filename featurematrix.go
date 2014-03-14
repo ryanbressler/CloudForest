@@ -99,6 +99,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	var inerImp float64
 	var vetImp float64
 	var split interface{}
+	var constant bool
 
 	if vet {
 		target.(Feature).CopyInTo(allocs.ContrastTarget.(Feature))
@@ -106,9 +107,19 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	parentImp := target.Impurity(cases, allocs.Counter)
 
-	for _, i := range *candidates {
+	cans := *candidates
+	lcans := len(cans)
+	//for _, i := range *candidates {
+	for j := 0; j < lcans; j++ {
+		i := cans[j]
 		f = fm.Data[i]
-		split, inerImp = f.BestSplit(target, cases, parentImp, leafSize, allocs)
+		split, inerImp, constant = f.BestSplit(target, cases, parentImp, leafSize, allocs)
+		if constant {
+
+			lcans--
+			cans[lcans], cans[j] = cans[j], cans[lcans]
+			j--
+		}
 
 		if evaloob && inerImp > impurityDecrease {
 			//spliter := f.DecodeSplit(split)
@@ -123,7 +134,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 			}
 
 			allocs.ContrastTarget.(Feature).ShuffleCases(casept)
-			_, vetImp = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, allocs)
+			_, vetImp, _ = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, allocs)
 			inerImp = inerImp - vetImp
 		}
 
