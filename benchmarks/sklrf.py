@@ -7,13 +7,20 @@ from time import time
 
 import numpy as np
 
+
+def dumptree(atree, fn):
+	from sklearn import tree
+	f = open(fn,"w")
+	tree.export_graphviz(atree,out_file=f)
+	f.close()
+
 # def main():
 fn = sys.argv[1]
 X,Y = load_svmlight_file(fn)
 
 rf_parameters = {
-	"n_estimators": 50,
-	"n_jobs": 8,
+	"n_estimators": 1,
+	"n_jobs": 1,
 	"max_features":1
 }
 clf = RandomForestClassifier(**rf_parameters)
