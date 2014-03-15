@@ -109,9 +109,10 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	// }
 	t.Root.CodedRecurse(func(n *Node, innercases *[]int, depth int, nconstantsbefore int) (fi int, split interface{}, nconstants int) {
 
-		//nconstants = nconstantsbefore
+		nconstants = nconstantsbefore
+
 		if (2 * leafSize) <= len(*innercases) {
-			SampleFirstN(&candidates, &innercanidates, mTry, nconstants)
+			SampleFirstN(&candidates, &innercanidates, mTry, nconstantsbefore)
 			//innercanidates = candidates[:mTry]
 
 			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
@@ -140,6 +141,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 			}
 
 		}
+		//fmt.Println("Terminating in tree grow.")
 
 		//Leaf node so find the predictive value and set it in n.Pred
 		split = nil
