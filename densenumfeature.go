@@ -283,14 +283,16 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		lastsplit := 0
 		innerimp := 0.0
 		stop := (len(sorter.Cases) - leafSize)
-		constant = true
+		constant = f.NumData[sorter.Cases[0]] == f.NumData[sorter.Cases[len(sorter.Cases)-1]]
+		if constant {
+			return
+		}
 		for i := leafSize; i < stop; i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
 			if f.NumData[c] == f.NumData[sorter.Cases[i-1]] {
 				continue
 			}
-			constant = false
 
 			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
 					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r

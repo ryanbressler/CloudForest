@@ -683,7 +683,8 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 			i--
 		}
 	}
-	constant = l > -1 && r < length
+	constant = l == -1 || r == length
+	//fmt.Printf("constant %v\n", constant)
 	l++
 
 	//skip cases where the split didn't do any splitting

@@ -96,7 +96,7 @@ func TestCatFeature(t *testing.T) {
 
 	allocs := NewBestSplitAllocs(5, f)
 
-	_, split, _, _ := fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ := fm.BestSplitter(f, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	if split.(int) != 1 {
 		t.Errorf("Boolean feature didn't self split. Returned %v", split)
@@ -123,7 +123,7 @@ func TestCatFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(6, target)
 
-	_, split, _, _ = fm.BestSplitter(target, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = fm.BestSplitter(target, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	if split.(int) != 1 {
 		t.Errorf("Boolean with missing val feature didn't split non missing copy. Returned %v", split)
@@ -136,7 +136,7 @@ func TestCatFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(6, target)
 
-	_, split, _, _ = fm.BestSplitter(target, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = fm.BestSplitter(target, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	if split.(int) != 1 {
 		t.Errorf("Trinary target with bool missing val feature didn't split. Returned %v", split)
@@ -150,7 +150,7 @@ func TestCatFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(6, target)
 
-	_, split, _, _ = fm.BestSplitter(target, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = fm.BestSplitter(target, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	if split.(int) != 1 {
 		t.Errorf("Trinary target with bool missing val feature didn't split. Returned %v", split)
@@ -180,7 +180,7 @@ func TestCatFeature(t *testing.T) {
 	allocs = NewBestSplitAllocs(6, target)
 
 	//split f by medium f should send 1 and 2 to one side, coded 6
-	_, split, _, _ = mediumfm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = mediumfm.BestSplitter(f, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	if split.(int) != 6 {
 		t.Errorf("Binary target with 6 valued feature didn't split. Returned %v", split)
@@ -238,7 +238,7 @@ func TestBigCatFeature(t *testing.T) {
 	allocs := NewBestSplitAllocs(40, boolf)
 
 	//split f by medium f should send 1 and 2 to one side, coded 6
-	_, split, _, _ := bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ := bigfm.BestSplitter(boolf, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	l, r, m := bigf.Split(split, cases)
 	if len(l) != 20 || len(r) != 20 || len(m) != 0 {
@@ -255,7 +255,7 @@ func TestBigCatFeature(t *testing.T) {
 	}
 
 	bigf.RandomSearch = true
-	_, split, _, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	l, r, m = bigf.Split(split, cases)
 	//won't perfectelly split but should do okay
@@ -267,7 +267,7 @@ func TestBigCatFeature(t *testing.T) {
 	bigf.RandomSearch = false
 
 	//split f by medium f should send 1 and 2 to one side, coded 6
-	_, split, _, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	l, r, m = bigf.Split(split, cases)
 	if len(l) < 19 || len(r) < 19 || len(m) != 1 {
@@ -284,7 +284,7 @@ func TestBigCatFeature(t *testing.T) {
 	}
 
 	bigf.RandomSearch = true
-	_, split, _, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = bigfm.BestSplitter(boolf, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 
 	l, r, m = bigf.Split(split, cases)
 	//won't perfectelly split but should do okay

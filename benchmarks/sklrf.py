@@ -19,9 +19,9 @@ fn = sys.argv[1]
 X,Y = load_svmlight_file(fn)
 
 rf_parameters = {
-	"n_estimators": 1,
-	"n_jobs": 1,
-	"max_features":1
+	"n_estimators": 50,
+	"n_jobs": 8,
+	"max_features":8
 }
 clf = RandomForestClassifier(**rf_parameters)
 X = X.toarray()

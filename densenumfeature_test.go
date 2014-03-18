@@ -68,7 +68,7 @@ func TestNumFeature(t *testing.T) {
 
 	allocs := NewBestSplitAllocs(5, f)
 
-	_, split, _, _ := fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ := fm.BestSplitter(f, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
 	if split.(float64) != 0.1 {
@@ -88,10 +88,10 @@ func TestNumFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(7, f)
 
-	_, split, _, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, constants := fm.BestSplitter(f, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
-	if split.(float64) != 0.1 {
+	if split.(float64) != 0.1 || constants != 0 {
 		t.Errorf("Numerical feature didn't self split correctelly with equal run. Returned %v not 0.1", split)
 	}
 
@@ -106,7 +106,7 @@ func TestNumFeature(t *testing.T) {
 
 	allocs = NewBestSplitAllocs(8, f)
 
-	_, split, _, _ = fm.BestSplitter(f, &cases, &[]int{0}, nil, 1, false, false, allocs, 0)
+	_, split, _, _ = fm.BestSplitter(f, &cases, &[]int{0}, 1, nil, 1, false, false, allocs, 0)
 	//fm.BestSplitter(target, cases, candidates, oob, leafSize, vet, evaloob, allocs)
 
 	sorted := true

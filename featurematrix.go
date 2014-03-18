@@ -86,6 +86,7 @@ be initialized to the proper size with NewBestSplitAlocs.
 func (fm *FeatureMatrix) BestSplitter(target Target,
 	cases *[]int,
 	candidates *[]int,
+	mTry int,
 	oob *[]int,
 	leafSize int,
 	vet bool,
@@ -107,18 +108,56 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	parentImp := target.Impurity(cases, allocs.Counter)
 
+	randi := 0
+	lastSample := 0
 	cans := *candidates
 	lcans := len(cans)
+	nConstants = nConstantsBefore
+	nDrawnConstants := 0
 	//for _, i := range *candidates {
-	for j := 0; j < lcans; j++ {
-		i := cans[j]
+	//Keep searchin if
+	//have looked at >= mTrey but haven't found a spli with impurity decrease
+	//haven't looked at at least one non constant feature
+	//hacen't looked at mTry features
+	for j := 0; (j >= mTry && impurityDecrease <= minImp && lcans > nDrawnConstants+lastSample) || (j >= mTry && j <= nDrawnConstants) || j < mTry; j++ {
+
+		//fmt.Println(lcans, j, nDrawnConstants, lastSample)
+		if nConstants >= lcans {
+			return
+		}
+
+		//make sure there isn't only one non constant left to draw
+		if lcans > nDrawnConstants+lastSample {
+
+			randi = lastSample + rand.Intn(lcans-nDrawnConstants-lastSample)
+			//randi = lastSample + rand.Intn(nnonconstant-lastSample)
+			if randi >= lcans-nConstants {
+				nDrawnConstants++
+				continue
+			}
+			cans[randi], cans[lastSample] = cans[lastSample], cans[randi]
+		}
+		i := cans[lastSample]
+
 		f = fm.Data[i]
 		split, inerImp, constant = f.BestSplit(target, cases, parentImp, leafSize, allocs)
 		if constant {
+			//fmt.Printf("Found %v : %v to be const with %v constants and %v drawn constants j: %v, last sample: %v\n", i, f.GetName(), nConstants, nDrawnConstants, j, lastSample)
+			nConstants++
+			nDrawnConstants++
 
-			lcans--
-			cans[lcans], cans[j] = cans[j], cans[lcans]
-			j--
+			// if constant && split != nil && inerImp > minImp {
+			// 	fmt.Printf("constant %T, %v, ncats: %v, %v with split imp %v!\n", f, f.GetName(), f.NCats(), i, inerImp)
+			// }
+			// if nConstants > lcans {
+			// 	fmt.Println("nConstants > lcans")
+			// }
+			// if lastSample >= lcans {
+			// 	fmt.Println("lastsample >= lcans")
+			// }
+			cans[lcans-nConstants], cans[lastSample] = cans[lastSample], cans[lcans-nConstants]
+		} else {
+			lastSample++
 		}
 
 		if evaloob && inerImp > impurityDecrease {

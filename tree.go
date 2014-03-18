@@ -95,7 +95,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	depthUsed *[]int,
 	allocs *BestSplitAllocs) {
 
-	var innercanidates []int
+	//var innercanidates []int
 	var impDec float64
 	// for i := 0; i < len(allocs.Weights); i++ {
 	// 	allocs.Weights[i] = 0
@@ -112,10 +112,17 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 		nconstants = nconstantsbefore
 
 		if (2 * leafSize) <= len(*innercases) {
-			SampleFirstN(&candidates, &innercanidates, mTry, nconstantsbefore)
+			//SampleFirstN(&candidates, &innercanidates, mTry, 0)
 			//innercanidates = candidates[:mTry]
 
-			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
+			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &candidates, mTry, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
+
+			// for i := mTry; i < len(candidates)-1 && impDec == minImp; i++ {
+			// 	randi := i + rand.Intn(len(candidates)-i)
+			// 	candidates[randi], candidates[i] = candidates[i], candidates[randi]
+			// 	innercanidates = candidates[i : i+1]
+			// 	fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
+			// }
 			if impDec > minImp {
 				if importance != nil {
 					(*importance)[fi].Add(impDec)
