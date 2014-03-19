@@ -42,7 +42,7 @@ Biology.
 
 Installation
 -------------
-With go and go path set up:
+With [go installed](http://golang.org/doc/install):
 
 ```bash
 go get github.com/ryanbressler/CloudForest
@@ -58,20 +58,24 @@ Quick Start
 #grow a predictor forest with default parameters and save it to forest.sf
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName
 
-#grow a 1000 tree forest using, 16 cores and report out of bag error with minimum leafSize 8 
-growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob -nThreads 16 -nTrees 1000 -leafSize 8
+#grow a 1000 tree forest using, 16 cores and report out of bag error 
+#with minimum leafSize 8 
+growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob \
+-nThreads 16 -nTrees 1000 -leafSize 8
 
-#grow a 1000 tree forest evaluating half the features as candidates at each split and reporting 
-#out of bag error after each tree to watch for convergence
+#grow a 1000 tree forest evaluating half the features as candidates at each 
+#split and reporting out of bag error after each tree to watch for convergence
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName -mTry .5 -progress 
 
 #growforest with weighted random forest
-growforest -train train.fm -rfpred forest.sf -target B:FeatureName -rfweights '{"true":2,"false":0.5}'
+growforest -train train.fm -rfpred forest.sf -target B:FeatureName \
+-rfweights '{"true":2,"false":0.5}'
 
 #report all growforest options
 growforest -h
 
-#Print the (balanced for classification, least squares for regression error rate on test data to standard out
+#Print the (balanced for classification, least squares for regression error 
+#rate on test data to standard out
 applyforest -fm test.fm -rfpred forest.sf
 
 #Apply the forest, report errorrate and save predictions
