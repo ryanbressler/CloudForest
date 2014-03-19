@@ -114,14 +114,15 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	lcans := len(cans)
 	nConstants = nConstantsBefore
 	nDrawnConstants := 0
-	//for _, i := range *candidates {
-	//Keep searchin if
-	//have looked at >= mTrey but haven't found a spli with impurity decrease
+	//Move constants to the right but don't touch the ones that are there (for siblings)
+	//Return the number of constants after moving for children
+	//Keep searching if
+	//have looked at >= mTry but haven't found a split with impurity decrease
 	//haven't looked at at least one non constant feature
 	//hacen't looked at mTry features
-	for j := 0; (j >= mTry && impurityDecrease <= minImp && lcans > nDrawnConstants+lastSample) || (j >= mTry && j <= nDrawnConstants) || j < mTry; j++ {
+	for j := 0; /*(j >= mTry && impurityDecrease <= minImp && lcans > nDrawnConstants+lastSample) ||*/ (j >= mTry && j <= nDrawnConstants) || j < mTry; j++ {
 
-		//fmt.Println(lcans, j, nDrawnConstants, lastSample)
+		//Break early if there aren't any more nonconstant features
 		if nConstants >= lcans {
 			return
 		}
@@ -142,19 +143,8 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		f = fm.Data[i]
 		split, inerImp, constant = f.BestSplit(target, cases, parentImp, leafSize, allocs)
 		if constant {
-			//fmt.Printf("Found %v : %v to be const with %v constants and %v drawn constants j: %v, last sample: %v\n", i, f.GetName(), nConstants, nDrawnConstants, j, lastSample)
 			nConstants++
 			nDrawnConstants++
-
-			// if constant && split != nil && inerImp > minImp {
-			// 	fmt.Printf("constant %T, %v, ncats: %v, %v with split imp %v!\n", f, f.GetName(), f.NCats(), i, inerImp)
-			// }
-			// if nConstants > lcans {
-			// 	fmt.Println("nConstants > lcans")
-			// }
-			// if lastSample >= lcans {
-			// 	fmt.Println("lastsample >= lcans")
-			// }
 			cans[lcans-nConstants], cans[lastSample] = cans[lastSample], cans[lcans-nConstants]
 		} else {
 			lastSample++

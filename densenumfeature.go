@@ -312,7 +312,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
-				codedSplit = f.NumData[sorter.Cases[i-1]]
+				codedSplit = (f.NumData[sorter.Cases[i-1]] + f.NumData[c]) / 2.0
 				//fmt.Println(len(sorter.Cases), sorter.Vals, allocs.LM, allocs.RM, codedSplit, impurityDecrease)
 
 			}
