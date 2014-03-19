@@ -283,14 +283,15 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		lastsplit := 0
 		innerimp := 0.0
 		stop := (len(sorter.Cases) - leafSize)
-		constant = f.NumData[sorter.Cases[0]] == f.NumData[sorter.Cases[len(sorter.Cases)-1]]
+		constant = (f.NumData[sorter.Cases[0]] + constant_cutoff) >= f.NumData[sorter.Cases[len(sorter.Cases)-1]]
 		if constant {
+			impurityDecrease = minImp
 			return
 		}
 		for i := leafSize; i < stop; i++ {
 			c := sorter.Cases[i]
 			//skip cases where the next sorted case has the same value as these can't be split on
-			if f.NumData[c] == f.NumData[sorter.Cases[i-1]] {
+			if f.NumData[c] <= (f.NumData[sorter.Cases[i-1]] + constant_cutoff) {
 				continue
 			}
 

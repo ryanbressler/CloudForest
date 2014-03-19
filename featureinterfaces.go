@@ -5,7 +5,8 @@ import ()
 const maxExhaustiveCats = 5
 const maxNonRandomExahustive = 10
 const maxNonBigCats = 30
-const minImp = 1e-12
+const minImp = 0.0
+const constant_cutoff = 1e-7
 
 //Feature contains all methods needed for a predictor feature.
 type Feature interface {

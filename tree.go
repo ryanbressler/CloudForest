@@ -123,7 +123,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 			// 	innercanidates = candidates[i : i+1]
 			// 	fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &innercanidates, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
 			// }
-			if impDec > minImp {
+			if split != nil {
 				if importance != nil {
 					(*importance)[fi].Add(impDec)
 				}
