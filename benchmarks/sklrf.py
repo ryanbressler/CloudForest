@@ -21,8 +21,8 @@ X,Y = load_svmlight_file(fn)
 rf_parameters = {
 	"n_estimators": 50,
 	"n_jobs": 8,
-	"max_features":9
-	#"bootstrap":False
+	"max_features":1.0,
+	"bootstrap":False
 }
 clf = RandomForestClassifier(**rf_parameters)
 X = X.toarray()
@@ -45,7 +45,10 @@ else:
 	X = X.toarray()
 	score = clf.score(X, Y)
 	count = np.sum(clf.predict(X)==Y)
-	print "Testing Score: %s, %s"%(score, count)
+	c1 = np.sum(clf.predict(X[Y==1])==Y[Y==1] )
+	c0 = np.sum(clf.predict(X[Y==0])==Y[Y==0] )
+	l = len(Y)
+	print "Testing Score: %s, %s / %s, %s, %s, %s "%(score, count, l,  c1, c0, (float(c1)/float(sum(Y==1))+float(c0)/float(sum(Y==0)))/2.0)
 
 
 # if __name__ == '__main__':
