@@ -139,6 +139,8 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	rand.Seed(time.Now().UTC().UnixNano())
+
 	if testfm != "" {
 		dotest = true
 	}

@@ -107,12 +107,16 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	}
 
 	parentImp := target.Impurity(cases, allocs.Counter)
+	nConstants = nConstantsBefore
+	if parentImp <= minImp {
+		return
+	}
 
 	randi := 0
 	lastSample := 0
 	cans := *candidates
 	lcans := len(cans)
-	nConstants = nConstantsBefore
+
 	nDrawnConstants := 0
 	//Move constants to the right but don't touch the ones that are there (for siblings)
 	//Return the number of constants after moving for children

@@ -375,7 +375,7 @@ func TestIris(t *testing.T) {
 		switch cattarget.(type) {
 		case *AdaBoostTarget:
 			//TODO ...ada boost target needs configuration to work better...limit on tree size?
-			if err > 0.15 {
+			if err > 0.05 {
 				t.Errorf("Error: Classification of iris using %T had error: %v", target, err)
 			}
 
