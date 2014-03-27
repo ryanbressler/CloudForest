@@ -1,0 +1,20 @@
+#ignore binaries
+growforest
+applyforest
+leafcount
+toafm
+nfold
+
+#ignore common files used/generated in local testing
+*.libsvm
+*.arff
+*.sf
+*.fm
+*.dot
+*.prof
+*.out
+*.imp
+*.tsv
+
+#ignore os x .DS_Store
+.DS_Store
