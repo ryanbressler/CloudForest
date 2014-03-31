@@ -89,6 +89,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	mTry int,
 	leafSize int,
 	splitmissing bool,
+	force bool,
 	vet bool,
 	evaloob bool,
 	importance *[]*RunningMean,
@@ -115,7 +116,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 			//SampleFirstN(&candidates, &innercanidates, mTry, 0)
 			//innercanidates = candidates[:mTry]
 
-			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &candidates, mTry, &oob, leafSize, vet, evaloob, allocs, nconstantsbefore)
+			fi, split, impDec, nconstants = fm.BestSplitter(target, innercases, &candidates, mTry, &oob, leafSize, force, vet, evaloob, allocs, nconstantsbefore)
 
 			// for i := mTry; i < len(candidates)-1 && impDec == minImp; i++ {
 			// 	randi := i + rand.Intn(len(candidates)-i)

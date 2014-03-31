@@ -86,6 +86,9 @@ func main() {
 	var evaloob bool
 	flag.BoolVar(&evaloob, "evaloob", false, "Evaluate potential splitting features on OOB cases after finding split value in bag.")
 
+	var force bool
+	flag.BoolVar(&force, "force", false, "Force at least one non constant feature to be tested for each split.")
+
 	var entropy bool
 	flag.BoolVar(&entropy, "entropy", false, "Use entropy minimizing classification (target must be categorical).")
 
@@ -512,7 +515,7 @@ func main() {
 					}
 				}
 
-				tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, vet, evaloob, imppnt, depthUsed, allocs)
+				tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, imppnt, depthUsed, allocs)
 
 				if mmdpnt != nil {
 					for i, v := range *depthUsed {

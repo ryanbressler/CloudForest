@@ -89,6 +89,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	mTry int,
 	oob *[]int,
 	leafSize int,
+	force bool,
 	vet bool,
 	evaloob bool,
 	allocs *BestSplitAllocs,
@@ -124,7 +125,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	//have looked at >= mTry but haven't found a split with impurity decrease
 	//haven't looked at at least one non constant feature
 	//hacen't looked at mTry features
-	for j := 0; /*(j >= mTry && impurityDecrease <= minImp && lcans > nDrawnConstants+lastSample) ||*/ (j >= mTry && j <= nDrawnConstants) || j < mTry; j++ {
+	for j := 0; (force && j >= mTry && j <= nDrawnConstants) || j < mTry; j++ {
 
 		//Break early if there aren't any more nonconstant features
 		if nConstants >= lcans {

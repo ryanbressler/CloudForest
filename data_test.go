@@ -85,7 +85,7 @@ func TestWierdTargets(t *testing.T) {
 		}
 
 		for _, target := range targets {
-			forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
+			forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, false, nil)
 			if len(forest.Trees) != 10 {
 				t.Errorf("%T didn't grow 10 trees.", target)
 			}
@@ -100,7 +100,7 @@ func TestWierdTargets(t *testing.T) {
 		target := &DensityTarget{&fm.Data, fm.Data[0].Length()}
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), cattarget)
-		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, false, nil, nil, allocs)
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
 		if count < 1 {
@@ -128,7 +128,7 @@ func TestTreeTargets(t *testing.T) {
 	for _, target := range regressiontargets {
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, false, nil, nil, allocs)
 
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
@@ -153,7 +153,7 @@ func TestTreeTargets(t *testing.T) {
 		tree := NewTree()
 
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, false, nil, nil, allocs)
 
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
@@ -227,7 +227,7 @@ func TestMissing(t *testing.T) {
 	for _, target := range regressiontargets {
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, false, nil, nil, allocs)
 
 		votes := NewNumBallotBox(numtarget.Length())
 
@@ -240,7 +240,7 @@ func TestMissing(t *testing.T) {
 
 		tree = NewTree()
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, nil, nil, allocs)
 
 		votes = NewNumBallotBox(numtarget.Length())
 
@@ -253,7 +253,7 @@ func TestMissing(t *testing.T) {
 
 		tree = NewTree()
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, nil, nil, allocs)
 
 		votes = NewNumBallotBox(numtarget.Length())
 
@@ -273,7 +273,7 @@ func TestMissing(t *testing.T) {
 		tree := NewTree()
 
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, false, nil, nil, allocs)
 
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -287,7 +287,7 @@ func TestMissing(t *testing.T) {
 		tree = NewTree()
 
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, nil, nil, allocs)
 
 		catvotes = NewCatBallotBox(cattarget.Length())
 
@@ -301,7 +301,7 @@ func TestMissing(t *testing.T) {
 		tree = NewTree()
 
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, nil, nil, allocs)
+		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, nil, nil, allocs)
 
 		catvotes = NewCatBallotBox(cattarget.Length())
 
@@ -362,7 +362,7 @@ func TestIris(t *testing.T) {
 	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -404,7 +404,7 @@ func TestIris(t *testing.T) {
 
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -441,7 +441,7 @@ func TestBoston(t *testing.T) {
 	targets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 	for _, target := range targets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
@@ -470,7 +470,7 @@ func TestBoston(t *testing.T) {
 
 	for _, target := range targets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
