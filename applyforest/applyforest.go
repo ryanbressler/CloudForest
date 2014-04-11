@@ -65,6 +65,7 @@ func main() {
 
 	targeti, hasTarget := data.Map[forest.Target]
 	if hasTarget {
+		fmt.Printf("Target is %v in feature %v\n", forest.Target, targeti)
 		er := bb.TallyError(data.Data[targeti])
 		fmt.Printf("%v\n", er)
 	}

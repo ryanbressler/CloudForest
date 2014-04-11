@@ -33,15 +33,14 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 		vals := strings.Fields(line)
 
 		if i == 0 {
-			label := "0"
-			lookup[label] = 0
-			labels = append(labels, label)
+			name := "0"
+			lookup[name] = 0
 			if strings.Contains(vals[0], ".") {
 				//looks like a float...add dense float64 feature regression
 				data = append(data, &DenseNumFeature{
 					make([]float64, 0, 0),
 					make([]bool, 0, 0),
-					label,
+					name,
 					false})
 
 			} else {
@@ -51,7 +50,7 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 						make([]string, 0, 0)},
 					make([]int, 0, 0),
 					make([]bool, 0, 0),
-					label,
+					name,
 					false,
 					false})
 			}
@@ -72,13 +71,12 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 			}
 			//pad out the data to include this feature
 			for xi >= len(data) {
-				label := fmt.Sprintf("%v", len(data))
-				lookup[label] = len(data)
-				labels = append(labels, label)
+				name := fmt.Sprintf("%v", len(data))
+				lookup[name] = len(data)
 				data = append(data, &DenseNumFeature{
 					make([]float64, ncases, ncases),
 					make([]bool, ncases, ncases),
-					label,
+					name,
 					false})
 
 			}
@@ -86,6 +84,8 @@ func ParseLibSVM(input io.Reader) *FeatureMatrix {
 
 		}
 
+		label := fmt.Sprintf("%v", i)
+		labels = append(labels, label)
 		i++
 
 	}
