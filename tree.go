@@ -56,6 +56,7 @@ func (t *Tree) StripCodes() {
 	t.Root.Climb(func(n *Node) {
 		if n.CodedSplit != nil {
 			n.CodedSplit = nil
+
 		}
 	})
 }
@@ -153,6 +154,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 		//Leaf node so find the predictive value and set it in n.Pred
 		split = nil
+		n.CodedSplit = nil
 		n.Splitter = nil
 		n.Pred = target.FindPredicted(*innercases)
 		return

@@ -612,14 +612,6 @@ func main() {
 	if dotest {
 		var bb CloudForest.VoteTallyer
 
-		if unboostedTarget.NCats() == 0 {
-			//regression
-			bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
-		} else {
-			//classification
-			bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
-		}
-
 		testdata := data
 		testtarget := unboostedTarget
 		if testfm != "" {
@@ -633,9 +625,38 @@ func main() {
 				log.Fatal("Target not found in test data.")
 			}
 			testtarget = testdata.Data[targeti]
+
 			for _, tree := range trees {
+				tree.Root.Climb(func(n *CloudForest.Node) {
+					if n.Splitter == nil && n.CodedSplit != nil {
+						fmt.Printf("node %v \n %v nil should be %v \n", *n, n.Splitter, n.CodedSplit)
+					}
+					if n.Splitter != nil && n.CodedSplit == nil {
+						fmt.Printf("node %v \n %v nil should be %v \n", *n, n.Splitter, n.CodedSplit)
+					}
+
+					switch n.CodedSplit.(type) {
+					case float64:
+						v := n.Splitter.Value
+						if n.CodedSplit.(float64) != v {
+							fmt.Printf("%v splits not equal.\n", *n)
+						}
+						if n.Featurei != testdata.Map[n.Splitter.Feature] {
+							fmt.Printf("Feature %v at %v not at %v \n", n.Splitter.Feature, testdata.Map[n.Splitter.Feature], n.Featurei)
+						}
+					}
+				})
 				tree.StripCodes()
+
 			}
+		}
+
+		if unboostedTarget.NCats() == 0 {
+			//regression
+			bb = CloudForest.NewNumBallotBox(testdata.Data[0].Length())
+		} else {
+			//classification
+			bb = CloudForest.NewCatBallotBox(testdata.Data[0].Length())
 		}
 
 		for _, tree := range trees {
