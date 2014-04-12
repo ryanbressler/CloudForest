@@ -110,7 +110,7 @@ And equals signs and quotes are optional for other parameters:
 	growforest -train="featurematrix.afm"
 
 
- Basic options
+### Basic options ###
 
  ```
    -target="": The row header of the target in the feature matrix.
@@ -127,12 +127,13 @@ And equals signs and quotes are optional for other parameters:
   
  ```
 
- Advanced Options
+### Advanced Options ###
 
  ```
    -blacklist="": A list of feature id's to exclude from the set of predictors.
    -includeRE="": Filter features that DON'T match this RE.
    -blockRE="": A regular expression to identify features that should be filtered out.
+   -force=false: Force at least one non constant feature to be tested for each split as in scikit-learn.
    -impute=false: Impute missing values to feature mean/mode before growth.
    -nCores=1: The number of cores to use.
    -progress=false: Report tree number and running oob error.
@@ -141,10 +142,12 @@ And equals signs and quotes are optional for other parameters:
    -multiboost=false: Allow multithreaded boosting which may have unexpected results. (highly experimental)
    -nobag=false: Don't bag samples for each tree.
    -evaloob=false: Evaluate potential splitting features on OOB cases after finding split value in bag.
+   -selftest=false: Test the forest on the data and report accuracy.
    -splitmissing=false: Split missing values onto a third branch at each node (experimental).
+   -test="": Data to test the model on.
  ```
 
- Regression Options
+### Regression Options ###
 
  ```
    -gbt=0: Use gradient boosting with the specified learning rate.
@@ -153,7 +156,7 @@ And equals signs and quotes are optional for other parameters:
    -adaboost=false: Use Adaptive boosting (highly experimental for regression).
  ```
 
- Classification Options
+### Classification Options ###
 
  ```
    -adaboost=false: Use Adaptive boosting for classification.
@@ -169,7 +172,7 @@ Note: rfweights and cost should use json to specify the weights and or costs per
 ```
    growforest -rfweights '{"true":2,"false":0.5}'
 ```
- Randomizing Data
+### Randomizing Data and Artifical Contrasts ###
 
  Randomizing shuffling parts of the data or including shuffled "Artifichal Contrasts" can be useful to establish baselines for comparison.
 
@@ -217,6 +220,23 @@ Usage of leafcount:
   -fm="featurematrix.afm": AFM formated feature matrix to use.
   -leaves="leaves.tsv": a case by case sparse matrix of leaf co-occurrence in tsv format
   -rfpred="rface.sf": A predictor forest.
+```
+
+nfold utility
+--------------
+
+nfold is a utility for generating cross validation folds. It can read in and ouput any of the supported formats.
+
+```
+Usage of nfold:
+  -fm="featurematrix.afm": AFM formated feature matrix containing data.
+  -folds=5: Number of folds to generate.
+  -target="": The row header of the target in the feature matrix.
+  -test="test_%v.fm": Format string for testing fms.
+  -train="train_%v.fm": Format string for training fms.
+  -writeall=false: Output all three formats.
+  -writearff=false: Output arff.
+  -writelibsvm=false: Output libsvm.
 ```
 
 Importance and Contrasts
@@ -301,7 +321,7 @@ This has so far yielded mixed results in testing.
 Data Formats - Feature Matrix Files, .arff and .libsvm files
 ----------------------------------------------------
 
-Feature Matrix Files
+### Anotated Feature Matrix Files ###
 
 CloudForest borrows the annotated feature matrix (.afm) and stochastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
@@ -327,7 +347,7 @@ C:CatF2 red	red	green
 
 Some sample feature matrix data files are included in the "data" directory.
 
-ARFF Files
+### ARFF Files ###
 
 CloudFores also supports limited import of weka's ARFF format. This format will be detected via the ".arff" file extension. Only numeric and nominal/catagorical attributes are supported, all other attribute types will be assumed to be catagorical and should usully be removed or blacklisted. There is no support for spaces in feature names, quoted strings or sparse data. Trailing space or comments after the data field may cause odd behavior. 
 
@@ -345,7 +365,7 @@ The ARFF format also provides an easy way to annotate a cvs file with informatio
 ?,green
 ```
 
-LibSvm Files
+### LibSvm Files ###
 
 There is also basic support for sparse data in libsvm's file format. This format will be detected by the ".libsvm" file format and has some limitations.
 The target field will be given the designation "0" and be in the "0" position of the matrix. No other feature can have this designation.
