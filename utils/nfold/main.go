@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"flag"
 	"fmt"
 	"github.com/ryanbressler/CloudForest"
@@ -9,6 +8,37 @@ import (
 	"log"
 	"os"
 )
+
+func openfiles(trainfn string, testfn string) (trainW io.WriteCloser, testW io.WriteCloser) {
+
+	trainfo, err := os.Create(trainfn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	testfo, err := os.Create(testfn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	trainW = trainfo
+	testW = testfo
+	// if zipoutput {
+	// 	trainz := zip.NewWriter(trainfo)
+	// 	trainW, err = trainz.Create(trainfn)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	//defer trainz.Close()
+	// 	testz := zip.NewWriter(testfo)
+	// 	testW, err = testz.Create(testfn)
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	//defer testz.Close()
+	// }
+
+	return
+
+}
 
 func main() {
 	fm := flag.String("fm",
@@ -21,10 +51,17 @@ func main() {
 	test := flag.String("test",
 		"test_%v.fm", "Format string for testing fms.")
 
-	var zipoutput bool
-	flag.BoolVar(&zipoutput, "zip", false, "Output ziped files.")
+	// var zipoutput bool
+	// flag.BoolVar(&zipoutput, "zip", false, "Output ziped files.")
+
 	var writelibsvm bool
 	flag.BoolVar(&writelibsvm, "writelibsvm", false, "Output libsvm.")
+
+	var writearff bool
+	flag.BoolVar(&writearff, "writearff", false, "Output arff.")
+
+	var writeall bool
+	flag.BoolVar(&writeall, "writeall", false, "Output all three formats.")
 
 	var folds int
 	flag.IntVar(&folds, "folds", 5, "Number of folds to generate.")
@@ -79,32 +116,9 @@ func main() {
 	trainis := make([]int, 0, foldsize*(folds-1))
 	//Write training and testing matrixes
 	for i := 0; i < folds; i++ {
+
 		trainfn := fmt.Sprintf(*train, i)
 		testfn := fmt.Sprintf(*test, i)
-		trainfo, err := os.Create(trainfn)
-		if err != nil {
-			log.Fatal(err)
-		}
-		testfo, err := os.Create(testfn)
-		if err != nil {
-			log.Fatal(err)
-		}
-		var trainW io.Writer = trainfo
-		var testW io.Writer = testfo
-		if zipoutput {
-			trainz := zip.NewWriter(trainfo)
-			trainW, err = trainz.Create(trainfn)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer trainz.Close()
-			testz := zip.NewWriter(testfo)
-			testW, err = testz.Create(testfn)
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer testz.Close()
-		}
 
 		trainis = trainis[0:0]
 		for j := 0; j < folds; j++ {
@@ -113,12 +127,22 @@ func main() {
 			}
 		}
 
-		if writelibsvm {
-			CloudForest.WriteLibSvmCases(data, foldis[i], *targetname, testW)
-			CloudForest.WriteLibSvmCases(data, trainis, *targetname, trainW)
-		} else {
+		if writearff || writeall {
+			trainW, testW := openfiles(trainfn+".arff", testfn+".arff")
+			CloudForest.WriteArffCases(data, foldis[i], *targetname, testW)
+			CloudForest.WriteArffCases(data, trainis, *targetname, trainW)
+		}
+
+		if ((!writelibsvm) && (!writearff)) || writeall {
+			trainW, testW := openfiles(trainfn, testfn)
 			data.WriteCases(testW, foldis[i])
 			data.WriteCases(trainW, trainis)
+		}
+
+		if writelibsvm || writeall {
+			trainW, testW := openfiles(trainfn+".libsvm", testfn+".libsvm")
+			CloudForest.WriteLibSvmCases(data, foldis[i], *targetname, testW)
+			CloudForest.WriteLibSvmCases(data, trainis, *targetname, trainW)
 		}
 
 		fmt.Printf("Wrote fold %v. %v testing cases and %v training cases.\n", i, len(foldis[i]), len(trainis))

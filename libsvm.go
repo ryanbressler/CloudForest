@@ -110,11 +110,12 @@ func WriteLibSvm(data *FeatureMatrix, targetn string, outfile io.Writer) error {
 	for i, f := range data.Data {
 		if i != targeti {
 			noTargetFm.Map[f.GetName()] = len(noTargetFm.Data)
-			noTargetFm.Data = append(noTargetFm.Data, f)
+			noTargetFm.Data = append(noTargetFm.Data, f.Copy())
 
 		}
 	}
 
+	noTargetFm.ImputeMissing()
 	encodedfm := noTargetFm.EncodeToNum()
 
 	oucsv := csv.NewWriter(outfile)
@@ -158,10 +159,12 @@ func WriteLibSvmCases(data *FeatureMatrix, cases []int, targetn string, outfile 
 	for i, f := range data.Data {
 		if i != targeti {
 			noTargetFm.Map[f.GetName()] = len(noTargetFm.Data)
-			noTargetFm.Data = append(noTargetFm.Data, f)
+			noTargetFm.Data = append(noTargetFm.Data, f.Copy())
 
 		}
 	}
+
+	noTargetFm.ImputeMissing()
 
 	encodedfm := noTargetFm.EncodeToNum()
 

@@ -3,6 +3,7 @@ package CloudForest
 import (
 	"bufio"
 	"encoding/csv"
+	"fmt"
 	"io"
 	"log"
 	"strings"
@@ -66,4 +67,49 @@ func ParseARFF(input io.Reader) *FeatureMatrix {
 	fm.LoadCases(csvdata, false)
 	return fm
 
+}
+
+func WriteArffCases(data *FeatureMatrix, cases []int, relation string, outfile io.Writer) error {
+	/*@RELATION iris
+
+	  @ATTRIBUTE sepallength  NUMERIC
+	  @ATTRIBUTE class        {Iris-setosa,Iris-versicolor,Iris-virginica}*/
+
+	fmt.Fprintf(outfile, "@RELATION %v\n\n", relation)
+
+	for _, f := range data.Data {
+		ftype := "NUMERIC"
+		switch f.(type) {
+		case (*DenseCatFeature):
+			ftype = fmt.Sprintf("{%v}", strings.Join(f.(*DenseCatFeature).Back, ","))
+		}
+
+		fmt.Fprintf(outfile, "@ATTRIBUTE %v %v\n", f.GetName(), ftype)
+	}
+
+	fmt.Fprint(outfile, "\n@DATA\n")
+
+	oucsv := csv.NewWriter(outfile)
+	oucsv.Comma = ','
+
+	for _, i := range cases {
+		entries := make([]string, 0, 10)
+
+		for _, f := range data.Data {
+			v := "?"
+			if !f.IsMissing(i) {
+				v = f.GetStr(i)
+			}
+			entries = append(entries, v)
+
+		}
+		//fmt.Println(entries)
+		err := oucsv.Write(entries)
+		if err != nil {
+			return err
+		}
+
+	}
+	oucsv.Flush()
+	return nil
 }
