@@ -144,7 +144,7 @@ And equals signs and quotes are optional for other parameters:
    -evaloob=false: Evaluate potential splitting features on OOB cases after finding split value in bag.
    -selftest=false: Test the forest on the data and report accuracy.
    -splitmissing=false: Split missing values onto a third branch at each node (experimental).
-   -test="": Data to test the model on.
+   -test="": Data to test the model on after training.
  ```
 
 ### Regression Options ###
@@ -318,10 +318,12 @@ This has so far yielded mixed results in testing.
 
 
 
-Data Formats - Feature Matrix Files, .arff and .libsvm files
-----------------------------------------------------
+Data File Formats
+------------------
 
-### Anotated Feature Matrix Files ###
+Data files in cloud forest are assumed to be in our Anotated Feature Matrix tsv based format unless a .libsvm or .arff file extension is used.
+
+### Anotated Feature Matrix Tsv Files ###
 
 CloudForest borrows the annotated feature matrix (.afm) and stochastic forest (.sf) file formats
 from Timo Erkkila's rf-ace which can be found at https://code.google.com/p/rf-ace/
@@ -347,7 +349,7 @@ C:CatF2 red	red	green
 
 Some sample feature matrix data files are included in the "data" directory.
 
-### ARFF Files ###
+### ARFF Data Files ###
 
 CloudFores also supports limited import of weka's ARFF format. This format will be detected via the ".arff" file extension. Only numeric and nominal/catagorical attributes are supported, all other attribute types will be assumed to be catagorical and should usully be removed or blacklisted. There is no support for spaces in feature names, quoted strings or sparse data. Trailing space or comments after the data field may cause odd behavior. 
 
@@ -365,10 +367,19 @@ The ARFF format also provides an easy way to annotate a cvs file with informatio
 ?,green
 ```
 
-### LibSvm Files ###
+### LibSvm/Svm Light Data Files ###
 
-There is also basic support for sparse data in libsvm's file format. This format will be detected by the ".libsvm" file format and has some limitations.
-The target field will be given the designation "0" and be in the "0" position of the matrix. No other feature can have this designation.
+There is also basic support for sparse numerical data in libsvm's file format. This format will be detected by the ".libsvm" file extension and has some limitations. A simple libsvm file might look like:
+
+```
+24.0 1:0.00632 2:18.00 3:2.310 4:0
+21.6 1:0.02731 2:0.00 3:7.070 7:78.90
+34.7 1:0.02729 2:0.00 5:0.4690
+```
+
+The target field will be given the designation "0" and be in the "0" position of the matrix and you will need to use "-target 0" as an option with growforest. No other feature can have this designation.
+
+The catagorical or numerical nature of the target variable will be detected from the value of the first line. If it is an integer value like 0,1 or 1200 the target will be parsed as catagorical and classification peformed. If it is a floating point value including a decmil place like 1.0, 1.7 etc the target will be parsed as numerical and regession performed. There is currentelly no way to override this behavior. 
 
 Models - Stochastic Forest Files
 --------------------------------
