@@ -6,7 +6,7 @@ package sortby
 
 import ()
 
-//Sortby will sort the values in cases and vals by the values in vals in increasing order.
+//SortBy will sort the values in cases and vals by the values in vals in increasing order.
 //If vals is longer then cases only the coresponding section will be sorted.
 func SortBy(cases *[]int, vals *[]float64) {
 	n := len(*cases)
