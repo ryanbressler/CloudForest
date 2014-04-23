@@ -249,11 +249,11 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 				i--
 			}
 		} else { //Right
-			lastright -= 1
+			lastright--
 			swaper = cases[i]
 			cases[i] = cases[lastright]
 			cases[lastright] = swaper
-			i -= 1
+			i--
 		}
 	}
 
@@ -264,7 +264,7 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 	return
 }
 
-//Split points reorders cs and returns the indexes at which left and right cases end and begin
+//SplitPoints reorders cs and returns the indexes at which left and right cases end and begin
 //The codedSplit whould be an int or Big.Int with bits set to indicate which classes go left.
 func (f *DenseCatFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, int) {
 	cases := *cs
@@ -845,6 +845,7 @@ func (target *DenseCatFeature) SplitImpurity(l *[]int, r *[]int, m *[]int, alloc
 	return
 }
 
+//MoveCoutsRtoL moves the by case counts from R to L for use in iterave updates.
 func (target *DenseCatFeature) MoveCountsRtoL(allocs *BestSplitAllocs, movedRtoL *[]int) {
 	var cat, i int
 	catdata := target.CatData
@@ -919,7 +920,7 @@ func (target *DenseCatFeature) CountPerCat(cases *[]int, counts *[]int) {
 	//fastest to derfrence this outside of loop?
 	catdata := target.CatData
 	i := 0
-	for i, _ = range counter {
+	for i = range counter {
 		counter[i] = 0
 	}
 
@@ -932,7 +933,7 @@ func (target *DenseCatFeature) CountPerCat(cases *[]int, counts *[]int) {
 }
 
 /*
-giniWithoutAlocate calculates gini impurity using the supplied counter which must
+GiniWithoutAlocate calculates gini impurity using the supplied counter which must
 be a slice with length equal to the number of cases. This allows you to reduce allocations
 but the counter will also contain per category counts.
 */
@@ -964,7 +965,7 @@ func (target *DenseCatFeature) ImpFromCounts(total int, counts *[]int) (e float6
 func (target *DenseCatFeature) DistinctCats(cases *[]int, counts *[]int) (total int) {
 	total = 0
 	counter := *counts
-	for i, _ := range counter {
+	for i := range counter {
 		counter[i] = 0
 	}
 	for _, i := range *cases {
@@ -980,14 +981,14 @@ func (target *DenseCatFeature) DistinctCats(cases *[]int, counts *[]int) (total 
 	return
 }
 
-//Mode returns the mode category feature for the cases specified
+//Mode returns the mode category feature for the cases specified.
 func (f *DenseCatFeature) Mode(cases *[]int) (m string) {
 	m = f.Back[f.Modei(cases)]
 	return
 
 }
 
-//Mode ireturns the mode category feature for the cases specified
+//Modei returns the mode category feature for the cases specified.
 func (f *DenseCatFeature) Modei(cases *[]int) (m int) {
 	counts := make([]int, f.NCats())
 	for _, i := range *cases {
@@ -1007,7 +1008,7 @@ func (f *DenseCatFeature) Modei(cases *[]int) (m int) {
 
 }
 
-//Find predicted takes the indexes of a set of cases and returns the
+//FindPredicted takes the indexes of a set of cases and returns the
 //predicted value. For categorical features this is a string containing the
 //most common category and for numerical it is the mean of the values.
 func (f *DenseCatFeature) FindPredicted(cases []int) (pred string) {
@@ -1097,7 +1098,7 @@ func (f *DenseCatFeature) CopyInTo(copyf Feature) {
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
 func (f *DenseCatFeature) ImputeMissing() {
 	cases := make([]int, 0, len(f.Missing))
-	for i, _ := range f.Missing {
+	for i := range f.Missing {
 		cases = append(cases, i)
 	}
 

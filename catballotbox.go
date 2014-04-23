@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-//CatBallotis used insideof CatBallotBox to record catagorical votes in a thread safe
+//CatBallot is used insideof CatBallotBox to record catagorical votes in a thread safe
 //manner.
 type CatBallot struct {
 	Mutex sync.Mutex
@@ -48,7 +48,7 @@ func (bb *CatBallotBox) Vote(casei int, pred string, weight float64) {
 	bb.Box[casei].Mutex.Unlock()
 }
 
-//TallyCatagorical tallies the votes for the case specified by i as
+//Tally tallies the votes for the case specified by i as
 //if it is a Categorical or boolean feature. Ie it returns the mode
 //(the most frequent value) of all votes.
 func (bb *CatBallotBox) Tally(i int) (predicted string) {

@@ -25,7 +25,7 @@ func TestSpareseCounter(t *testing.T) {
 		t.Errorf("Error reading tsv output by SpareCOunter %v", err)
 	}
 	if l := len(records); l != 3 {
-		t.Error("Sparse counter output tsv with %v records", l)
+		t.Errorf("Sparse counter output tsv with %v records", l)
 	}
 	for i, r := range records {
 		if r != "1" {

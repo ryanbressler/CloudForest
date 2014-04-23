@@ -17,7 +17,7 @@ func TestNumFeature(t *testing.T) {
 	f.Append("10.2")
 
 	if x := f.NCats(); x != 0 {
-		t.Errorf("Numerical NCats = %(v) != 0", x)
+		t.Errorf("Numerical NCats = %v != 0", x)
 	}
 
 	codedSplit := 0.5

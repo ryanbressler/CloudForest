@@ -37,8 +37,6 @@ func (sf *SortableFeature) Len() int {
 func (sf *SortableFeature) Less(i int, j int) bool {
 	v := sf.Vals
 	return v[i] < v[j]
-	return sf.Vals[i] < sf.Vals[j]
-	//return sf.Feature.Get(sf.Cases[i]) < sf.Feature.Get(sf.Cases[j])
 
 }
 

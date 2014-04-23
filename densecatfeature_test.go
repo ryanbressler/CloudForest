@@ -32,7 +32,7 @@ func TestCatFeature(t *testing.T) {
 	//f has 0 1 1
 
 	if x := f.NCats(); x != 2 {
-		t.Errorf("Boolean NCats = %(v) != 2", x)
+		t.Errorf("Boolean NCats = %v != 2", x)
 	}
 
 	fns := f.EncodeToNum()

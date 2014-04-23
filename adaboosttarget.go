@@ -18,7 +18,7 @@ NewAdaBoostTarget creates a categorical adaptive boosting target and initializes
 func NewAdaBoostTarget(f CatFeature) (abt *AdaBoostTarget) {
 	nCases := f.Length()
 	abt = &AdaBoostTarget{f, make([]float64, nCases)}
-	for i, _ := range abt.Weights {
+	for i := range abt.Weights {
 		abt.Weights[i] = 1 / float64(nCases)
 	}
 	return

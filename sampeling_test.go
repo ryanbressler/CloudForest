@@ -75,7 +75,7 @@ func TestSampeling(t *testing.T) {
 			}
 		}
 		if case0 < 200 || case1 < 200 {
-			t.Error("Cases 0 and 1 underprepresented after balanced sampeling from %T.", bs)
+			t.Errorf("Cases 0 and 1 underprepresented after balanced sampeling from %T.", bs)
 		}
 
 	}
