@@ -14,7 +14,7 @@ NewWRFTarget creates a weighted random forest target and initializes its weights
 func NewWRFTarget(f CatFeature, weights map[string]float64) (abt *WRFTarget) {
 	abt = &WRFTarget{f, make([]float64, f.NCats())}
 
-	for i, _ := range abt.Weights {
+	for i := range abt.Weights {
 		abt.Weights[i] = weights[f.NumToCat(i)]
 	}
 
@@ -22,7 +22,7 @@ func NewWRFTarget(f CatFeature, weights map[string]float64) (abt *WRFTarget) {
 }
 
 /*
-WRFTarget.SplitImpurity is an weigtedRF version of SplitImpurity.
+SplitImpurity is an weigtedRF version of SplitImpurity.
 */
 func (target *WRFTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
 	nl := float64(len(*l))
@@ -46,17 +46,17 @@ func (target *WRFTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allo
 	return target.SplitImpurity(l, r, m, allocs)
 }
 
-//WRFTarget.Impurity is Gini impurity that uses the weights specified in WRFTarget.weights.
+//Impurity is Gini impurity that uses the weights specified in WRFTarget.weights.
 func (target *WRFTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	total := 0.0
 	counts := *counter
-	for i, _ := range counts {
+	for i := range counts {
 		counts[i] = 0
 	}
 	for _, i := range *cases {
 		if !target.IsMissing(i) {
 			cati := target.Geti(i)
-			counts[cati] += 1
+			counts[cati]++
 			total += target.Weights[cati]
 		}
 	}
@@ -70,26 +70,26 @@ func (target *WRFTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 }
 
 //FindPredicted finds the predicted target as the weighted catagorical Mode.
-func (f *WRFTarget) FindPredicted(cases []int) (pred string) {
+func (target *WRFTarget) FindPredicted(cases []int) (pred string) {
 
-	counts := make([]int, f.NCats())
+	counts := make([]int, target.NCats())
 	for _, i := range cases {
-		if !f.IsMissing(i) {
-			counts[f.Geti(i)] += 1
+		if !target.IsMissing(i) {
+			counts[target.Geti(i)] += 1
 		}
 
 	}
 	m := 0
 	max := 0.0
 	for k, v := range counts {
-		val := float64(v) * f.Weights[k]
+		val := float64(v) * target.Weights[k]
 		if val > max {
 			m = k
 			max = val
 		}
 	}
 
-	pred = f.NumToCat(m)
+	pred = target.NumToCat(m)
 
 	return
 
