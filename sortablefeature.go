@@ -7,8 +7,7 @@ import (
 	//"sort"
 )
 
-/*
-Sortable feature is a wrapper for a feature and set of cases that satisfies the
+/*SortableFeature is a wrapper for a feature and set of cases that satisfies the
 sort.Interface interface so that the case indexes in Cases can be sorted using
 sort.Sort
 */
@@ -18,7 +17,7 @@ type SortableFeature struct {
 	Cases []int
 }
 
-//introsort + heapsort as in scikits learn's tree implementaion. For now go's sort is actually faster as it does less comparison
+//Sort performs introsort + heapsort using the sortby sub package.
 func (sf *SortableFeature) Sort() {
 	//n := len(sf.Cases)
 	// maxd := 2 * int(math.Log(float64(n)))
@@ -53,6 +52,7 @@ func (sf *SortableFeature) Swap(i int, j int) {
 
 }
 
+//Load loads the values of the cases into a cache friendly array.
 func (sf *SortableFeature) Load(vals *[]float64, cases *[]int) {
 	sf.Cases = *cases
 	sfvals := sf.Vals
