@@ -17,7 +17,7 @@ type Splitter struct {
 //func
 
 /*
-Splitter.Split splits a slice of cases into left, right and missing slices without allocating
+Split splits a slice of cases into left, right and missing slices without allocating
 a new underlying array by sorting cases into left, missing, right order and returning
 slices that point to the left and right cases.
 */
@@ -50,7 +50,7 @@ func (s *Splitter) Split(fm *FeatureMatrix, cases []int) (l []int, r []int, m []
 
 		} else {
 			//Right
-			lastright -= 1
+			lastright--
 			swaper = cases[i]
 			cases[i] = cases[lastright]
 			cases[lastright] = swaper
