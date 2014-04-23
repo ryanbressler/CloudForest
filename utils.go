@@ -50,7 +50,7 @@ func (rm *RunningMean) Read() (mean float64, count float64) {
 	return
 }
 
-//NewRunningMean returns an initalized RunningMean.
+//NewRunningMeans returns an initalized *[]*RunningMean.
 func NewRunningMeans(size int) *[]*RunningMean {
 	importance := make([]*RunningMean, 0, size)
 	for i := 0; i < size; i++ {

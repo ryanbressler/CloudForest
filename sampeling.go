@@ -43,7 +43,7 @@ func (s *BalancedSampler) Sample(samples *[]int, n int) {
 
 }
 
-//A secondary balanced sampler roughly balances the target feature within the classes of another catagorical
+//SecondaryBalancedSampler roughly balances the target feature within the classes of another catagorical
 //feature while roughly preserving the origional rate of the secondary feature.
 type SecondaryBalancedSampler struct {
 	Total    int
@@ -51,6 +51,7 @@ type SecondaryBalancedSampler struct {
 	Samplers [][][]int
 }
 
+//NewSecondaryBalancedSampler returns an initalized balanced sampler.
 func NewSecondaryBalancedSampler(target *DenseCatFeature, balanceby *DenseCatFeature) (s *SecondaryBalancedSampler) {
 	nSecondaryCats := balanceby.NCats()
 	s = &SecondaryBalancedSampler{0, make([]int, nSecondaryCats, nSecondaryCats), make([][][]int, 0, nSecondaryCats)}
