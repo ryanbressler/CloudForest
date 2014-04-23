@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-//Cat ballot is used insideof CatBallotBox to record catagorical votes in a thread safe
+//CatBallotis used insideof CatBallotBox to record catagorical votes in a thread safe
 //manner.
 type CatBallot struct {
 	Mutex sync.Mutex
@@ -18,13 +18,13 @@ func NewCatBallot() (cb *CatBallot) {
 	return
 }
 
-//Keeps track of votes by trees in a thread safe manner.
+//CatBallotBox keeps track of votes by trees in a thread safe manner.
 type CatBallotBox struct {
 	*CatMap
 	Box []*CatBallot
 }
 
-//Build a new ballot box for the number of cases specified by "size".
+//NewCatBallotBox builds a new ballot box for the number of cases specified by "size".
 func NewCatBallotBox(size int) *CatBallotBox {
 	bb := CatBallotBox{
 		&CatMap{make(map[string]int),
@@ -75,7 +75,7 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 }
 
 /*
-Tally error returns the balanced classification error for categorical features.
+TallyError returns the balanced classification error for categorical features.
 
 1 - sum((sum(Y(xi)=Y'(xi))/|xi|))
 
@@ -99,9 +99,9 @@ func (bb *CatBallotBox) TallyError(feature Feature) (e float64) {
 
 		predicted := bb.Tally(i)
 		if !feature.IsMissing(i) {
-			total[value] += 1
+			total[value]++
 			if catfeature.NumToCat(value) == predicted {
-				correct[value] += 1
+				correct[value]++
 			}
 
 		}

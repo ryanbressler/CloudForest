@@ -5,9 +5,11 @@ import (
 	"log"
 	"math/rand"
 	//"sort"
+	"math"
 	"strconv"
 )
 
+//DenseNumFeature contains dense float64 training data, possibly with missing values.
 type DenseNumFeature struct {
 	NumData    []float64
 	Missing    []bool
@@ -29,10 +31,12 @@ func (f *DenseNumFeature) Append(v string) {
 	f.Missing = append(f.Missing, false)
 }
 
+//Less checks if the value of case i is less then the value of j.
 func (f *DenseNumFeature) Less(i int, j int) bool {
 	return f.NumData[i] < f.NumData[j]
 }
 
+//PutStr parses a string and puts it in the i'th position
 func (f *DenseNumFeature) PutStr(i int, v string) {
 	fv, err := strconv.ParseFloat(v, 64)
 	if err != nil {
@@ -44,35 +48,43 @@ func (f *DenseNumFeature) PutStr(i int, v string) {
 	f.Missing[i] = false
 }
 
+//NCats returns the number of catagories, 0 for numerical values.
 func (f *DenseNumFeature) NCats() int {
 	return 0
 }
 
+//GetName returns the name of the feature.
 func (f *DenseNumFeature) GetName() string {
 	return f.Name
 }
 
+//Length returns the length of the feature.
 func (f *DenseNumFeature) Length() int {
 	return len(f.Missing)
 }
 
+//IsMissing checks if the value for the i'th case is missing.
 func (f *DenseNumFeature) IsMissing(i int) bool {
 	return f.Missing[i]
 }
 
+//MissingVals checks if the feature has any missing values.
 func (f *DenseNumFeature) MissingVals() bool {
 	return f.HasMissing
 }
 
+//PutMissing set's the i'th value to be missing.
 func (f *DenseNumFeature) PutMissing(i int) {
 	f.Missing[i] = true
 	f.HasMissing = true
 }
 
+//Get returns the value in the i'th posiiton. It doesn't check for missing values.
 func (f *DenseNumFeature) Get(i int) float64 {
 	return f.NumData[i]
 }
 
+//Get str returns the string representing the value in the i'th position. It returns NA if tehe value is missing.
 func (f *DenseNumFeature) GetStr(i int) (value string) {
 	if f.Missing[i] {
 		return "NA"
@@ -80,24 +92,29 @@ func (f *DenseNumFeature) GetStr(i int) (value string) {
 	return fmt.Sprintf("%v", f.NumData[i])
 }
 
+//Put inserts the value v into the i'th position of the feature.
 func (f *DenseNumFeature) Put(i int, v float64) {
 	f.NumData[i] = v
 	f.Missing[i] = false
 }
 
+//GoesLeft checks if the i'th case goes left according to the supplied spliter.
 func (f *DenseNumFeature) GoesLeft(i int, splitter *Splitter) bool {
 	return f.NumData[i] <= splitter.Value
 }
 
+//Predicted returns the prediction (the mean) that should be made for the supplied cases.
 func (f *DenseNumFeature) Predicted(cases *[]int) float64 {
 	return f.Mean(cases)
 }
 
+//Norm defines the norm to use to tell how far the i'th case if from the value v
 func (f *DenseNumFeature) Norm(i int, v float64) float64 {
-	d := f.NumData[i] - v
-	return d * d
+	return math.Abs(f.NumData[i] - v)
+
 }
 
+//Split does an inplace slit from a coded split (a float64) and returns slices pointing into the origional cases slice.
 func (f *DenseNumFeature) Split(codedSplit interface{}, cases []int) (l []int, r []int, m []int) {
 	length := len(cases)
 
@@ -143,6 +160,7 @@ func (f *DenseNumFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 	return
 }
 
+//SplitPoints returns the last left and first right index afeter reordering the cases slice froma float64 coded split.
 func (f *DenseNumFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, int) {
 	cases := *cs
 	length := len(cases)
@@ -538,6 +556,7 @@ func (f *DenseNumFeature) Copy() Feature {
 	return fake
 }
 
+//CopyInTo copies the values and missing state from one numerical feature into another.
 func (f *DenseNumFeature) CopyInTo(copyf Feature) {
 	copy(copyf.(*DenseNumFeature).Missing, f.Missing)
 	copy(copyf.(*DenseNumFeature).NumData, f.NumData)

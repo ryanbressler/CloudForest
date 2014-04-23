@@ -25,7 +25,7 @@ func NewAdaBoostTarget(f CatFeature) (abt *AdaBoostTarget) {
 }
 
 /*
-AdaBoostTarget.SplitImpurity is an AdaBoosting version of SplitImpurity.
+SplitImpurity is an AdaBoosting version of SplitImpurity.
 */
 func (target *AdaBoostTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
 	nl := float64(len(*l))
@@ -49,7 +49,7 @@ func (target *AdaBoostTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int,
 	return target.SplitImpurity(l, r, m, allocs)
 }
 
-//AdaBoostTarget.Impurity is an AdaBoosting that uses the weights specified in AdaBoostTarget.weights.
+//Impurity is an AdaBoosting that uses the weights specified in weights.
 func (target *AdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	e = 0.0
 	m := target.Modei(cases)
@@ -65,7 +65,7 @@ func (target *AdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64)
 	return
 }
 
-//AdaBoostTarget.Boost performs categorical adaptive boosting using the specified partition and
+//Boost performs categorical adaptive boosting using the specified partition and
 //returns the weight that tree that generated the partition should be given.
 func (t *AdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	weight = 0.0

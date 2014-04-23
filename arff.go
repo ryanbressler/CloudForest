@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+//ParseARFF reads a file in weka'sarff format:
+//http://www.cs.waikato.ac.nz/ml/weka/arff.html
+//The relation is ignored and only catagorical and numerical variables are supported
 func ParseARFF(input io.Reader) *FeatureMatrix {
 
 	reader := bufio.NewReader(input)
@@ -69,6 +72,7 @@ func ParseARFF(input io.Reader) *FeatureMatrix {
 
 }
 
+//WriteArffCases writes the specified cases from the provied feature matrix into an arff file with the given relation string.
 func WriteArffCases(data *FeatureMatrix, cases []int, relation string, outfile io.Writer) error {
 	/*@RELATION iris
 

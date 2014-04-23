@@ -23,6 +23,8 @@ type DenseCatFeature struct {
 	HasMissing   bool
 }
 
+//EncodeToNum returns numerical features doing simple binary encoding of
+//Each of the distinct catagories in the feature.
 func (f *DenseCatFeature) EncodeToNum() (fs []Feature) {
 	l := f.Length()
 	if f.NCats() <= 2 {
@@ -69,36 +71,44 @@ func (f *DenseCatFeature) Append(v string) {
 	f.Missing = append(f.Missing, false)
 }
 
+//Length returns the number of cases in the feature.
 func (f *DenseCatFeature) Length() int {
 	return len(f.Missing)
 }
 
+//GetName returns the name of the feature.
 func (f *DenseCatFeature) GetName() string {
 	return f.Name
 }
 
+//IsMissing returns weather the given case is missing in the feature.
 func (f *DenseCatFeature) IsMissing(i int) bool {
 	return f.Missing[i]
 }
 
+//MissingVals returns weather the feature has any missing values.
 func (f *DenseCatFeature) MissingVals() bool {
 	return f.HasMissing
 }
 
+//PutMissing sets the given case i to be missing.
 func (f *DenseCatFeature) PutMissing(i int) {
 	f.Missing[i] = true
 	f.HasMissing = true
 }
 
+//Geti returns the int encoding of the class label for the i'th case.
 func (f *DenseCatFeature) Geti(i int) int {
 	return f.CatData[i]
 }
 
+//Puti puts the v't class label encoding into the ith case.
 func (f *DenseCatFeature) Puti(i int, v int) {
 	f.CatData[i] = v
 	f.Missing[i] = false
 }
 
+//GetStr returns the class label for the i'th case.
 func (f *DenseCatFeature) GetStr(i int) string {
 	if f.Missing[i] {
 		return "NA"
@@ -106,6 +116,7 @@ func (f *DenseCatFeature) GetStr(i int) string {
 	return f.Back[f.CatData[i]]
 }
 
+//PutStr set's the i'th case to the class label v.
 func (f *DenseCatFeature) PutStr(i int, v string) {
 	norm := strings.ToLower(v)
 	if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
@@ -117,6 +128,7 @@ func (f *DenseCatFeature) PutStr(i int, v string) {
 	f.Missing[i] = false
 }
 
+//GoesLeft tests if the i'th case goes left according to the supplid Spliter.
 func (f *DenseCatFeature) GoesLeft(i int, splitter *Splitter) bool {
 	return splitter.Left[f.Back[f.CatData[i]]]
 }
@@ -187,6 +199,8 @@ func (f *DenseCatFeature) BestSplit(target Target,
 
 }
 
+//Split does an inplace split from a coded spli value which should be an int or Big.Int with bit flags
+//representing which class labels go left.
 func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r []int, m []int) {
 	length := len(cases)
 
@@ -250,6 +264,8 @@ func (f *DenseCatFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 	return
 }
 
+//Split points reorders cs and returns the indexes at which left and right cases end and begin
+//The codedSplit whould be an int or Big.Int with bits set to indicate which classes go left.
 func (f *DenseCatFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, int) {
 	cases := *cs
 	length := len(cases)
@@ -312,7 +328,7 @@ func (f *DenseCatFeature) SplitPoints(codedSplit interface{}, cs *[]int) (int, i
 	return lastleft, lastright
 }
 
-//Decode split builds a splitter from the numeric values returned by BestNumSplit or
+//DecodeSplit builds a splitter from the numeric values returned by BestNumSplit or
 //BestCatSplit. Numeric splitters are decoded to send values <= num left. Categorical
 //splitters are decoded to send categorical values for which the bit in cat is 1 left.
 func (f *DenseCatFeature) DecodeSplit(codedSplit interface{}) (s *Splitter) {
@@ -933,6 +949,7 @@ func (target *DenseCatFeature) GiniWithoutAlocate(cases *[]int, counts *[]int) (
 	return
 }
 
+//ImpFromCounts recalculates gini impurity from class counts for us in intertive updates.
 func (target *DenseCatFeature) ImpFromCounts(total int, counts *[]int) (e float64) {
 	e++
 	t := float64(total * total)
@@ -970,7 +987,7 @@ func (f *DenseCatFeature) Mode(cases *[]int) (m string) {
 
 }
 
-//Mode returns the mode category feature for the cases specified
+//Mode ireturns the mode category feature for the cases specified
 func (f *DenseCatFeature) Modei(cases *[]int) (m int) {
 	counts := make([]int, f.NCats())
 	for _, i := range *cases {
@@ -1070,7 +1087,9 @@ func (f *DenseCatFeature) Copy() Feature {
 
 }
 
+//CopyInTo coppoes the values of the feature into a new feature...doesn't copy CatMap, name etc.
 func (f *DenseCatFeature) CopyInTo(copyf Feature) {
+
 	copy(copyf.(*DenseCatFeature).Missing, f.Missing)
 	copy(copyf.(*DenseCatFeature).CatData, f.CatData)
 }
