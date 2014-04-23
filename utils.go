@@ -18,12 +18,12 @@ type RunningMean struct {
 	Count float64
 }
 
-//RunningMean.Add add's the specified value to the running mean in a thread safe way.
+//Add add's 1.0 to the running mean in a thread safe way.
 func (rm *RunningMean) Add(val float64) {
 	rm.WeightedAdd(val, 1.0)
 }
 
-//RunningMean.Add add's the specified value to the running mean in a thread safe way.
+//WeightedAdd add's the specified value to the running mean in a thread safe way.
 func (rm *RunningMean) WeightedAdd(val float64, weight float64) {
 	if !math.IsNaN(val) && !math.IsNaN(weight) {
 		rm.mutex.Lock()
@@ -41,7 +41,7 @@ func (rm *RunningMean) WeightedAdd(val float64, weight float64) {
 
 }
 
-//RunningMean.Read reads the mean and count
+//Read reads the mean and count
 func (rm *RunningMean) Read() (mean float64, count float64) {
 	rm.mutex.Lock()
 	mean = rm.Mean
@@ -50,6 +50,7 @@ func (rm *RunningMean) Read() (mean float64, count float64) {
 	return
 }
 
+//NewRunningMean returns an initalized RunningMean.
 func NewRunningMeans(size int) *[]*RunningMean {
 	importance := make([]*RunningMean, 0, size)
 	for i := 0; i < size; i++ {
@@ -60,7 +61,7 @@ func NewRunningMeans(size int) *[]*RunningMean {
 
 }
 
-//Sparse counter uses maps to track sparse integer counts in large matrix.
+//SparseCounter uses maps to track sparse integer counts in large matrix.
 //The matrix is assumed to contain zero values where nothing has been added.
 type SparseCounter struct {
 	Map   map[int]map[int]int
@@ -85,7 +86,7 @@ func (sc *SparseCounter) Add(i int, j int, val int) {
 
 }
 
-//Write tsv writes the non zero counts out into a three column tsv containing i, j, and
+//WriteTsv writes the non zero counts out into a three column tsv containing i, j, and
 //count in the columns.
 func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 	sc.mutex.Lock()
