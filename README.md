@@ -226,6 +226,10 @@ nfold utility
 --------------
 
 nfold is a utility for generating cross validation folds. It can read in and ouput any of the supported formats.
+You can specify a catagorical target feature to do stratified sampeling which will balance the classes between the folds.
+
+If no target feature is specified, a numerical target feature is specified or the -unstratified option is provided
+unstratified sampeling will be used.
 
 ```
 Usage of nfold:
@@ -234,6 +238,7 @@ Usage of nfold:
   -target="": The row header of the target in the feature matrix.
   -test="test_%v.fm": Format string for testing fms.
   -train="train_%v.fm": Format string for training fms.
+  -unstratified=false: Force unstratified sampeling of categorical target.
   -writeall=false: Output all three formats.
   -writearff=false: Output arff.
   -writelibsvm=false: Output libsvm.

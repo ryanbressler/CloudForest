@@ -53,6 +53,8 @@ func main() {
 
 	// var zipoutput bool
 	// flag.BoolVar(&zipoutput, "zip", false, "Output ziped files.")
+	var unstratified bool
+	flag.BoolVar(&unstratified, "unstratified", false, "Force unstratified sampeling of categorical target.")
 
 	var writelibsvm bool
 	flag.BoolVar(&writelibsvm, "writelibsvm", false, "Output libsvm.")
@@ -74,15 +76,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//find the target feature
-	fmt.Printf("Target : %v\n", *targetname)
-	targeti, ok := data.Map[*targetname]
-	if !ok {
-		log.Fatal("Target not found in data.")
-	}
-
-	targetf := data.Data[targeti]
-
 	foldis := make([][]int, 0, folds)
 
 	foldsize := len(data.CaseLabels) / folds
@@ -91,27 +84,58 @@ func main() {
 		foldis = append(foldis, make([]int, 0, foldsize))
 	}
 
-	//sample folds stratified by case
-	fmt.Printf("Stratifying by %v classes.\n", targetf.(*CloudForest.DenseCatFeature).NCats())
-	bSampler := CloudForest.NewBalancedSampler(targetf.(*CloudForest.DenseCatFeature))
+	var targetf CloudForest.Feature
 
-	fmt.Printf("Stratifying by %v classes.\n", len(bSampler.Cases))
-	var samples []int
-	for i := 0; i < len(bSampler.Cases); i++ {
-		fmt.Printf("%v cases in class %v.\n", len(bSampler.Cases[i]), i)
-		//shuffle in place
-		CloudForest.SampleFirstN(&bSampler.Cases[i], &samples, len(bSampler.Cases[i]), 0)
-		stratFoldSize := len(bSampler.Cases[i]) / folds
+	//find the target feature
+	fmt.Printf("Target : %v\n", *targetname)
+	targeti, ok := data.Map[*targetname]
+	if !ok {
+		fmt.Println("Target not found in data, doing unstratified sampeling.")
+		unstratified = true
+	}
+
+	if ok {
+		targetf = data.Data[targeti]
+
+		switch targetf.(type) {
+		case *CloudForest.DenseNumFeature:
+			unstratified = true
+		}
+	}
+	if unstratified {
+		ncases := len(data.CaseLabels)
+		cases := make([]int, ncases, ncases)
+		for i := 0; i < ncases; i++ {
+			cases[i] = i
+		}
+		CloudForest.SampleFirstN(&cases, nil, len(cases), 0)
 		for j := 0; j < folds; j++ {
-			for k := j * stratFoldSize; k < (j+1)*stratFoldSize; k++ {
-				foldis[j] = append(foldis[j], bSampler.Cases[i][k])
-
+			for k := j * foldsize; k < (j+1)*foldsize; k++ {
+				foldis[j] = append(foldis[j], cases[k])
 			}
 		}
 
-	}
+	} else {
+		//sample folds stratified by case
+		fmt.Printf("Stratifying by %v classes.\n", targetf.(*CloudForest.DenseCatFeature).NCats())
+		bSampler := CloudForest.NewBalancedSampler(targetf.(*CloudForest.DenseCatFeature))
 
-	//TODO: unstratified sampeling.
+		fmt.Printf("Stratifying by %v classes.\n", len(bSampler.Cases))
+		var samples []int
+		for i := 0; i < len(bSampler.Cases); i++ {
+			fmt.Printf("%v cases in class %v.\n", len(bSampler.Cases[i]), i)
+			//shuffle in place
+			CloudForest.SampleFirstN(&bSampler.Cases[i], &samples, len(bSampler.Cases[i]), 0)
+			stratFoldSize := len(bSampler.Cases[i]) / folds
+			for j := 0; j < folds; j++ {
+				for k := j * stratFoldSize; k < (j+1)*stratFoldSize; k++ {
+					foldis[j] = append(foldis[j], bSampler.Cases[i][k])
+
+				}
+			}
+
+		}
+	}
 
 	trainis := make([]int, 0, foldsize*(folds-1))
 	//Write training and testing matrixes
