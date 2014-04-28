@@ -365,15 +365,38 @@ and i(tl) i(tR) are the left and right impurities.
 Counter is only used for categorical targets and should have the same length as the number of categories in the target.
 */
 func (target *DenseNumFeature) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
+
+	//This code relies on the fact that:
+	// sum((xi-x_mean)^2)
+	//= sum(xi^2) - n * x_mean^2
+	//= sum(xi^2) - sum(xi)^2/n
+
 	nl := float64(len(*l))
 	nr := float64(len(*r))
 	nm := 0.0
 
-	impurityDecrease = nl * target.Impurity(l, nil)
-	impurityDecrease += nr * target.Impurity(r, nil)
+	sum := 0.0
+	sum_sqr := 0.0
+
+	//Left impurity
+	sum, sum_sqr = target.SumAndSumSquares(l)
+	impurityDecrease = nl * (sum_sqr - sum*sum/nl)
+	allocs.Lsum = sum
+	allocs.Lsum_sqr = sum_sqr
+
+	//Right Impurity
+	sum, sum_sqr = target.SumAndSumSquares(r)
+	impurityDecrease += nr * (sum_sqr - sum*sum/nr)
+	allocs.Rsum = sum
+	allocs.Rsum_sqr = sum_sqr
+
+	//Missing Impurity
 	if m != nil && len(*m) > 0 {
 		nm = float64(len(*m))
-		impurityDecrease += nm * target.Impurity(m, nil)
+		sum, sum_sqr = target.SumAndSumSquares(m)
+		impurityDecrease += nm * (sum_sqr - sum*sum/nm)
+		allocs.Msum = sum
+		allocs.Msum_sqr = sum_sqr
 	}
 
 	impurityDecrease /= nl + nr + nm
@@ -383,15 +406,63 @@ func (target *DenseNumFeature) SplitImpurity(l *[]int, r *[]int, m *[]int, alloc
 //UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
 //Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
 func (target *DenseNumFeature) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64) {
-	return target.SplitImpurity(l, r, m, allocs)
+	//This code relies on the fact that:
+	// sum((xi-x_mean)^2)
+	//= sum(xi^2) - n * x_mean^2
+	//= sum(xi^2) - sum(xi)^2/n
+	//it moves the sum and sum_sqr R to L in th allocs and recalculates impurities
+
+	MVsum, MVsum_sqr := target.SumAndSumSquares(movedRtoL)
+
+	allocs.Lsum += MVsum
+	allocs.Rsum -= MVsum
+	allocs.Lsum_sqr += MVsum_sqr
+	allocs.Rsum_sqr -= MVsum_sqr
+
+	nl := float64(len(*l))
+	nr := float64(len(*r))
+	nm := 0.0
+
+	//Left impurity
+	impurityDecrease = nl * (allocs.Lsum_sqr - allocs.Lsum*allocs.Lsum/nl)
+
+	//Right Impurity
+	impurityDecrease += nr * (allocs.Rsum_sqr - allocs.Rsum*allocs.Rsum/nr)
+
+	//Missing Impurity
+	if m != nil && len(*m) > 0 {
+		nm = float64(len(*m))
+		impurityDecrease += nm * (allocs.Msum_sqr - allocs.Msum*allocs.Msum/nm)
+
+	}
+
+	impurityDecrease /= nl + nr + nm
+	return
+}
+
+func (target *DenseNumFeature) SumAndSumSquares(cases *[]int) (sum float64, sum_sqr float64) {
+	for _, i := range *cases {
+		x := target.NumData[i]
+		sum += x
+		sum_sqr += x * x
+	}
+	return
 }
 
 //Impurity returns Gini impurity or mean squared error vs the mean for a set of cases
 //depending on weather the feature is categorical or numerical
 func (target *DenseNumFeature) Impurity(cases *[]int, counter *[]int) (e float64) {
+	//This code relies on the fact that:
+	// sum((xi-x_mean)^2)
+	//= sum(xi^2) - n * x_mean^2
+	//= sum(xi^2) - sum(xi)^2/n
+	//the un optimized verzion would be:
+	// m := target.Mean(cases)
+	// e = target.Error(cases, m)
 
-	m := target.Mean(cases)
-	e = target.Error(cases, m)
+	sum, sum_sqr := target.SumAndSumSquares(cases)
+	e = sum_sqr - sum*sum/float64(len(*cases))
+
 	return
 
 }

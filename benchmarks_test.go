@@ -32,6 +32,30 @@ func BenchmarkIris(b *testing.B) {
 	}
 }
 
+func BenchmarkBoston(b *testing.B) {
+
+	boston := strings.NewReader(boston_housing)
+
+	fm := ParseARFF(boston)
+
+	candidates := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+
+	target := fm.Data[fm.Map["class"]]
+
+	cases := make([]int, 0, fm.Data[0].Length())
+	for i := 0; i < fm.Data[0].Length(); i++ {
+		cases = append(cases, i)
+	}
+	allocs := NewBestSplitAllocs(len(cases), target)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		tree := NewTree()
+		tree.Grow(fm, target, cases, candidates, nil, 2, 1, false, false, false, false, nil, nil, allocs)
+
+	}
+}
+
 func BenchmarkBestNumSplit(b *testing.B) {
 
 	// irisreader := strings.NewReader(irisarff)

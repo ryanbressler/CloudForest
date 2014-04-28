@@ -3,8 +3,6 @@ CloudForest
 
 [![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest) 
 
-([Build status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master) includes accuracy tests on iris and boston housing price datasets and multiple go versions.)
-
 CloudForest implements fast, multithreaded, flexible ensembles of decision trees for machine
 learning in pure Go (golang to search engines). It allows for a number of related algorithms
 for classification, regression, feature selection and structure analysis on heterogeneous
@@ -40,6 +38,8 @@ https://github.com/ryanbressler/CloudForest
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
 Biology.
 
+([Build status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master) includes accuracy tests on iris and boston housing price datasets and multiple go versions.)
+
 Installation
 -------------
 With [go installed](http://golang.org/doc/install):
@@ -49,7 +49,25 @@ go get github.com/ryanbressler/CloudForest
 go install github.com/ryanbressler/CloudForest/growforest
 go install github.com/ryanbressler/CloudForest/applyforest
 go install github.com/ryanbressler/CloudForest/leafcount
+
+#optional utilities
+go install github.com/ryanbressler/CloudForest/utils/nfold
+go install github.com/ryanbressler/CloudForest/utils/toafm
 ```
+
+To update to the latest version use the -u flag
+```bash
+go get -u github.com/ryanbressler/CloudForest
+go install -u github.com/ryanbressler/CloudForest/growforest
+go install -u github.com/ryanbressler/CloudForest/applyforest
+go install -u github.com/ryanbressler/CloudForest/leafcount
+
+#optional utilities
+go install -u github.com/ryanbressler/CloudForest/utils/nfold
+go install -u github.com/ryanbressler/CloudForest/utils/toafm
+```
+
+
 
 Quick Start
 -------------
@@ -89,6 +107,13 @@ applyforest -fm test.fm -rfpred forest.sf -preds predictions.tsv
 #Branches Are Reported as:
 #Case Feature Count
 leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -branches branches.tsv
+
+#Generate training and testing folds
+nfold -fm data.fm
+
+#growforest with interanal training and testing
+growforest -train train_0.fm -target N:FeatureName -test test_0.fm
+
 ```
 
 Growforest Utility

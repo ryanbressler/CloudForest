@@ -18,9 +18,12 @@ type BestSplitAllocs struct {
 	Counter        *[]int  //class counter for counting classes in splits used alone of for missing
 	LCounter       *[]int  //left class counter sumarizing (mean) splits
 	RCounter       *[]int  //right class counter sumarizing (mean) splits
-	Lval           float64 //left value for sumarizing splits
-	Rval           float64 //right value for sumarizing  splits
-	Mval           float64 //missing value for sumarizing splits
+	Lsum           float64 //left value for sumarizing splits
+	Rsum           float64 //right value for sumarizing  splits
+	Msum           float64 //missing value for sumarizing splits
+	Lsum_sqr       float64 //left value for sumarizing splits
+	Rsum_sqr       float64 //right value for sumarizing  splits
+	Msum_sqr       float64 //missing value for sumarizing splits
 	SortVals       []float64
 	Sorter         *SortableFeature //for learning from numerical features
 	ContrastTarget Target
@@ -49,6 +52,9 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 		&counter,
 		&lcounter,
 		&rcounter,
+		0.0,
+		0.0,
+		0.0,
 		0.0,
 		0.0,
 		0.0,
