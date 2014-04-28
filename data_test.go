@@ -330,6 +330,9 @@ func TestIris(t *testing.T) {
 	fm := ParseLibSVM(irisreader)
 	targeti := 0
 
+	if len(fm.CaseLabels) != 150 || fm.Data[0].Length() != 150 {
+		t.Errorf("Iris feature matrix has %v case labels, %v values not 150", len(fm.CaseLabels), fm.Data[0].Length())
+	}
 	if len(fm.Data) != 5 {
 		t.Errorf("Iris feature matrix has %v features not 5", len(fm.Data))
 	}
@@ -433,6 +436,10 @@ func TestBoston(t *testing.T) {
 
 	if len(fm.Data) != 14 {
 		t.Errorf("Boston feature matrix has %v features not 14", len(fm.Data))
+	}
+
+	if len(fm.CaseLabels) != 506 || fm.Data[0].Length() != 506 {
+		t.Errorf("Boston feature matrix has %v case labels, %v values not 506", len(fm.CaseLabels), fm.Data[0].Length())
 	}
 
 	candidates := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}

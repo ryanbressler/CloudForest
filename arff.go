@@ -18,7 +18,7 @@ func ParseARFF(input io.Reader) *FeatureMatrix {
 
 	data := make([]Feature, 0, 100)
 	lookup := make(map[string]int, 0)
-	labels := make([]string, 0, 0)
+	//labels := make([]string, 0, 0)
 
 	i := 0
 	for {
@@ -55,13 +55,13 @@ func ParseARFF(input io.Reader) *FeatureMatrix {
 			}
 
 			lookup[vals[1]] = i
-			labels = append(labels, vals[1])
+			//labels = append(labels, vals[1])
 			i++
 		}
 
 	}
 
-	fm := &FeatureMatrix{data, lookup, labels}
+	fm := &FeatureMatrix{data, lookup, make([]string, 0, 0)}
 
 	csvdata := csv.NewReader(reader)
 	csvdata.Comment = '%'
