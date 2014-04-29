@@ -3,29 +3,33 @@ CloudForest
 
 [![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest) 
 
-CloudForest implements fast, multithreaded, flexible ensembles of decision trees for machine
-learning in pure Go (golang to search engines). It allows for a number of related algorithms
-for classification, regression, feature selection and structure analysis on heterogeneous
-numerical / categorical data with missing values. These include:
+Fast, flexible, multi-threaded ensembles of decision trees for machine
+learning in pure Go (golang). 
+
+CloudForest allows for a number of related algorithms for classification, regression, feature selection 
+and structure analysis on heterogeneous numerical / categorical data with missing values. These include:
 
 * Breiman and Cutler's Random Forest for Classification and Regression
-* Adaptive Boosting (AdaBoost) Classification
+* Adaptive Boosting (AdaBoost) Classification 
 * Gradient Boosting Tree Regression
-* Entropy and Cost driven classification
-* L1 regression
-* Feature selection with artificial contrasts
-* Methods for Classification on Unbalanced Data
-* Methods for learning from data with lots of noisy features.
-* Preliminary Implementation of Density Estimating Trees/Forests
+* Entropy, Cost driven and Class Weighted classification
+* L1 Decision Tree regression
+* Improved feature selection with artificial contrasts
+* Roughly Balanced Bagging for Unbalanced Data
+* Improved robustness using out of bag cases and artificial contrasts.
+* Density Estimating Trees/Forests
 * Proximity/Affinity Analysis suitable for manifold learning
 
-CloudForest has been optimized to minimize memory use, allow multi-core and multi-machine learning with and perform especially well learning from large numebers features and features with a small number of class labels. This includes binary data and genomic variant data which
-may have class labels like "reference", "heterozygous", "homozygous".
+The Design Prioritizes:
 
-File formats have been chosen to allow multi machine parallel learning. 
-
-Command line utilities to grow, apply and analyze forests are provided in sub directories
-or CloudForest can be used as a library.
+* Training Speed
+* An optimized set of core functionality. 
+* The flexibility to quickly implement new impurities and algorithms using the common core.
+* The ability to natively handle categorical data types and missing values allowing faster learning.
+* Use in a multi core or multi machine environment.
+ 
+Command line utilities to grow, apply and analyze forests and do cross validation are provided or 
+CloudForest can be used as a library in go programs.
 
 This Document covers command line usage, file formats and some algorithmic background.
 
@@ -38,7 +42,8 @@ https://github.com/ryanbressler/CloudForest
 CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
 Biology.
 
-([Build status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master) includes accuracy tests on iris and boston housing price datasets and multiple go versions.)
+([Build status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master) includes accuracy tests on 
+iris and Boston housing price datasets and multiple go versions.)
 
 Installation
 -------------
@@ -48,9 +53,9 @@ With [go installed](http://golang.org/doc/install):
 go get github.com/ryanbressler/CloudForest
 go install github.com/ryanbressler/CloudForest/growforest
 go install github.com/ryanbressler/CloudForest/applyforest
-go install github.com/ryanbressler/CloudForest/leafcount
 
 #optional utilities
+go install github.com/ryanbressler/CloudForest/leafcount
 go install github.com/ryanbressler/CloudForest/utils/nfold
 go install github.com/ryanbressler/CloudForest/utils/toafm
 ```
@@ -60,9 +65,9 @@ To update to the latest version use the -u flag
 go get -u github.com/ryanbressler/CloudForest
 go install -u github.com/ryanbressler/CloudForest/growforest
 go install -u github.com/ryanbressler/CloudForest/applyforest
-go install -u github.com/ryanbressler/CloudForest/leafcount
 
 #optional utilities
+go install -u github.com/ryanbressler/CloudForest/leafcount
 go install -u github.com/ryanbressler/CloudForest/utils/nfold
 go install -u github.com/ryanbressler/CloudForest/utils/toafm
 ```
