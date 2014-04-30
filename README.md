@@ -281,11 +281,11 @@ Importance
 Variable Importance in CloudForest is based on the as the mean decrease in impurity over all of
 the splits made using a feature. It is output in a tsv as:
 
-0 | 1 | 2 | 3 | 4 | 5 | 6
----|---|---|---|---|---|---
-Feature | DecreasePerUse | UseCount | DecreasePerTree | DecreasePerTreeUsed | TreeUsedCount | MeanMinimalDepth
+0       | 1                | 2         | 3                 | 4                      | 5               | 6
+--------|------------------|-----------|-------------------|------------------------|-----------------|-------------------
+Feature | Decrease Per Use | Use Count | Decrease Per Tree | Decrease Per Tree Used | Tree Used Count | Mean Minimal Depth
 
-Decrease per tree  (the 4th column) is the most common definition of importance in other implementations and 
+Decrease per tree  (col 3 starting from 0) is the most common definition of importance in other implementations and 
 is calculated over all trees, not just the ones the feature was used in.
 
 Each of these scores has different properties:
@@ -319,8 +319,8 @@ growforest -train housing.arff -target class -ace 10 -importance bostanimpace.ts
 
 The output tsv will be a tsv with the following columns:
 
-0 | 1 | 2 | 3
----|---|---|---
+0      | 1         | 2               | 3
+-------|-----------|-----------------|--------
 target | predictor | mean importance | p-value
 
 
