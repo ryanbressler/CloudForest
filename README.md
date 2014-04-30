@@ -211,6 +211,7 @@ Note: rfweights and cost should use json to specify the weights and or costs per
  certain types of features that contribute to over-fitting including unique identifiers and sparse features
 
  ```
+   -ace=0: Number ace permutations to do. Output ace style importance and p values.
    -permute: Permute the target feature (to establish random predictive power).
    -contrastall=false: Include a shuffled artificial contrast copy of every feature.
    -nContrasts=0: The number of randomized artificial contrast features to include in the feature matrix.
@@ -280,6 +281,8 @@ Importance
 Variable Importance in CloudForest is based on the as the mean decrease in impurity over all of
 the splits made using a feature. It is output in a tsv as:
 
+0 | 1 | 2 | 3 | 4 | 5 | 6
+---|---|---|---|---|---|---
 Feature | DecreasePerUse | UseCount | DecreasePerTree | DecreasePerTreeUsed | TreeUsedCount | MeanMinimalDepth
 
 Decrease per tree  (the 4th column) is the most common definition of importance in other implementations and 
@@ -316,6 +319,8 @@ growforest -train housing.arff -target class -ace 10 -importance bostanimpace.ts
 
 The output tsv will be a tsv with the following columns:
 
+0 | 1 | 2 | 3
+---|---|---|---
 target | predictor | mean importance | p-value
 
 
