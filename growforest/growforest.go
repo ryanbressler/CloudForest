@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ryanbressler/CloudForest"
+	"github.com/ryanbressler/CloudForest/stats"
 	"io"
 	"log"
 	"math"
@@ -59,6 +60,9 @@ func main() {
 
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
+
+	var ace int
+	flag.IntVar(&ace, "ace", 0, "Number ace permutations to do. Output ace style importance and p values.")
 
 	var nContrasts int
 	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artificial contrast features to include in the feature matrix.")
@@ -141,6 +145,8 @@ func main() {
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
 	}
+
+	nForest := 1
 
 	rand.Seed(time.Now().UTC().UnixNano())
 
@@ -425,6 +431,27 @@ func main() {
 		defer forestfile.Close()
 		forestwriter = CloudForest.NewForestWriter(forestfile)
 	}
+	//****************** Setup For ACE ********************************//
+	var aceImps [][]float64
+	firstace := len(data.Data)
+
+	if ace > 0 {
+
+		fmt.Printf("Performing ACE analysis with %v forests/perumutations.\n", ace)
+
+		data.ContrastAll()
+
+		for i := 0; i < firstace; i++ {
+			blacklistis = append(blacklistis, blacklistis[i])
+		}
+		blacklistis[targeti+firstace] = true
+
+		aceImps = make([][]float64, len(data.Data))
+		for i := 0; i < len(data.Data); i++ {
+			aceImps[i] = make([]float64, ace)
+		}
+		nForest = ace
+	}
 
 	//****************** Needed Collections and vars ******************//
 	var trees []*CloudForest.Tree
@@ -443,139 +470,164 @@ func main() {
 
 	//****************** Good Stuff Stars Here ;) ******************//
 	trainingStart := time.Now()
-	for core := 0; core < nCores; core++ {
-		go func() {
-			weight := -1.0
-			canidates := make([]int, 0, len(data.Data))
-			for i := 0; i < len(data.Data); i++ {
-				if i != targeti && !blacklistis[i] {
-					canidates = append(canidates, i)
-				}
-			}
-			tree := CloudForest.NewTree()
-			tree.Target = *targetname
-			cases := make([]int, 0, nSamples)
-			oobcases := make([]int, 0, nSamples)
 
-			if nobag {
-				for i := 0; i < nSamples; i++ {
-					if !targetf.IsMissing(i) {
-						cases = append(cases, i)
+	for foresti := 0; foresti < nForest; foresti++ {
+
+		//Grow a single forest on nCores
+		for core := 0; core < nCores; core++ {
+			go func() {
+				weight := -1.0
+				canidates := make([]int, 0, len(data.Data))
+				for i := 0; i < len(data.Data); i++ {
+					if i != targeti && !blacklistis[i] {
+						canidates = append(canidates, i)
 					}
 				}
-			}
+				tree := CloudForest.NewTree()
+				tree.Target = *targetname
+				cases := make([]int, 0, nSamples)
+				oobcases := make([]int, 0, nSamples)
 
-			var depthUsed *[]int
-			if mmdpnt != nil {
-				du := make([]int, len(data.Data))
-				depthUsed = &du
-			}
-
-			allocs := CloudForest.NewBestSplitAllocs(nSamples, targetf)
-			for {
-				nCases := data.Data[0].Length()
-				//sample nCases case with replacement
-				if !nobag {
-					cases = cases[0:0]
-
-					if balance {
-						bSampler.Sample(&cases, nSamples)
-
-					} else {
-						for j := 0; len(cases) < nSamples; j++ {
-							r := rand.Intn(nCases)
-							if !targetf.IsMissing(r) {
-								cases = append(cases, r)
-							}
-						}
-					}
-
-				}
-
-				if nobag && nSamples != nCases {
-					cases = cases[0:0]
+				if nobag {
 					for i := 0; i < nSamples; i++ {
 						if !targetf.IsMissing(i) {
 							cases = append(cases, i)
 						}
 					}
-					CloudForest.SampleFirstN(&cases, nil, nCases, 0)
 				}
 
-				if oob || evaloob {
-					ibcases := make([]bool, nCases)
-					for _, v := range cases {
-						ibcases[v] = true
-					}
-					oobcases = oobcases[0:0]
-					for i, v := range ibcases {
-						if !v {
-							oobcases = append(oobcases, i)
-						}
-					}
-				}
-
-				tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, imppnt, depthUsed, allocs)
-
+				var depthUsed *[]int
 				if mmdpnt != nil {
-					for i, v := range *depthUsed {
-						if v != 0 {
-							(*mmdpnt)[i].Add(float64(v))
-							(*depthUsed)[i] = 0
+					du := make([]int, len(data.Data))
+					depthUsed = &du
+				}
+
+				allocs := CloudForest.NewBestSplitAllocs(nSamples, targetf)
+				for {
+					nCases := data.Data[0].Length()
+					//sample nCases case with replacement
+					if !nobag {
+						cases = cases[0:0]
+
+						if balance {
+							bSampler.Sample(&cases, nSamples)
+
+						} else {
+							for j := 0; len(cases) < nSamples; j++ {
+								r := rand.Intn(nCases)
+								if !targetf.IsMissing(r) {
+									cases = append(cases, r)
+								}
+							}
 						}
 
 					}
-				}
 
-				if boost {
-					boostMutex.Lock()
-					weight = targetf.(CloudForest.BoostingTarget).Boost(tree.Partition(data))
-					boostMutex.Unlock()
-					if weight == math.Inf(1) {
-						fmt.Printf("Boosting Reached Weight of %v\n", weight)
-						close(treechan)
-						break
+					if nobag && nSamples != nCases {
+						cases = cases[0:0]
+						for i := 0; i < nSamples; i++ {
+							if !targetf.IsMissing(i) {
+								cases = append(cases, i)
+							}
+						}
+						CloudForest.SampleFirstN(&cases, nil, nCases, 0)
 					}
 
-					tree.Weight = weight
+					if oob || evaloob {
+						ibcases := make([]bool, nCases)
+						for _, v := range cases {
+							ibcases[v] = true
+						}
+						oobcases = oobcases[0:0]
+						for i, v := range ibcases {
+							if !v {
+								oobcases = append(oobcases, i)
+							}
+						}
+					}
+
+					tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, imppnt, depthUsed, allocs)
+
+					if mmdpnt != nil {
+						for i, v := range *depthUsed {
+							if v != 0 {
+								(*mmdpnt)[i].Add(float64(v))
+								(*depthUsed)[i] = 0
+							}
+
+						}
+					}
+
+					if boost {
+						boostMutex.Lock()
+						weight = targetf.(CloudForest.BoostingTarget).Boost(tree.Partition(data))
+						boostMutex.Unlock()
+						if weight == math.Inf(1) {
+							fmt.Printf("Boosting Reached Weight of %v\n", weight)
+							close(treechan)
+							break
+						}
+
+						tree.Weight = weight
+					}
+
+					if oob {
+						tree.VoteCases(data, oobVotes, oobcases)
+					}
+
+					treechan <- tree
+					tree = <-treechan
 				}
+			}()
 
-				if oob {
-					tree.VoteCases(data, oobVotes, oobcases)
+		}
+
+		for i := 0; i < nTrees; i++ {
+			tree := <-treechan
+			if tree == nil {
+				break
+			}
+			if forestwriter != nil {
+				forestwriter.WriteTree(tree, i)
+			}
+
+			if dotest {
+				trees = append(trees, tree)
+
+				if i < nTrees-1 {
+					//newtree := new(CloudForest.Tree)
+					treechan <- CloudForest.NewTree()
 				}
-
-				treechan <- tree
-				tree = <-treechan
+			} else {
+				if i < nTrees-1 {
+					treechan <- tree
+				}
 			}
-		}()
-
-	}
-
-	for i := 0; i < nTrees; i++ {
-		tree := <-treechan
-		if tree == nil {
-			break
-		}
-		if forestwriter != nil {
-			forestwriter.WriteTree(tree, i)
-		}
-
-		if dotest {
-			trees = append(trees, tree)
-
-			if i < nTrees-1 {
-				//newtree := new(CloudForest.Tree)
-				treechan <- CloudForest.NewTree()
+			if progress {
+				fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(unboostedTarget))
 			}
-		} else {
-			if i < nTrees-1 {
-				treechan <- tree
+
+		}
+		//Single forest growth is over.
+
+		//Record importance scores from this forest for ace
+		if ace > 0 {
+			//Record Imporance scores
+			for i := 0; i < len(data.Data); i++ {
+				mean, count := (*imppnt)[i].Read()
+				aceImps[i][foresti] = mean * float64(count) / float64(nTrees)
+			}
+
+			//Reset importance scores
+			imppnt = CloudForest.NewRunningMeans(len(data.Data))
+
+			//Reshuffle contrast features
+			for i := firstace; i < len(data.Data); i++ {
+				if !blacklistis[i] {
+					data.Data[i].Shuffle()
+				}
 			}
 		}
-		if progress {
-			fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(unboostedTarget))
-		}
-
 	}
 
 	trainingEnd := time.Now()
@@ -595,17 +647,31 @@ func main() {
 		}
 	}
 
+	//TODO: write ace importance file
+
 	if *imp != "" {
+
 		impfile, err := os.Create(*imp)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer impfile.Close()
-		for i, v := range *imppnt {
-			mean, count := v.Read()
-			meanMinDepth, treeCount := (*mmdpnt)[i].Read()
-			fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\t%v\t%v\t%v\n", data.Data[i].GetName(), mean, count, mean*float64(count)/float64(nTrees), mean*float64(count)/float64(treeCount), treeCount, meanMinDepth)
+		if ace > 0 {
+			for i := 0; i < firstace; i++ {
 
+				p, _, _, m := stats.Ttest(&aceImps[i], &aceImps[i+firstace])
+
+				fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", *targetname, data.Data[i].GetName(), m, p)
+
+			}
+		} else {
+			//Write standard importance file
+			for i, v := range *imppnt {
+				mean, count := v.Read()
+				meanMinDepth, treeCount := (*mmdpnt)[i].Read()
+				fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\t%v\t%v\t%v\n", data.Data[i].GetName(), mean, count, mean*float64(count)/float64(nTrees), mean*float64(count)/float64(treeCount), treeCount, meanMinDepth)
+
+			}
 		}
 	}
 
@@ -627,25 +693,7 @@ func main() {
 			testtarget = testdata.Data[targeti]
 
 			for _, tree := range trees {
-				// tree.Root.Climb(func(n *CloudForest.Node) {
-				// 	if n.Splitter == nil && n.CodedSplit != nil {
-				// 		fmt.Printf("node %v \n %v nil should be %v \n", *n, n.Splitter, n.CodedSplit)
-				// 	}
-				// 	if n.Splitter != nil && n.CodedSplit == nil {
-				// 		fmt.Printf("node %v \n %v nil should be %v \n", *n, n.Splitter, n.CodedSplit)
-				// 	}
 
-				// 	switch n.CodedSplit.(type) {
-				// 	case float64:
-				// 		v := n.Splitter.Value
-				// 		if n.CodedSplit.(float64) != v {
-				// 			fmt.Printf("%v splits not equal.\n", *n)
-				// 		}
-				// 		if n.Featurei != testdata.Map[n.Splitter.Feature] {
-				// 			fmt.Printf("Feature %v at %v not at %v \n", n.Splitter.Feature, testdata.Map[n.Splitter.Feature], n.Featurei)
-				// 		}
-				// 	}
-				// })
 				tree.StripCodes()
 
 			}

@@ -56,7 +56,7 @@ func TestTTest(t *testing.T) {
 		t.Errorf("Bad MeanAndVarResults %v, %v, %v. not close to --0.6641913, 0.8571537, 10", mean, v, n)
 	}
 
-	p, tv, df := Ttest(&x, &y)
+	p, tv, df, _ := Ttest(&x, &y)
 	if notE(p, 0.9035) {
 		t.Errorf("Bad p value from TTest. %v not close to 0.9035", p)
 	}

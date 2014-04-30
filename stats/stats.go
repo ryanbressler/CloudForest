@@ -24,11 +24,12 @@ func MeanAndVar(X *[]float64) (m, v, n float64) {
 //Ttest performs a Welch's t test and returns p-value, t-value and the degrees of freedom.
 //The p value based on the hypothesis that mean(B)>mean(A).
 //Based on similar code in rf-ace (Apache 2.0, Timo Erkkilä)
-func Ttest(A, B *[]float64) (p, t, v float64) {
+func Ttest(A, B *[]float64) (p, t, v, am float64) {
 
 	// Calculate means and variances for each of two samples.
 	Am, Av, An := MeanAndVar(A)
 	Bm, Bv, Bn := MeanAndVar(B)
+	am = Am
 
 	//Welch's t test
 	As := Av / An
