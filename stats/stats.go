@@ -9,6 +9,7 @@ import (
 	"math"
 )
 
+//MeanAndVar returns the sample mean, variance and count as float64's.
 func MeanAndVar(X *[]float64) (m, v, n float64) {
 	for _, x := range *X {
 		m += x
@@ -21,6 +22,9 @@ func MeanAndVar(X *[]float64) (m, v, n float64) {
 	return
 }
 
+//Ttest performs a Welch's t test and returns p-value, t-value and the degrees of freedom.
+//The p value based on the hypothesis that mean(B)>mean(A).
+//Based on code from rf-ace.
 func Ttest(A, B *[]float64) (p, t, v float64) {
 
 	// Calculate means and variances for each of two samples.

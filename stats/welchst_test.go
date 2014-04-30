@@ -53,19 +53,19 @@ func TestTTest(t *testing.T) {
 	y := []float64{-0.09087432, 0.35026448, 0.89435080, -1.40248504, -1.14944188, 0.23536083, -0.45775375, 0.24868155, -1.18380814, 1.70410704}
 	mean, v, n := MeanAndVar(&x)
 	if notE(mean, -0.6641913) || notE(v, 0.8571537) || n != 10 {
-		t.Errorf("Bad MeanAndVarResults %v, %v, %v not close to --0.6641913, 0.8571537, 10", mean, v, n)
+		t.Errorf("Bad MeanAndVarResults %v, %v, %v. not close to --0.6641913, 0.8571537, 10", mean, v, n)
 	}
 
 	p, tv, df := Ttest(&x, &y)
 	if notE(p, 0.9035) {
-		t.Errorf("Bad p value from TTest %v not clost to 0.9035", p)
+		t.Errorf("Bad p value from TTest. %v not close to 0.9035", p)
 	}
 
 	if notE(tv, -1.3526) {
-		t.Errorf("Bad t value TTest %v not clost to -1.3526", tv)
+		t.Errorf("Bad t value TTest. %v not close to -1.3526", tv)
 	}
 
 	if notE(df, 17.925) {
-		t.Errorf("Bad degrees freedom from TTest %v not clost to 17.925", df)
+		t.Errorf("Bad degrees freedom from TTest. %v not close to 17.925", df)
 	}
 }
