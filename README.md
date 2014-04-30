@@ -322,7 +322,7 @@ The output tsv will be a tsv with the following columns:
 
 0      | 1         | 2               | 3
 -------|-----------|-----------------|--------
-target | predictor | mean importance | p-value
+target | predictor | p-value         | mean importance
 
 
 

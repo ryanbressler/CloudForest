@@ -661,7 +661,7 @@ func main() {
 
 				p, _, _, m := stats.Ttest(&aceImps[i], &aceImps[i+firstace])
 
-				fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", *targetname, data.Data[i].GetName(), m, p)
+				fmt.Fprintf(impfile, "%v\t%v\t%v\t%v\n", *targetname, data.Data[i].GetName(), p, m)
 
 			}
 		} else {
