@@ -297,21 +297,22 @@ To provide a baseline for evaluating importance, artificial contrast features ca
 including shuffled copies of existing features (-nContrasts, -contrastAll).
 
 A feature that performs well when randomized (or when the target has been randomized) may be causing
-overfitting. 
+over-fitting. 
 
 The option to permute the target (-permute) will establish a minimum random baseline. Using a 
 regular expression (-shuffleRE) to shuffle part of the data can be useful in teasing out the contributions of 
 different subsets of features.
 
-Importance and P-Valuse Via Artifical Contrasts
+Importance and P-Values Via Artificial Contrasts
 -----------------------------------------------
 P values can be established for importance scores by comparing the importance score for each feature to that of
-shuffled copy of itself or artifical contrast as described in Tuv's "Feature Selection with
+shuffled copy of itself or artificial contrast as described in Tuv's "Feature Selection with
 Ensembles, Artificial Variables, and Redundancy Elimination."
 
-Feature selection based on these p-values can increase the model's resistance to overfitting from high cardinality features.
+Feature selection based on these p-values can increase the model's resistance to over-fitting from high cardinality features.
 
-To use this method specify the number of repeats to perform usint the -ace option and provide a file name for importance scores.
+To use this method specify the number of repeats to perform using the -ace option and provide a file name for importance scores
+via the -importance option. Importance scores will be decrease per tree.
 
 ```
 growforest -train housing.arff -target class -ace 10 -importance bostanimpace.tsv
