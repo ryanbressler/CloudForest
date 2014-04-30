@@ -274,13 +274,13 @@ Usage of nfold:
   -writelibsvm=false: Output libsvm.
 ```
 
-Importance and Contrasts
---------------------------
+Importance
+----------
 
 Variable Importance in CloudForest is based on the as the mean decrease in impurity over all of
 the splits made using a feature. It is output in a tsv as:
 
-Feature DecreasePerUse UseCount DecreasePerTree DecreasePerTreeUsed TreeUsedCount MeanMinimalDepth
+Feature | DecreasePerUse | UseCount | DecreasePerTree | DecreasePerTreeUsed | TreeUsedCount | MeanMinimalDepth
 
 Decrease per tree  (the 4th column) is the most common definition of importance in other implementations and 
 is calculated over all trees, not just the ones the feature was used in.
@@ -299,6 +299,25 @@ overfitting.
 The option to permute the target (-permute) will establish a minimum random baseline. Using a 
 regular expression (-shuffleRE) to shuffle part of the data can be useful in teasing out the contributions of 
 different subsets of features.
+
+Importance and P-Valuse Via Artifical Contrasts
+-----------------------------------------------
+P values can be established for importance scores by comparing the importance score for each feature to that of
+shuffled copy of itself or artifical contrast as described in Tuv's "Feature Selection with
+Ensembles, Artificial Variables, and Redundancy Elimination."
+
+Feature selection based on these p-values can increase the model's resistance to overfitting from high cardinality features.
+
+To use this method specify the number of repeats to perform usint the -ace option and provide a file name for importance scores.
+
+```
+growforest -train housing.arff -target class -ace 10 -importance bostanimpace.tsv
+```
+
+The output tsv will be a tsv with the following columns:
+
+target | predictor | mean importance | p-value
+
 
 
 Data With Lots of Noisy, Uninformative, High Cardinality Features
