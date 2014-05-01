@@ -312,9 +312,10 @@ shuffled copy of itself or artificial contrast over a number of runs. This algor
 Feature selection based on these p-values can increase the model's resistance to issues including
  over-fitting from high cardinality features.
 
-In cloudforest these p-values are produces with a Welch's t-test. To use this method specify the number of 
-repeats to perform using the "-ace" option and provide a file name for importance scores via the -importance 
-option. Importance scores will be decrease per tree.
+In CloudForest these p-values are produces with a Welch's t-test and the null hypthesis that the mean importance
+of a features contrasts is greater then that of the feature itself over all of the forests. To use this method 
+specify the number of forests/repeats to perform using the "-ace" option and provide a file name for importance 
+scores via the -importance option. Importance scores will be the mean decrease per tree over all of the forests.
 
 ```
 growforest -train housing.arff -target class -ace 10 -importance bostanimp.tsv
