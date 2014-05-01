@@ -303,19 +303,21 @@ The option to permute the target (-permute) will establish a minimum random base
 regular expression (-shuffleRE) to shuffle part of the data can be useful in teasing out the contributions of 
 different subsets of features.
 
-Importance and P-Values Via Artificial Contrasts
------------------------------------------------
-P values can be established for importance scores by comparing the importance score for each feature to that of
-shuffled copy of itself or artificial contrast as described in Tuv's "Feature Selection with
-Ensembles, Artificial Variables, and Redundancy Elimination."
+Importance with P-Values Via Artificial Contrasts/ACE
+-----------------------------------------------------
+P-values can be established for importance scores by comparing the importance score for each feature to that of
+shuffled copy of itself or artificial contrast over a number of runs. This algorithm is described in Tuv's 
+"Feature Selection with Ensembles, Artificial Variables, and Redundancy Elimination."
 
-Feature selection based on these p-values can increase the model's resistance to over-fitting from high cardinality features.
+Feature selection based on these p-values can increase the model's resistance to issues including
+ over-fitting from high cardinality features.
 
-To use this method specify the number of repeats to perform using the -ace option and provide a file name for importance scores
-via the -importance option. Importance scores will be decrease per tree.
+In cloudforest these p-values are produces with a Welch's t-test. To use this method specify the number of 
+repeats to perform using the "-ace" option and provide a file name for importance scores via the -importance 
+option. Importance scores will be decrease per tree.
 
 ```
-growforest -train housing.arff -target class -ace 10 -importance bostanimpace.tsv
+growforest -train housing.arff -target class -ace 10 -importance bostanimp.tsv
 ```
 
 The output tsv will be a tsv with the following columns:
@@ -324,10 +326,15 @@ The output tsv will be a tsv with the following columns:
 -------|-----------|-----------------|--------
 target | predictor | p-value         | mean importance
 
+This method is often combined with the -evaloob method described bellow.
+
+```
+growforest -train housing.arff -target class -ace 10 -importance bostanimp.tsv -evaloob
+``` 
 
 
-Data With Lots of Noisy, Uninformative, High Cardinality Features
-------------------------------------------------------------------
+Improved Feature Selection 
+--------------------------
 
 Genomic data is frequently has many noisy, high cardinality, uninformative features which can lead to in bag over fitting. To combat this, 
 CloudForest implements some methods designed to help better filter out uninformative features.
