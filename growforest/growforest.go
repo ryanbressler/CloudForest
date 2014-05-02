@@ -64,6 +64,9 @@ func main() {
 	var ace int
 	flag.IntVar(&ace, "ace", 0, "Number ace permutations to do. Output ace style importance and p values.")
 
+	var cutoff float64
+	flag.Float64Var(&cutoff, "cutoff", 0.0, "P-value cutoff to apply to features for last forest after ACE.")
+
 	var nContrasts int
 	flag.IntVar(&nContrasts, "nContrasts", 0, "The number of randomized artificial contrast features to include in the feature matrix.")
 
@@ -451,6 +454,9 @@ func main() {
 			aceImps[i] = make([]float64, ace)
 		}
 		nForest = ace
+		if cutoff > 0 {
+			nForest++
+		}
 	}
 
 	//****************** Needed Collections and vars ******************//
@@ -464,6 +470,8 @@ func main() {
 
 		imppnt = CloudForest.NewRunningMeans(len(data.Data))
 		mmdpnt = CloudForest.NewRunningMeans(len(data.Data))
+	} else if ace > 0 {
+		imppnt = CloudForest.NewRunningMeans(len(data.Data))
 	}
 
 	treechan := make(chan *CloudForest.Tree, 0)
@@ -472,7 +480,7 @@ func main() {
 	trainingStart := time.Now()
 
 	for foresti := 0; foresti < nForest; foresti++ {
-
+		//fmt.Println("forest ", foresti)
 		//Grow a single forest on nCores
 		for core := 0; core < nCores; core++ {
 			go func() {
@@ -483,6 +491,7 @@ func main() {
 						canidates = append(canidates, i)
 					}
 				}
+
 				tree := CloudForest.NewTree()
 				tree.Target = *targetname
 				cases := make([]int, 0, nSamples)
@@ -571,7 +580,7 @@ func main() {
 						tree.Weight = weight
 					}
 
-					if oob {
+					if oob && foresti == nForest-1 {
 						tree.VoteCases(data, oobVotes, oobcases)
 					}
 
@@ -587,11 +596,11 @@ func main() {
 			if tree == nil {
 				break
 			}
-			if forestwriter != nil {
+			if forestwriter != nil && foresti == nForest-1 {
 				forestwriter.WriteTree(tree, i)
 			}
 
-			if dotest {
+			if dotest && foresti == nForest-1 {
 				trees = append(trees, tree)
 
 				if i < nTrees-1 {
@@ -611,7 +620,10 @@ func main() {
 		//Single forest growth is over.
 
 		//Record importance scores from this forest for ace
-		if ace > 0 {
+		if ace > 0 && (cutoff == 0.0 || foresti < nForest-1) {
+			if foresti < nForest-1 {
+				fmt.Printf("Finished ACE forest %v.\n", foresti)
+			}
 			//Record Imporance scores
 			for i := 0; i < len(data.Data); i++ {
 				mean, count := (*imppnt)[i].Read()
@@ -627,11 +639,38 @@ func main() {
 					data.Data[i].Shuffle()
 				}
 			}
+
+			if cutoff > 0 && foresti == nForest-2 {
+				sigcount := 0
+				for i := range blacklistis {
+
+					if i < firstace && !blacklistis[i] {
+						p, _, _, m := stats.Ttest(&aceImps[i], &aceImps[i+firstace])
+						if p < cutoff && m > 0.0 && i != targeti {
+							blacklistis[i] = false
+							sigcount++
+						} else {
+							blacklistis[i] = true
+						}
+					}
+					if i >= firstace {
+						blacklistis[i] = true
+					}
+
+				}
+				mTry = CloudForest.ParseAsIntOrFractionOfTotal(StringmTry, sigcount)
+				if mTry <= 0 {
+
+					mTry = int(math.Ceil(math.Sqrt(float64(sigcount))))
+				}
+
+				fmt.Printf("Growing non-ACE forest with %v features with p-value < %v.\nmTry: %v\n", sigcount, cutoff, mTry)
+			}
 		}
 	}
 
 	trainingEnd := time.Now()
-	fmt.Printf("Training model took %v.\n", trainingEnd.Sub(trainingStart))
+	fmt.Printf("Total training time: %v.\n", trainingEnd.Sub(trainingStart))
 
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
@@ -647,8 +686,6 @@ func main() {
 		}
 	}
 
-	//TODO: write ace importance file
-
 	if *imp != "" {
 
 		impfile, err := os.Create(*imp)
@@ -657,6 +694,7 @@ func main() {
 		}
 		defer impfile.Close()
 		if ace > 0 {
+
 			for i := 0; i < firstace; i++ {
 
 				p, _, _, m := stats.Ttest(&aceImps[i], &aceImps[i+firstace])
