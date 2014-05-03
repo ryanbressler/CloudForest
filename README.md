@@ -169,7 +169,7 @@ And equals signs and quotes are optional for other parameters:
    -progress=false: Report tree number and running oob error.
    -oobpreds="": Calculate and report oob predictions in the file specified.
    -cpuprofile="": write cpu profile to file
-   -multiboost=false: Allow multithreaded boosting which may have unexpected results. (highly experimental)
+   -multiboost=false: Allow multi-threaded boosting which may have unexpected results. (highly experimental)
    -nobag=false: Don't bag samples for each tree.
    -evaloob=false: Evaluate potential splitting features on OOB cases after finding split value in bag.
    -selftest=false: Test the forest on the data and report accuracy.
@@ -202,7 +202,7 @@ Note: rfweights and cost should use json to specify the weights and or costs per
 ```
    growforest -rfweights '{"true":2,"false":0.5}'
 ```
-### Randomizing Data and Artifical Contrasts ###
+### Randomizing Data and Artificial Contrasts ###
 
  Randomizing shuffling parts of the data or including shuffled "Artifichal Contrasts" can be useful to establish baselines for comparison.
 
@@ -235,7 +235,7 @@ Usage of applyforest:
   -mode=false: Force categorical (mode) voting.
   -preds="": The name of a file to write the predictions into.
   -rfpred="rface.sf": A predictor forest.
-  -votes="": The name of a file to write catagorical vote totals to.
+  -votes="": The name of a file to write categorical vote totals to.
 ```
 
 Leafcount Utility
