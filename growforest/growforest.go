@@ -85,10 +85,22 @@ func main() {
 	flag.BoolVar(&l1, "l1", false, "Use l1 norm regression (target must be numeric).")
 
 	var density bool
-	flag.BoolVar(&density, "density", false, "Build density estimating trees instead of classifcation/regression trees.")
+	flag.BoolVar(&density, "density", false, "Build density estimating trees instead of classification/regression trees.")
 
 	var vet bool
 	flag.BoolVar(&vet, "vet", false, "Penalize potential splitter impurity decrease by subtracting the best split of a permuted target.")
+
+	var NP bool
+	flag.BoolVar(&NP, "NP", false, "Do approximate Neyman-Pearson classification.")
+
+	var NP_pos string
+	flag.StringVar(&NP_pos, "NP_pos", "1", "Class label to consider positive in NP classification.")
+
+	var NP_a float64
+	flag.Float64Var(&NP_a, "NP_a", 0.1, "Constraint on false positive rate in NP classification [0,1]")
+
+	var NP_k float64
+	flag.Float64Var(&NP_k, "NP_k", 100, "Weight of false positive constraint in NP classification [0,Inf+)")
 
 	var evaloob bool
 	flag.BoolVar(&evaloob, "evaloob", false, "Evaluate potential splitting features on OOB cases after finding split value in bag.")
@@ -112,10 +124,10 @@ func main() {
 	flag.BoolVar(&adaboost, "adaboost", false, "Use Adaptive boosting for regression/classification.")
 
 	var gradboost float64
-	flag.Float64Var(&gradboost, "gbt", 0.0, "Use gradiant boosting with the specified learning rate.")
+	flag.Float64Var(&gradboost, "gbt", 0.0, "Use gradient boosting with the specified learning rate.")
 
 	var multiboost bool
-	flag.BoolVar(&multiboost, "multiboost", false, "Allow multithreaded boosting which may have unexpected results. (highly experimental)")
+	flag.BoolVar(&multiboost, "multiboost", false, "Allow multi-threaded boosting which may have unexpected results. (highly experimental)")
 
 	var nobag bool
 	flag.BoolVar(&nobag, "nobag", false, "Don't bag samples for each tree.")
@@ -272,7 +284,7 @@ func main() {
 	}
 
 	if permutate {
-		fmt.Println("Permutating target feature.")
+		fmt.Println("Permuting target feature.")
 		data.Data[targeti].Shuffle()
 	}
 
@@ -375,12 +387,11 @@ func main() {
 			}
 			switch {
 			case gradboost != 0.0:
-				fmt.Println("Using Gradiant Boosting.")
+				fmt.Println("Using Gradient Boosting.")
 				targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
 
 			case adaboost:
 				fmt.Println("Using Numeric Adaptive Boosting.")
-				//BUG(ryan): gradiant boostign should expose learning rate.
 				targetf = CloudForest.NewNumAdaBoostTarget(targetf.(CloudForest.NumFeature))
 			}
 			target = targetf
@@ -388,8 +399,12 @@ func main() {
 		case CloudForest.CatFeature:
 			fmt.Println("Performing classification.")
 			switch {
+			case NP:
+				fmt.Printf("Performing Approximate Neyman-Pearson Classification with positive label: \"%v\".\n", NP_pos)
+				fmt.Printf("False positive constraint: %v, constraint weight: %v.\n", NP_a, NP_k)
+				targetf = CloudForest.NewNPTarget(targetf.(CloudForest.CatFeature), NP_pos, NP_a, NP_k)
 			case *costs != "":
-				fmt.Println("Using missclasification costs: ", *costs)
+				fmt.Println("Using misclassification costs: ", *costs)
 				costmap := make(map[string]float64)
 				err := json.Unmarshal([]byte(*costs), &costmap)
 				if err != nil {
@@ -440,7 +455,7 @@ func main() {
 
 	if ace > 0 {
 
-		fmt.Printf("Performing ACE analysis with %v forests/perumutations.\n", ace)
+		fmt.Printf("Performing ACE analysis with %v forests/permutations.\n", ace)
 
 		data.ContrastAll()
 
@@ -624,7 +639,7 @@ func main() {
 			if foresti < nForest-1 {
 				fmt.Printf("Finished ACE forest %v.\n", foresti)
 			}
-			//Record Imporance scores
+			//Record Importance scores
 			for i := 0; i < len(data.Data); i++ {
 				mean, count := (*imppnt)[i].Read()
 				aceImps[i][foresti] = mean * float64(count) / float64(nTrees)
@@ -752,15 +767,24 @@ func main() {
 		fmt.Printf("Error: %v\n", bb.TallyError(testtarget))
 
 		if testtarget.NCats() != 0 {
+			falses := make([]int, testtarget.NCats())
+			totals := make([]int, testtarget.NCats())
 			correct := 0
 			length := testtarget.Length()
 			for i := 0; i < length; i++ {
-				if bb.Tally(i) == testtarget.GetStr(i) {
+				pred := bb.Tally(i)
+				totals[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
+				if pred == testtarget.GetStr(i) {
 					correct++
+				} else {
+					falses[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
 				}
 
 			}
 			fmt.Printf("Classified: %v / %v = %v\n", correct, length, float64(correct)/float64(length))
+			for i, v := range testtarget.(*CloudForest.DenseCatFeature).Back {
+				fmt.Printf("False %v : %v / %v = %v\n", v, falses[i], totals[i], float64(falses[i])/float64(totals[i]))
+			}
 		}
 
 	}
