@@ -16,8 +16,9 @@ http://www.stat.rice.edu/~cscott/pubs/npdesign.pdf
 
 N(f) = κ max((R0(f) − α), 0) + R1(f) − β.
 
-Where α is the false positive constraint and k controls the cost of violating
-this constraint and β is a constant we can ignore.
+Where f is the classifer, R0 is the flase positive rate R1 is the false negative rate,
+α is the false positive constraint and k controls the cost of violating
+this constraint and β is a constant we can ignore as it subtracts out in diffrences.
 */
 type NPTarget struct {
 	CatFeature
@@ -26,7 +27,7 @@ type NPTarget struct {
 	Kappa float64
 }
 
-//NewNPTarget creates a RefretTarget and initializes NPTarget.Costs to the proper length.
+//NewNPTarget creates a NPTarget
 func NewNPTarget(f CatFeature, Pos string, Alpha, Kappa float64) *NPTarget {
 	return &NPTarget{f, f.CatToNum(Pos), Alpha, Kappa}
 }
@@ -56,8 +57,8 @@ func (target *NPTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, alloc
 	return target.SplitImpurity(l, r, m, allocs)
 }
 
-//NPTarget.Impurity implements a simple regret function that finds the average cost of
-//a set using the misclassification costs in NPTarget.Costs.
+//NPTarget.Impurity implements an impurity that minimizes false negatives subject
+//to a soft constrain on fale positives.
 func (target *NPTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 
 	var t, totalpos, totalneg int
