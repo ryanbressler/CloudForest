@@ -397,11 +397,11 @@ func main() {
 			target = targetf
 
 		case CloudForest.CatFeature:
-			fmt.Println("Performing classification.")
+			fmt.Printf("Performing classification with %v categories.\n", targetf.NCats())
 			switch {
 			case NP:
-				fmt.Printf("Performing Approximate Neyman-Pearson Classification with positive label: \"%v\".\n", NP_pos)
-				fmt.Printf("False positive constraint: %v, constraint weight: %v.\n", NP_a, NP_k)
+				fmt.Printf("Performing Approximate Neyman-Pearson Classification with constrained false \"%v\".\n", NP_pos)
+				fmt.Printf("False %v constraint: %v, constraint weight: %v.\n", NP_pos, NP_a, NP_k)
 				targetf = CloudForest.NewNPTarget(targetf.(CloudForest.CatFeature), NP_pos, NP_a, NP_k)
 			case *costs != "":
 				fmt.Println("Using misclassification costs: ", *costs)
@@ -770,20 +770,28 @@ func main() {
 			falses := make([]int, testtarget.NCats())
 			totals := make([]int, testtarget.NCats())
 			correct := 0
+			nas := 0
 			length := testtarget.Length()
 			for i := 0; i < length; i++ {
 				pred := bb.Tally(i)
-				totals[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
-				if pred == testtarget.GetStr(i) {
-					correct++
+				if pred == "NA" {
+					nas++
 				} else {
-					falses[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
+					totals[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
+					if pred == testtarget.GetStr(i) {
+						correct++
+					} else {
+						falses[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
+					}
 				}
 
 			}
 			fmt.Printf("Classified: %v / %v = %v\n", correct, length, float64(correct)/float64(length))
 			for i, v := range testtarget.(*CloudForest.DenseCatFeature).Back {
 				fmt.Printf("False %v : %v / %v = %v\n", v, falses[i], totals[i], float64(falses[i])/float64(totals[i]))
+			}
+			if nas != 0 {
+				fmt.Printf("Couldn't predict %v cases due to missing values.\n", nas)
 			}
 		}
 
