@@ -94,13 +94,13 @@ func main() {
 	flag.BoolVar(&NP, "NP", false, "Do approximate Neyman-Pearson classification.")
 
 	var NP_pos string
-	flag.StringVar(&NP_pos, "NP_pos", "1", "Class label to consider positive in NP classification.")
+	flag.StringVar(&NP_pos, "NP_pos", "1", "Class label to constrain percision in NP classification.")
 
 	var NP_a float64
-	flag.Float64Var(&NP_a, "NP_a", 0.1, "Constraint on false positive rate in NP classification [0,1]")
+	flag.Float64Var(&NP_a, "NP_a", 0.1, "Constraint on percision in NP classification [0,1]")
 
 	var NP_k float64
-	flag.Float64Var(&NP_k, "NP_k", 100, "Weight of false positive constraint in NP classification [0,Inf+)")
+	flag.Float64Var(&NP_k, "NP_k", 100, "Weight of constraint in NP classification [0,Inf+)")
 
 	var evaloob bool
 	flag.BoolVar(&evaloob, "evaloob", false, "Evaluate potential splitting features on OOB cases after finding split value in bag.")
@@ -767,28 +767,40 @@ func main() {
 		fmt.Printf("Error: %v\n", bb.TallyError(testtarget))
 
 		if testtarget.NCats() != 0 {
-			falses := make([]int, testtarget.NCats())
-			totals := make([]int, testtarget.NCats())
+			falsesbypred := make([]int, testtarget.NCats())
+			predtotals := make([]int, testtarget.NCats())
+
+			truebytrue := make([]int, testtarget.NCats())
+			truetotals := make([]int, testtarget.NCats())
+
 			correct := 0
 			nas := 0
 			length := testtarget.Length()
 			for i := 0; i < length; i++ {
+				truei := testtarget.(*CloudForest.DenseCatFeature).Geti(i)
+				truetotals[truei]++
 				pred := bb.Tally(i)
 				if pred == "NA" {
 					nas++
 				} else {
-					totals[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
+					predi := testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)
+					predtotals[predi]++
 					if pred == testtarget.GetStr(i) {
 						correct++
+						truebytrue[truei]++
 					} else {
-						falses[testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)]++
+
+						falsesbypred[predi]++
 					}
 				}
 
 			}
 			fmt.Printf("Classified: %v / %v = %v\n", correct, length, float64(correct)/float64(length))
 			for i, v := range testtarget.(*CloudForest.DenseCatFeature).Back {
-				fmt.Printf("False %v : %v / %v = %v\n", v, falses[i], totals[i], float64(falses[i])/float64(totals[i]))
+				fmt.Printf("Label %v Percision (Actuall/Predicted): %v / %v = %v\n", v, falsesbypred[i], predtotals[i], float64(falsesbypred[i])/float64(predtotals[i]))
+				falses := truetotals[i] - truebytrue[i]
+				fmt.Printf("Label %v Missed/Actuall Rate: %v / %v = %v\n", v, falses, truetotals[i], float64(falses)/float64(truetotals[i]))
+
 			}
 			if nas != 0 {
 				fmt.Printf("Couldn't predict %v cases due to missing values.\n", nas)

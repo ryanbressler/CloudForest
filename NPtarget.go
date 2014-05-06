@@ -5,9 +5,9 @@ import (
 )
 
 /*
-NPTarget wraps a categorical feature for use approximate Neyman-Pearson (NP)
-classification. Ie classification that minimizes the false negative rate
-subject to a constrainte on the false positive rate.
+NPTarget wraps a categorical feature for use in experimental approximate Neyman-Pearson (NP)
+classification...constraints and optimization are done on percision false
+positive/negative rate.
 
 It uses an impurity measure with a soft constraint from the seccond family presented in
 
@@ -17,7 +17,7 @@ Clayton Scott,  October 2005
 http://www.stat.rice.edu/~cscott/pubs/npdesign.pdf
 
 
-N(f) = κ max((R0(f) − α), 0) + R1(f) − β.
+N(f) = κ max((R0(f) − α), 0) + R1(f)
 
 Where f is the classifer, R0 is the flase positive rate R1 is the false negative rate,
 α is the false positive constraint and k controls the cost of violating
@@ -25,7 +25,7 @@ this constraint and β is a constant we can ignore as it subtracts out in diffre
 
 The vote assigned to each leaf node is a corrected mode where the count of the
 positive/constrained label is corrected by 1/α. Without this modification constraints
-> .5 won't work since nodes with that many false positives won't vote positive.
+> .5 won't work since nodes with that many negatives false positives won't vote positive.
 */
 type NPTarget struct {
 	CatFeature
