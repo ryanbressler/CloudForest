@@ -78,6 +78,9 @@ func main() {
 	var impute bool
 	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode before growth.")
 
+	var extra bool
+	flag.BoolVar(&extra, "extra", false, "Grow Extra Random Trees (supports learning from numerical variables only).")
+
 	var splitmissing bool
 	flag.BoolVar(&splitmissing, "splitmissing", false, "Split missing values onto a third branch at each node (experimental).")
 
@@ -570,7 +573,7 @@ func main() {
 						}
 					}
 
-					tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, imppnt, depthUsed, allocs)
+					tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
 
 					if mmdpnt != nil {
 						for i, v := range *depthUsed {

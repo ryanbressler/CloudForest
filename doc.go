@@ -59,7 +59,7 @@ function/closure passed to a tree's root node's Recurse method:
 
 		if (2 * leafSize) <= len(innercases) {
 			SampleFirstN(&candidates, mTry)
-			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], allocs)
+			best, impDec := fm.BestSplitter(target, innercases, candidates[:mTry], false, allocs)
 			if best != nil && impDec > minImp {
 				//not a leaf node so define the splitter and left and right nodes
 				//so recursion will continue
@@ -119,11 +119,13 @@ pointers to these items and its use can be seen in functions like:
 	func (fm *FeatureMatrix) BestSplitter(target Target,
 		cases []int,
 		candidates []int,
+		extraRandom bool,
 		allocs *BestSplitAllocs) (s *Splitter, impurityDecrease float64)
 
 	func (f *Feature) BestSplit(target Target,
 		cases *[]int,
 		parentImp float64,
+		randomSplit bool,
 		allocs *BestSplitAllocs) (bestNum float64, bestCat int, bestBigCat *big.Int, impurityDecrease float64)
 
 

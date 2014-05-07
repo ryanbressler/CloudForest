@@ -92,6 +92,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	force bool,
 	vet bool,
 	evaloob bool,
+	extraRandom bool,
 	allocs *BestSplitAllocs,
 	nConstantsBefore int) (bestFi int, bestSplit interface{}, impurityDecrease float64, nConstants int) {
 
@@ -146,7 +147,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		i := cans[lastSample]
 
 		f = fm.Data[i]
-		split, inerImp, constant = f.BestSplit(target, cases, parentImp, leafSize, allocs)
+		split, inerImp, constant = f.BestSplit(target, cases, parentImp, leafSize, extraRandom, allocs)
 		if constant {
 			nConstants++
 			nDrawnConstants++
@@ -168,7 +169,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 			}
 
 			allocs.ContrastTarget.(Feature).ShuffleCases(casept)
-			_, vetImp, _ = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, allocs)
+			_, vetImp, _ = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, extraRandom, allocs)
 			inerImp = inerImp - vetImp
 		}
 

@@ -30,22 +30,22 @@ func TestBestSplitter(t *testing.T) {
 	candidates := []int{1, 2, 3, 4, 5, 6, 7}
 	allocs := NewBestSplitAllocs(len(*cases), target)
 
-	_, imp, constant := fm.Data[1].BestSplit(target, cases, 1, 1, allocs)
+	_, imp, constant := fm.Data[1].BestSplit(target, cases, 1, 1, false, allocs)
 	if imp <= minImp || constant == true {
 		t.Errorf("Good feature had imp %v and constant: %v", imp, constant)
 	}
 
-	_, imp, constant = fm.Data[2].BestSplit(target, cases, 1, 1, allocs)
+	_, imp, constant = fm.Data[2].BestSplit(target, cases, 1, 1, false, allocs)
 	if imp > minImp || constant == false {
 		t.Errorf("Constant cat feature had imp %v and constant: %v %v", imp, constant, fm.Data[2].(*DenseCatFeature).CatData)
 	}
 
-	_, imp, constant = fm.Data[7].BestSplit(target, cases, 1, 1, allocs)
+	_, imp, constant = fm.Data[7].BestSplit(target, cases, 1, 1, false, allocs)
 	if imp > minImp || constant == false {
 		t.Errorf("Constant num feature had imp %v and constant: %v", imp, constant)
 	}
 
-	fi, split, impDec, nconstants := fm.BestSplitter(target, cases, &candidates, len(candidates), nil, 1, true, false, false, allocs, 0)
+	fi, split, impDec, nconstants := fm.BestSplitter(target, cases, &candidates, len(candidates), nil, 1, true, false, false, false, allocs, 0)
 	if fi != 1 || split == nil || impDec == minImp || nconstants != 6 {
 		t.Errorf("BestSplitter couldn't find non constant feature and six constants fi: %v split: %v impDex: %v nconstants: %v ", fi, split, impDec, nconstants)
 	}
@@ -54,13 +54,13 @@ func TestBestSplitter(t *testing.T) {
 
 		candidates = []int{1, 2, 3, 4, 5, 6, 7}
 
-		fi, split, impDec, nconstants = fm.BestSplitter(target, cases, &candidates, 1, nil, 1, true, false, false, allocs, i)
+		fi, split, impDec, nconstants = fm.BestSplitter(target, cases, &candidates, 1, nil, 1, true, false, false, false, allocs, i)
 		if fi != 1 || split == nil || impDec == minImp {
 			t.Errorf("BestSplitter couldn't find non constant feature with mTry=1 and %v known constants fi: %v split: %v impDex: %v nconstants: %v ", i, fi, split, impDec, nconstants)
 		}
 
 		candidates = []int{1, 2, 3, 4, 5, 6, 7}
-		fi, split, impDec, nconstants = fm.BestSplitter(target, cases, &candidates, len(candidates), nil, 1, true, false, false, allocs, i)
+		fi, split, impDec, nconstants = fm.BestSplitter(target, cases, &candidates, len(candidates), nil, 1, true, false, false, false, allocs, i)
 		if fi != 1 || split == nil || impDec == minImp || nconstants != 6 {
 			t.Errorf("BestSplitter couldn't find non constant feature and six constants with %v known constants fi: %v split: %v impDex: %v nconstants: %v ", i, fi, split, impDec, nconstants)
 		}

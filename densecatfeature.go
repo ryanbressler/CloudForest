@@ -144,6 +144,7 @@ func (f *DenseCatFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	leafSize int,
+	randomSplit bool,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	var nmissing, nonmissing, total int

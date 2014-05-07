@@ -26,6 +26,7 @@ type Feature interface {
 		cases *[]int,
 		parentImp float64,
 		leafSize int,
+		randomSplit bool,
 		allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool)
 	DecodeSplit(codedSplit interface{}) (s *Splitter)
 	ShuffledCopy() (fake Feature)

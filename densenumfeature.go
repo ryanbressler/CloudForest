@@ -226,6 +226,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	leafSize int,
+	randomSplit bool,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	var nmissing, nonmissing, total int
@@ -260,7 +261,7 @@ func (f *DenseNumFeature) BestSplit(target Target,
 		tosplit = cases
 	}
 
-	codedSplit, impurityDecrease, constant = f.BestNumSplit(target, tosplit, nonmissingparentImp, leafSize, allocs)
+	codedSplit, impurityDecrease, constant = f.BestNumSplit(target, tosplit, nonmissingparentImp, leafSize, randomSplit, allocs)
 
 	if f.HasMissing && nmissing > 0 && impurityDecrease > minImp {
 		impurityDecrease = parentImp + ((float64(nonmissing)*(impurityDecrease-nonmissingparentImp) - float64(nmissing)*missingimp) / float64(total))
@@ -285,6 +286,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	cases *[]int,
 	parentImp float64,
 	leafSize int,
+	randomSplit bool,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	impurityDecrease = minImp
@@ -306,8 +308,14 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 			impurityDecrease = minImp
 			return
 		}
+
 		for i := leafSize; i < stop; i++ {
 			c := sorter.Cases[i]
+
+			if randomSplit {
+				c = sorter.Cases[rand.Intn(stop)]
+			}
+
 			//skip cases where the next sorted case has the same value as these can't be split on
 			if f.NumData[c] <= (f.NumData[sorter.Cases[i-1]] + constant_cutoff) {
 				continue
@@ -334,6 +342,10 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 				codedSplit = (f.NumData[sorter.Cases[i-1]] + f.NumData[c]) / 2.0
 				//fmt.Println(len(sorter.Cases), sorter.Vals, allocs.LM, allocs.RM, codedSplit, impurityDecrease)
 
+			}
+
+			if randomSplit {
+				break
 			}
 
 		}
