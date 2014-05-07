@@ -492,12 +492,11 @@ func main() {
 		imppnt = CloudForest.NewRunningMeans(len(data.Data))
 	}
 
-	treechan := make(chan *CloudForest.Tree, 0)
-
 	//****************** Good Stuff Stars Here ;) ******************//
 	trainingStart := time.Now()
 
 	for foresti := 0; foresti < nForest; foresti++ {
+		treechan := make(chan *CloudForest.Tree, 0)
 		//fmt.Println("forest ", foresti)
 		//Grow a single forest on nCores
 		for core := 0; core < nCores; core++ {
@@ -681,7 +680,6 @@ func main() {
 
 					mTry = int(math.Ceil(math.Sqrt(float64(sigcount))))
 				}
-
 				fmt.Printf("Growing non-ACE forest with %v features with p-value < %v.\nmTry: %v\n", sigcount, cutoff, mTry)
 			}
 		}
