@@ -120,6 +120,9 @@ func main() {
 	var oob bool
 	flag.BoolVar(&oob, "oob", false, "Calculate and report oob error.")
 
+	var jungle bool
+	flag.BoolVar(&jungle, "jungle", false, "Grow unserializable and experimental decision jungle with node recombination.")
+
 	var caseoob string
 	flag.StringVar(&caseoob, "oobpreds", "", "Calculate and report oob predictions in the file specified.")
 
@@ -587,8 +590,12 @@ func main() {
 						}
 					}
 
-					tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
+					if jungle {
+						tree.GrowJungle(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
 
+					} else {
+						tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
+					}
 					if mmdpnt != nil {
 						for i, v := range *depthUsed {
 							if v != 0 {

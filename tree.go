@@ -2,6 +2,15 @@ package CloudForest
 
 import ()
 
+type nodeAndCases struct {
+	n          *Node
+	start      int
+	end        int
+	nconstants int
+	parent     *Node
+	dead       bool
+}
+
 //Tree represents a single decision tree.
 type Tree struct {
 	//Tree int
@@ -163,6 +172,157 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 		return
 
 	}, fm, &cases, 0, 0)
+}
+
+func (t *Tree) GrowJungle(fm *FeatureMatrix,
+	target Target,
+	cases []int,
+	candidates []int,
+	oob []int,
+	mTry int,
+	leafSize int,
+	splitmissing bool,
+	force bool,
+	vet bool,
+	evaloob bool,
+	extraRandom bool,
+	importance *[]*RunningMean,
+	depthUsed *[]int,
+	allocs *BestSplitAllocs) {
+
+	//var innercanidates []int
+	var impDec float64
+	nodes := []nodeAndCases{nodeAndCases{t.Root, 0, len(cases), 0, nil, false}}
+	var depth, nconstants, start, end, fi, firstThisLevel int
+	var split interface{}
+
+	innercases := cases[0:len(cases)]
+	innercases2 := cases[0:len(cases)]
+
+	for {
+		//Extend Nodes
+		lastThisLevel := len(nodes)
+
+		for i := firstThisLevel; i < lastThisLevel; i++ {
+			if nodes[i].dead {
+				continue
+			}
+
+			node := nodes[i]
+			n := node.n
+			start = node.start
+			end = node.end
+			innercases = cases[node.start:node.end]
+			nconstants = node.nconstants
+
+			if (2 * leafSize) <= len(innercases) {
+
+				fi, split, impDec, nconstants = fm.BestSplitter(target, &innercases, &candidates, mTry, &oob, leafSize, force, vet, evaloob, extraRandom, allocs, nconstants)
+
+				if split != nil {
+					if importance != nil {
+						(*importance)[fi].Add(impDec)
+					}
+					if depthUsed != nil && ((*depthUsed)[fi] == 0 || depth < (*depthUsed)[fi]) {
+						(*depthUsed)[fi] = depth
+					}
+
+					//not a leaf node so define the splitter and left and right nodes
+					//so recursion will continue
+					n.CodedSplit = split
+					n.Featurei = fi
+					n.Splitter = fm.Data[fi].DecodeSplit(split)
+					n.Pred = ""
+
+					li, ri := fm.Data[fi].SplitPoints(split, &innercases)
+
+					//Left
+					n.Left = new(Node)
+					nodes = append(nodes, nodeAndCases{n.Left, start, start + li, nconstants, n, false})
+
+					//Right
+					n.Right = new(Node)
+					nodes = append(nodes, nodeAndCases{n.Right, start + ri, end, nconstants, n, false})
+
+					if splitmissing {
+						n.Missing = new(Node)
+						if li != ri {
+							nodes = append(nodes, nodeAndCases{n.Missing, start + li, start + ri, nconstants, n, false})
+						}
+					}
+
+					continue
+				}
+
+			}
+
+			//Leaf node so find the predictive value and set it in n.Pred
+			split = nil
+			n.CodedSplit = nil
+			n.Splitter = nil
+			n.Pred = target.FindPredicted(innercases)
+			continue
+
+		}
+
+		if len(nodes) == lastThisLevel {
+			break
+		}
+
+		//Combine next level nodes here for jungles
+		for i := lastThisLevel; i < len(nodes); i++ {
+			if nodes[i].dead {
+				continue
+			}
+			var maxImpDec, impDec float64
+			combine := -1
+			nodei := nodes[i]
+			for j := lastThisLevel; j < len(nodes); j++ {
+				if nodes[j].dead {
+					continue
+				}
+
+				nodej := nodes[j]
+				if nodei.end == nodej.start && nodei.parent != nodej.parent {
+					//should we consider other harder combinations?
+					innercases = cases[nodei.start:nodei.end]
+					innercases2 = cases[nodej.start:nodej.end]
+					impDec = target.SplitImpurity(&innercases, &innercases2, nil, allocs)
+
+					innercases = cases[nodei.start:nodej.end]
+					impDec -= target.Impurity(&innercases, allocs.Counter)
+
+					if impDec > maxImpDec {
+						maxImpDec = impDec
+						combine = j
+					}
+
+				}
+			}
+
+			if combine != -1 {
+				nodes[combine].dead = true
+				nj := nodes[combine]
+				nodei.end = nj.end
+				parent := nj.parent
+				switch nj.n {
+				case parent.Left:
+					parent.Left = nodei.n
+				case parent.Right:
+					parent.Right = nodei.n
+				case parent.Missing:
+					parent.Missing = nodei.n
+				}
+
+			}
+
+		}
+
+		firstThisLevel = lastThisLevel
+
+		depth++
+	}
+
 }
 
 //GetLeaves is called by the leaf count utility to
