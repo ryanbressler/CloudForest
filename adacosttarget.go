@@ -5,30 +5,42 @@ import (
 )
 
 /*
-AdaBoostTarget wraps a numerical feature as a target for us in Adaptive Boosting (AdaBoost)
+AdaCostTarget wraps a numerical feature as a target for us in Cost Sensitive Adaptive Boosting (AdaC2.M1)
 
+"Boosting for Learning Multiple Classes with Imbalanced Class Distribution"
+Yanmin Sun, Mohamed S. Kamel and Yang Wang
 */
-type AdaBoostTarget struct {
+type AdaCostTarget struct {
 	CatFeature
 	Weights []float64
+	Costs   []float64
 }
 
 /*
-NewAdaBoostTarget creates a categorical adaptive boosting target and initializes its weights.
+NewAdaCostTarget creates a categorical adaptive boosting target and initializes its weights.
 */
-func NewAdaBoostTarget(f CatFeature) (abt *AdaBoostTarget) {
+func NewAdaCostTarget(f CatFeature) (abt *AdaCostTarget) {
 	nCases := f.Length()
-	abt = &AdaBoostTarget{f, make([]float64, nCases)}
+	abt = &AdaCostTarget{f, make([]float64, nCases), make([]float64, f.NCats())}
 	for i := range abt.Weights {
 		abt.Weights[i] = 1 / float64(nCases)
 	}
 	return
 }
 
+/*RegretTarget.SetCosts puts costs in a map[string]float64 by feature name into the proper
+entries in RegretTarget.Costs.*/
+func (target *AdaCostTarget) SetCosts(costmap map[string]float64) {
+	for i := 0; i < target.NCats(); i++ {
+		c := target.NumToCat(i)
+		target.Costs[i] = costmap[c]
+	}
+}
+
 /*
 SplitImpurity is an AdaCosting version of SplitImpurity.
 */
-func (target *AdaBoostTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
+func (target *AdaCostTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
 	nl := float64(len(*l))
 	nr := float64(len(*r))
 	nm := 0.0
@@ -46,7 +58,7 @@ func (target *AdaBoostTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs
 
 //UpdateSImpFromAllocs willl be called when splits are being built by moving cases from r to l as in learning from numerical variables.
 //Here it just wraps SplitImpurity but it can be implemented to provide further optimization.
-func (target *AdaBoostTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64) {
+func (target *AdaCostTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs, movedRtoL *[]int) (impurityDecrease float64) {
 	var cat, i int
 	lcounter := *allocs.LCounter
 	rcounter := *allocs.RCounter
@@ -75,7 +87,7 @@ func (target *AdaBoostTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int,
 }
 
 //Impurity is an AdaCosting that uses the weights specified in weights.
-func (target *AdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
+func (target *AdaCostTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	e = 0.0
 	//m := target.Modei(cases)
 
@@ -86,7 +98,7 @@ func (target *AdaBoostTarget) Impurity(cases *[]int, counter *[]int) (e float64)
 }
 
 //ImpFromCounts recalculates gini impurity from class counts for us in intertive updates.
-func (target *AdaBoostTarget) ImpFromCounts(cases *[]int, counter *[]int) (e float64) {
+func (target *AdaCostTarget) ImpFromCounts(cases *[]int, counter *[]int) (e float64) {
 
 	var m, mc int
 
@@ -101,7 +113,7 @@ func (target *AdaBoostTarget) ImpFromCounts(cases *[]int, counter *[]int) (e flo
 
 		cat := target.Geti(c)
 		if cat != m {
-			e += target.Weights[c]
+			e += target.Weights[c] * target.Costs[cat]
 		}
 
 	}
@@ -112,7 +124,7 @@ func (target *AdaBoostTarget) ImpFromCounts(cases *[]int, counter *[]int) (e flo
 
 //Boost performs categorical adaptive boosting using the specified partition and
 //returns the weight that tree that generated the partition should be given.
-func (t *AdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
+func (t *AdaCostTarget) Boost(leaves *[][]int) (weight float64) {
 	weight = 0.0
 	counter := make([]int, t.NCats())
 	for _, cases := range *leaves {
@@ -124,7 +136,6 @@ func (t *AdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 	weight = .5 * math.Log((1-weight)/weight)
 
 	for _, cases := range *leaves {
-
 		t.CountPerCat(&cases, &counter)
 
 		var m, mc int
@@ -140,9 +151,9 @@ func (t *AdaBoostTarget) Boost(leaves *[][]int) (weight float64) {
 				cat := t.Geti(c)
 				//CHANGE from adaboost:
 				if cat != m {
-					t.Weights[c] = t.Weights[c] * math.Exp(weight)
+					t.Weights[c] = t.Weights[c] * math.Exp(weight) * t.Costs[cat]
 				} else {
-					t.Weights[c] = t.Weights[c] * math.Exp(-weight)
+					t.Weights[c] = t.Weights[c] * math.Exp(-weight) * t.Costs[cat]
 				}
 			}
 

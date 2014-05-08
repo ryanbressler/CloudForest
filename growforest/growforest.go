@@ -31,6 +31,9 @@ func main() {
 	costs := flag.String("cost",
 		"", "For categorical targets, a json string to float map of the cost of falsely identifying each category.")
 
+	adacosts := flag.String("adacost",
+		"", "Json costs for cost sentive AdaBoost.")
+
 	rfweights := flag.String("rfweights",
 		"", "For categorical targets, a json string to float map of the weights to use for each category in Weighted RF.")
 
@@ -417,6 +420,18 @@ func main() {
 				regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
 				regTarg.SetCosts(costmap)
 				targetf = regTarg
+			case *adacosts != "":
+				fmt.Println("Using cost sensative AdaBoost costs: ", *adacosts)
+				costmap := make(map[string]float64)
+				err := json.Unmarshal([]byte(*adacosts), &costmap)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				actarget := CloudForest.NewAdaCostTarget(targetf.(CloudForest.CatFeature))
+				actarget.SetCosts(costmap)
+				targetf = actarget
+
 			case *rfweights != "":
 				fmt.Println("Using rf weights: ", *rfweights)
 				weightmap := make(map[string]float64)
