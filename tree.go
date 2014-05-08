@@ -270,52 +270,57 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 		}
 
 		//Combine next level nodes here for jungles
-		for i := lastThisLevel; i < len(nodes); i++ {
-			if nodes[i].dead {
-				continue
-			}
-			var maxImpDec, impDec float64
-			combine := -1
-			nodei := nodes[i]
-			for j := lastThisLevel; j < len(nodes); j++ {
-				if nodes[j].dead {
+		madeChanges := true
+		for madeChanges {
+			madeChanges = false
+			for i := lastThisLevel; i < len(nodes); i++ {
+				if nodes[i].dead {
 					continue
 				}
+				var maxImpDec, impDec float64
+				combine := -1
+				nodei := nodes[i]
+				for j := lastThisLevel; j < len(nodes); j++ {
+					if nodes[j].dead {
+						continue
+					}
 
-				nodej := nodes[j]
-				if nodei.end == nodej.start && nodei.parent != nodej.parent {
-					//should we consider other harder combinations?
-					innercases = cases[nodei.start:nodei.end]
-					innercases2 = cases[nodej.start:nodej.end]
-					impDec = target.SplitImpurity(&innercases, &innercases2, nil, allocs)
+					nodej := nodes[j]
+					if nodei.end == nodej.start && nodei.parent != nodej.parent {
+						//should we consider other harder noncontigeous combinations?
+						innercases = cases[nodei.start:nodei.end]
+						innercases2 = cases[nodej.start:nodej.end]
+						impDec = target.SplitImpurity(&innercases, &innercases2, nil, allocs)
 
-					innercases = cases[nodei.start:nodej.end]
-					impDec -= target.Impurity(&innercases, allocs.Counter)
+						innercases = cases[nodei.start:nodej.end]
+						impDec -= target.Impurity(&innercases, allocs.Counter)
 
-					if impDec > maxImpDec {
-						maxImpDec = impDec
-						combine = j
+						if impDec > maxImpDec {
+							maxImpDec = impDec
+							combine = j
+						}
+
+					}
+				}
+
+				if combine != -1 {
+					madeChanges = true
+					nodes[combine].dead = true
+					nj := nodes[combine]
+					nodei.end = nj.end
+					parent := nj.parent
+					switch nj.n {
+					case parent.Left:
+						parent.Left = nodei.n
+					case parent.Right:
+						parent.Right = nodei.n
+					case parent.Missing:
+						parent.Missing = nodei.n
 					}
 
 				}
-			}
-
-			if combine != -1 {
-				nodes[combine].dead = true
-				nj := nodes[combine]
-				nodei.end = nj.end
-				parent := nj.parent
-				switch nj.n {
-				case parent.Left:
-					parent.Left = nodei.n
-				case parent.Right:
-					parent.Right = nodei.n
-				case parent.Missing:
-					parent.Missing = nodei.n
-				}
 
 			}
-
 		}
 
 		firstThisLevel = lastThisLevel
