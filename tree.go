@@ -288,6 +288,7 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 					nodej := nodes[j]
 					if nodei.end == nodej.start && nodei.parent != nodej.parent {
 						//should we consider other harder noncontigeous combinations?
+						//or is theis enough of a random search to be fine?
 						innercases = cases[nodei.start:nodei.end]
 						innercases2 = cases[nodej.start:nodej.end]
 						impDec = target.SplitImpurity(&innercases, &innercases2, nil, allocs)
