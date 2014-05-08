@@ -30,7 +30,8 @@ func main() {
 		"", "File name to output importance.")
 	costs := flag.String("cost",
 		"", "For categorical targets, a json string to float map of the cost of falsely identifying each category.")
-
+	dentropy := flag.String("dentropy",
+		"", "Class disutilities for disutility entropy.")
 	adacosts := flag.String("adacost",
 		"", "Json costs for cost sentive AdaBoost.")
 
@@ -423,6 +424,17 @@ func main() {
 				regTarg := CloudForest.NewRegretTarget(targetf.(CloudForest.CatFeature))
 				regTarg.SetCosts(costmap)
 				targetf = regTarg
+			case *dentropy != "":
+				fmt.Println("Using entropy with disutilities: ", *dentropy)
+				costmap := make(map[string]float64)
+				err := json.Unmarshal([]byte(*dentropy), &costmap)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				deTarg := CloudForest.NewDEntropyTarget(targetf.(CloudForest.CatFeature))
+				deTarg.SetCosts(costmap)
+				targetf = deTarg
 			case *adacosts != "":
 				fmt.Println("Using cost sensative AdaBoost costs: ", *adacosts)
 				costmap := make(map[string]float64)
