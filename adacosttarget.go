@@ -9,6 +9,10 @@ AdaCostTarget wraps a numerical feature as a target for us in Cost Sensitive Ada
 
 "Boosting for Learning Multiple Classes with Imbalanced Class Distribution"
 Yanmin Sun, Mohamed S. Kamel and Yang Wang
+
+See equations in slides here:
+http://people.ee.duke.edu/~lcarin/Minhua4.18.08.pdf
+
 */
 type AdaCostTarget struct {
 	CatFeature
