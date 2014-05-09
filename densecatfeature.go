@@ -60,7 +60,7 @@ func (f *DenseCatFeature) EncodeToNum() (fs []Feature) {
 //during data parseing.
 func (f *DenseCatFeature) Append(v string) {
 	norm := strings.ToLower(v)
-	if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
+	if len(norm) == 0 || norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
 
 		f.CatData = append(f.CatData, 0)
 		f.Missing = append(f.Missing, true)
@@ -119,7 +119,7 @@ func (f *DenseCatFeature) GetStr(i int) string {
 //PutStr set's the i'th case to the class label v.
 func (f *DenseCatFeature) PutStr(i int, v string) {
 	norm := strings.ToLower(v)
-	if norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
+	if len(norm) == 0 || norm == "?" || norm == "nan" || norm == "na" || norm == "null" {
 		f.Missing[i] = true
 		f.HasMissing = true
 	}
