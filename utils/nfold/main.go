@@ -68,12 +68,20 @@ func main() {
 	var folds int
 	flag.IntVar(&folds, "folds", 5, "Number of folds to generate.")
 
+	var impute bool
+	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode.")
+
 	flag.Parse()
 
 	//Parse Data
 	data, err := CloudForest.LoadAFM(*fm)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if impute {
+		fmt.Println("Imputing missing values to feature mean/mode.")
+		data.ImputeMissing()
 	}
 
 	foldis := make([][]int, 0, folds)
