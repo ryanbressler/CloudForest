@@ -720,7 +720,7 @@ func main() {
 	}
 
 	trainingEnd := time.Now()
-	fmt.Printf("Total training time: %v.\n", trainingEnd.Sub(trainingStart))
+	fmt.Printf("Total training time (seconds): %v\n", trainingEnd.Sub(trainingStart).Seconds())
 
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))

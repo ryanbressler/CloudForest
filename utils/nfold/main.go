@@ -72,6 +72,9 @@ func main() {
 	var folds int
 	flag.IntVar(&folds, "folds", 5, "Number of folds to generate.")
 
+	var maxcats int
+	flag.IntVar(&maxcats, "maxcats", -1, "Maximum number of categories to allow in a feature.")
+
 	var impute bool
 	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode.")
 
@@ -113,19 +116,20 @@ func main() {
 		}
 		blackfile.Close()
 
-		newdata := make([]CloudForest.Feature, 0, len(data.Data)-blacklisted)
-		newmap := make(map[string]int, len(data.Data)-blacklisted)
-
-		for i, f := range data.Data {
-			if !blacklistis[i] {
-				newmap[f.GetName()] = len(newdata)
-				newdata = append(newdata, f)
-			}
-		}
-
-		data.Data = newdata
-		data.Map = newmap
 	}
+
+	newdata := make([]CloudForest.Feature, 0, len(data.Data)-blacklisted)
+	newmap := make(map[string]int, len(data.Data)-blacklisted)
+
+	for i, f := range data.Data {
+		if !blacklistis[i] && (maxcats == -1 || f.NCats() <= maxcats) {
+			newmap[f.GetName()] = len(newdata)
+			newdata = append(newdata, f)
+		}
+	}
+
+	data.Data = newdata
+	data.Map = newmap
 
 	if impute {
 		fmt.Println("Imputing missing values to feature mean/mode.")
