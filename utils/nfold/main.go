@@ -78,6 +78,12 @@ func main() {
 	var impute bool
 	flag.BoolVar(&impute, "impute", false, "Impute missing values to feature mean/mode.")
 
+	var onehot bool
+	flag.BoolVar(&onehot, "onehot", false, "Do one hot encoding of categorical features to boolean true false.")
+
+	var num bool
+	flag.BoolVar(&num, "num", false, "Do one hot encoding of categorical features to numerical features.")
+
 	flag.Parse()
 
 	//Parse Data
@@ -102,6 +108,9 @@ func main() {
 				break
 			} else if err != nil {
 				log.Fatal(err)
+			}
+			if id[0] == *targetname {
+				continue
 			}
 			i, ok := data.Map[id[0]]
 			if !ok {
@@ -134,6 +143,16 @@ func main() {
 	if impute {
 		fmt.Println("Imputing missing values to feature mean/mode.")
 		data.ImputeMissing()
+	}
+
+	if onehot {
+		fmt.Println("OneHot encoding.")
+		data.OneHot()
+	}
+
+	if num {
+		fmt.Println("Numerical OneHot encoding.")
+		data.EncodeToNum()
 	}
 
 	foldis := make([][]int, 0, folds)

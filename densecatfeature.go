@@ -56,6 +56,31 @@ func (f *DenseCatFeature) EncodeToNum() (fs []Feature) {
 	return
 }
 
+func (f *DenseCatFeature) OneHot() (fs []Feature) {
+	l := f.Length()
+	if f.NCats() > 2 {
+		fs = make([]Feature, 0, f.NCats())
+		for j, sv := range f.Back {
+			fn := &DenseCatFeature{
+				&CatMap{map[string]int{"false": 0, "true": 1},
+					[]string{"false", "true"}},
+				make([]int, l, l),
+				f.Missing,
+				f.Name + "==" + sv,
+				f.RandomSearch,
+				f.HasMissing}
+
+			for i, v := range f.CatData {
+				if j == v {
+					fn.CatData[i] = 1
+				}
+			}
+			fs = append(fs, fn)
+		}
+	}
+	return
+}
+
 //Append will parse and append a single value to the end of the feature. It is generally only used
 //during data parseing.
 func (f *DenseCatFeature) Append(v string) {
