@@ -294,30 +294,36 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 	if len(*cases) >= 2*leafSize {
 		sorter := allocs.Sorter
-		//sorter.Vals = f.NumData
-		//sorter.Cases = *cases
-		sorter.Load(&f.NumData, cases)
-		//sort.Sort(sorter)
+
+		NumData := f.NumData
+
+		sorter.Load(&NumData, cases)
 		sorter.Sort()
+
+		sorted := sorter.Cases
 
 		lastsplit := 0
 		innerimp := 0.0
-		stop := (len(sorter.Cases) - leafSize)
-		constant = (f.NumData[sorter.Cases[0]] + constant_cutoff) >= f.NumData[sorter.Cases[len(sorter.Cases)-1]]
+		stop := (len(sorted) - leafSize)
+		constant = (NumData[sorted[0]] + constant_cutoff) >= NumData[sorted[len(sorted)-1]]
 		if constant {
 			impurityDecrease = minImp
 			return
 		}
 
+		var c, lastc int
+		lastc = sorted[leafSize-1]
 		for i := leafSize; i < stop; i++ {
-			c := sorter.Cases[i]
+			c = sorted[i]
 
 			if randomSplit {
-				c = sorter.Cases[rand.Intn(stop)]
+				r := leafSize + rand.Intn(stop-leafSize)
+				c = sorted[r]
+				lastc = sorted[r-1]
 			}
 
 			//skip cases where the next sorted case has the same value as these can't be split on
-			if f.NumData[c] <= (f.NumData[sorter.Cases[i-1]] + constant_cutoff) {
+			if NumData[c] <= (NumData[lastc] + constant_cutoff) {
 				continue
 			}
 
@@ -339,10 +345,11 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
-				codedSplit = (f.NumData[sorter.Cases[i-1]] + f.NumData[c]) / 2.0
+				codedSplit = (NumData[lastc] + NumData[c]) / 2.0
 				//fmt.Println(len(sorter.Cases), sorter.Vals, allocs.LM, allocs.RM, codedSplit, impurityDecrease)
 
 			}
+			lastc = c
 
 			if randomSplit {
 				break

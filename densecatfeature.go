@@ -912,9 +912,10 @@ func (target *DenseCatFeature) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int
 	if m != nil && len(*m) > 0 {
 		nm = float64(len(*m))
 		impurityDecrease += nm * target.ImpFromCounts(len(*m), allocs.Counter)
+		nl += nm
 	}
-
-	impurityDecrease /= nl + nr + nm
+	nl += nr
+	impurityDecrease /= nl
 	return
 }
 

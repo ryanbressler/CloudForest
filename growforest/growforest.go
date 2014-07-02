@@ -160,20 +160,16 @@ func main() {
 	var testfm string
 	flag.StringVar(&testfm, "test", "", "Data to test the model on.")
 
-	flag.Parse()
+	var noseed bool
+	flag.BoolVar(&noseed, "noseed", false, "Don't seed the random number generator from time.")
 
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-	}
+	flag.Parse()
 
 	nForest := 1
 
-	rand.Seed(time.Now().UTC().UnixNano())
+	if !noseed {
+		rand.Seed(time.Now().UTC().UnixNano())
+	}
 
 	if testfm != "" {
 		dotest = true
@@ -199,6 +195,15 @@ func main() {
 	data, err := CloudForest.LoadAFM(*fm)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
 
 	if nContrasts > 0 {
@@ -523,6 +528,11 @@ func main() {
 	}
 
 	//****************** Good Stuff Stars Here ;) ******************//
+	var treesStarted, treesFinished int
+	treesStarted = nCores
+	var recordingTree sync.Mutex
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(nCores)
 	trainingStart := time.Now()
 
 	for foresti := 0; foresti < nForest; foresti++ {
@@ -530,7 +540,8 @@ func main() {
 		//fmt.Println("forest ", foresti)
 		//Grow a single forest on nCores
 		for core := 0; core < nCores; core++ {
-			go func() {
+
+			grow := func() {
 				weight := -1.0
 				canidates := make([]int, 0, len(data.Data))
 				for i := 0; i < len(data.Data); i++ {
@@ -635,39 +646,83 @@ func main() {
 						tree.VoteCases(data, oobVotes, oobcases)
 					}
 
-					treechan <- tree
-					tree = <-treechan
+					////////////// Lock mutext to ouput tree ////////
+					if nCores > 1 {
+						recordingTree.Lock()
+					}
+
+					if forestwriter != nil && foresti == nForest-1 {
+						forestwriter.WriteTree(tree, treesStarted)
+					}
+
+					if dotest && foresti == nForest-1 {
+						trees = append(trees, tree)
+
+						if treesStarted < nTrees-1 {
+							//newtree := new(CloudForest.Tree)
+							tree = CloudForest.NewTree()
+							tree.Target = *targetname
+						}
+					}
+					if progress {
+						treesFinished++
+						fmt.Printf("Model oob error after tree %v : %v\n", treesFinished, oobVotes.TallyError(unboostedTarget))
+					}
+					if treesStarted < nTrees {
+						treesStarted++
+					} else {
+						if nCores > 1 {
+							recordingTree.Unlock()
+							waitGroup.Done()
+						}
+						break
+
+					}
+					if nCores > 1 {
+						recordingTree.Unlock()
+					}
+					//////// Unlock //////////////////////////
+					// treechan <- tree
+					// tree = <-treechan
 				}
-			}()
-
-		}
-
-		for i := 0; i < nTrees; i++ {
-			tree := <-treechan
-			if tree == nil {
-				break
-			}
-			if forestwriter != nil && foresti == nForest-1 {
-				forestwriter.WriteTree(tree, i)
 			}
 
-			if dotest && foresti == nForest-1 {
-				trees = append(trees, tree)
-
-				if i < nTrees-1 {
-					//newtree := new(CloudForest.Tree)
-					treechan <- CloudForest.NewTree()
-				}
+			if nCores > 1 {
+				go grow()
 			} else {
-				if i < nTrees-1 {
-					treechan <- tree
-				}
-			}
-			if progress {
-				fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(unboostedTarget))
+				grow()
 			}
 
 		}
+		if nCores > 1 {
+			waitGroup.Wait()
+		}
+		// for i := 0; i < nTrees; i++ {
+		// 	tree := <-treechan
+		// 	if tree == nil {
+		// 		break
+		// 	}
+		// 	if forestwriter != nil && foresti == nForest-1 {
+		// 		forestwriter.WriteTree(tree, i)
+		// 	}
+
+		// 	if dotest && foresti == nForest-1 {
+		// 		trees = append(trees, tree)
+
+		// 		if i < nTrees-1 {
+		// 			//newtree := new(CloudForest.Tree)
+		// 			treechan <- CloudForest.NewTree()
+		// 		}
+		// 	} else {
+		// 		if i < nTrees-1 {
+		// 			treechan <- tree
+		// 		}
+		// 	}
+		// 	if progress {
+		// 		fmt.Printf("Model oob error after tree %v : %v\n", i, oobVotes.TallyError(unboostedTarget))
+		// 	}
+
+		// }
 		//Single forest growth is over.
 
 		//Record importance scores from this forest for ace
