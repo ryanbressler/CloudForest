@@ -67,7 +67,7 @@ func main() {
 	if hasTarget {
 		fmt.Printf("Target is %v in feature %v\n", forest.Target, targeti)
 		er := bb.TallyError(data.Data[targeti])
-		fmt.Printf("%v\n", er)
+		fmt.Printf("Error: %v\n", er)
 	}
 	if *predfn != "" {
 		fmt.Printf("Outputting label predicted actual tsv to %v\n", *predfn)

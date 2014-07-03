@@ -528,14 +528,16 @@ func main() {
 	}
 
 	//****************** Good Stuff Stars Here ;) ******************//
-	var treesStarted, treesFinished int
-	treesStarted = nCores
-	var recordingTree sync.Mutex
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(nCores)
+
 	trainingStart := time.Now()
 
 	for foresti := 0; foresti < nForest; foresti++ {
+		var treesStarted, treesFinished int
+		treesStarted = nCores
+		var recordingTree sync.Mutex
+		var waitGroup sync.WaitGroup
+
+		waitGroup.Add(nCores)
 		treechan := make(chan *CloudForest.Tree, 0)
 		//fmt.Println("forest ", foresti)
 		//Grow a single forest on nCores

@@ -123,6 +123,19 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 				c++
 				break
 			}
+			// if pivotv > swapf {
+			// 	c++
+			// 	break
+			// } else if pivotv >= swapf {
+			// 	d--
+			// 	vs[c] = vs[d]
+			// 	vs[d] = swapf
+
+			// 	swapi = cs[c]
+			// 	cs[c] = cs[d]
+			// 	cs[d] = swapi
+
+			// }
 		}
 		if b >= c {
 			break
@@ -142,10 +155,41 @@ func doPivot(cases *[]int, vals *[]float64, lo, hi int) (midlo, midhi int) {
 	}
 
 	n := min(b-a, a-lo)
-	swapRange(cases, vals, lo, b-n, n)
+
+	//swapRange(cases, vals, lo, b-n, n)
+	a2 := lo
+	b2 := b - n
+	for i := 0; i < n; i++ {
+
+		swapf = vs[a2]
+		vs[a2] = vs[b2]
+		vs[b2] = swapf
+
+		swapi = cs[a2]
+		cs[a2] = cs[b2]
+		cs[b2] = swapi
+
+		a2++
+		b2++
+	}
 
 	n = min(hi-d, d-c)
-	swapRange(cases, vals, c, hi-n, n)
+	//swapRange(cases, vals, c, hi-n, n)
+	a2 = c
+	b2 = hi - n
+	for i := 0; i < n; i++ {
+
+		swapf = vs[a2]
+		vs[a2] = vs[b2]
+		vs[b2] = swapf
+
+		swapi = cs[a2]
+		cs[a2] = cs[b2]
+		cs[b2] = swapi
+
+		a2++
+		b2++
+	}
 
 	return lo + b - a, hi - (d - c)
 }
@@ -174,22 +218,24 @@ func swapRange(cases *[]int, vals *[]float64, a, b, n int) {
 	vs := *vals
 	cs := *cases
 	//var api, bpi = a, b
-	// var swapi int
-	// var swapf float64
+	var swapi int
+	var swapf float64
 	for i := 0; i < n; i++ {
 		//swap(cases, vals, a, b+i)
+
 		// vs[a+i], vs[b+i] = vs[b+i], vs[a+i]
 		// cs[a+i], cs[b+i] = cs[b+i], cs[a+i]
-		// swapf = vs[a]
-		// vs[a] = vs[b]
-		// vs[b] = swapf
 
-		// swapi = cs[a]
-		// cs[a] = cs[b]
-		// cs[b] = swapi
+		swapf = vs[a]
+		vs[a] = vs[b]
+		vs[b] = swapf
 
-		vs[a], vs[b] = vs[b], vs[a]
-		cs[a], cs[b] = cs[b], cs[a]
+		swapi = cs[a]
+		cs[a] = cs[b]
+		cs[b] = swapi
+
+		// vs[a], vs[b] = vs[b], vs[a]
+		// cs[a], cs[b] = cs[b], cs[a]
 		a++
 		b++
 	}

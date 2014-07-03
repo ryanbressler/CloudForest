@@ -135,8 +135,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		return
 	}
 
-	randi := 0
-	lastSample := 0
+	var randi, lastSample, swap int
 	cans := *candidates
 	lcans := len(cans)
 
@@ -146,7 +145,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 	//Keep searching if
 	//have looked at >= mTry but haven't found a split with impurity decrease
 	//haven't looked at at least one non constant feature
-	//hacen't looked at mTry features
+	//haven't looked at mTry features
 	for j := 0; (force && j >= mTry && j <= nDrawnConstants) || j < mTry; j++ {
 
 		//Break early if there aren't any more nonconstant features
@@ -157,13 +156,18 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		//make sure there isn't only one non constant left to draw
 		if lcans > nDrawnConstants+lastSample {
 
-			randi = lastSample + rand.Intn(lcans-nDrawnConstants-lastSample)
+			randi = lastSample
+			randi += rand.Intn(lcans - nDrawnConstants - lastSample)
 			//randi = lastSample + rand.Intn(nnonconstant-lastSample)
 			if randi >= lcans-nConstants {
 				nDrawnConstants++
 				continue
 			}
-			cans[randi], cans[lastSample] = cans[lastSample], cans[randi]
+			//cans[randi], cans[lastSample] = cans[lastSample], cans[randi]
+			swap = cans[randi]
+			cans[randi] = cans[lastSample]
+			cans[lastSample] = swap
+
 		}
 		i := cans[lastSample]
 

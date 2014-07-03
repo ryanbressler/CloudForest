@@ -290,75 +290,74 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 	allocs *BestSplitAllocs) (codedSplit interface{}, impurityDecrease float64, constant bool) {
 
 	impurityDecrease = minImp
-	codedSplit = 0.0
+	var splitf float64
 
-	if len(*cases) >= 2*leafSize {
+	ncases := len(*cases)
+	if ncases >= 2*leafSize {
 		sorter := allocs.Sorter
 
-		NumData := f.NumData
-
-		sorter.Load(&NumData, cases)
+		sorter.Load(&f.NumData, cases)
 		sorter.Sort()
 
 		sorted := sorter.Cases
+		sortedData := sorter.Vals
 
 		lastsplit := 0
-		innerimp := 0.0
-		stop := (len(sorted) - leafSize)
-		constant = (NumData[sorted[0]] + constant_cutoff) >= NumData[sorted[len(sorted)-1]]
+		var innerimp float64
+		stop := (ncases - leafSize)
+		constant = (sortedData[0] + constant_cutoff) >= sortedData[ncases-1]
 		if constant {
 			impurityDecrease = minImp
 			return
 		}
+		lasti := leafSize - 1
 
-		var c, lastc int
-		lastc = sorted[leafSize-1]
+		if randomSplit {
+			leafSize = leafSize + rand.Intn(stop-leafSize)
+			lasti = leafSize - 1
+			stop = leafSize + 1
+
+		}
+
 		for i := leafSize; i < stop; i++ {
-			c = sorted[i]
-
-			if randomSplit {
-				r := leafSize + rand.Intn(stop-leafSize)
-				c = sorted[r]
-				lastc = sorted[r-1]
-			}
 
 			//skip cases where the next sorted case has the same value as these can't be split on
-			if NumData[c] <= (NumData[lastc] + constant_cutoff) {
+			if sortedData[i] <= (sortedData[lasti] + constant_cutoff) {
 				continue
+				if randomSplit {
+					stop++
+				}
 			}
 
-			/*		BUG there is a reallocation of a slice (not the underlying array) happening here in
-					BestNumSplit accounting for a chunk of runtime. Tried copying data between *l and *r
-					but it was slower.  */
 			if lastsplit == 0 {
-				allocs.LM = sorter.Cases[:i]
-				allocs.RM = sorter.Cases[i:]
-				innerimp = parentImp - target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+				allocs.LM = sorted[:i]
+				allocs.RM = sorted[i:]
+				innerimp = parentImp
+				innerimp -= target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
 				lastsplit = i
 			} else {
-				allocs.LM = sorter.Cases[:i]
-				allocs.RM = sorter.Cases[i:]
-				allocs.MM = sorter.Cases[lastsplit:i]
-				innerimp = parentImp - target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
+				allocs.LM = sorted[:i]
+				allocs.RM = sorted[i:]
+				allocs.MM = sorted[lastsplit:i]
+				innerimp = parentImp
+				innerimp -= target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
 				lastsplit = i
 			}
 
 			if innerimp > impurityDecrease {
 				impurityDecrease = innerimp
-				codedSplit = (NumData[lastc] + NumData[c]) / 2.0
+				splitf = sortedData[lasti]
+				splitf += sortedData[i]
+				splitf /= 2.0
 				//fmt.Println(len(sorter.Cases), sorter.Vals, allocs.LM, allocs.RM, codedSplit, impurityDecrease)
 
 			}
-			lastc = c
-
-			if randomSplit {
-				break
-			}
+			lasti = i
 
 		}
 
 	}
-
+	codedSplit = splitf
 	return
 }
 
