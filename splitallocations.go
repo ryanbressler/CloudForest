@@ -5,13 +5,12 @@ import ()
 //BestSplitAllocs contains reusable allocations for split searching and evaluation.
 //Seprate instances should be used in each go routing doing learning.
 type BestSplitAllocs struct {
-	L  []int
-	R  []int
-	LM []int
-	RM []int
-	MM []int
-	// Cases          []int
-	// Weights        []int
+	L              []int //Allocated to size
+	R              []int
+	M              []int
+	LM             []int //Used to point at other array
+	RM             []int
+	MM             []int
 	Left           *[]int  //left cases for potential splits
 	Right          *[]int  //right cases for potential splits
 	NonMissing     *[]int  //non missing cases for potential splits
@@ -24,6 +23,7 @@ type BestSplitAllocs struct {
 	Lsum_sqr       float64 //left value for sumarizing splits
 	Rsum_sqr       float64 //right value for sumarizing  splits
 	Msum_sqr       float64 //missing value for sumarizing splits
+	CatVals        []int
 	SortVals       []float64
 	Sorter         *SortableFeature //for learning from numerical features
 	ContrastTarget Target
@@ -40,6 +40,7 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 	lcounter := make([]int, target.NCats())
 	rcounter := make([]int, target.NCats())
 	bsa = &BestSplitAllocs{make([]int, 0, nTotalCases),
+		make([]int, 0, nTotalCases),
 		make([]int, 0, nTotalCases),
 		nil,
 		nil,
@@ -58,6 +59,7 @@ func NewBestSplitAllocs(nTotalCases int, target Target) (bsa *BestSplitAllocs) {
 		0.0,
 		0.0,
 		0.0,
+		make([]int, nTotalCases, nTotalCases),
 		make([]float64, nTotalCases, nTotalCases),
 		&SortableFeature{make([]float64, nTotalCases, nTotalCases),
 			nil},

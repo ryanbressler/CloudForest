@@ -602,10 +602,19 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64, constant bool) {
 
 	impurityDecrease = minImp
-	l := allocs.Left
-	Left := *l
-	r := allocs.Right
-	Right := *r
+
+	cs := *cases
+	// Left := allocs.Left
+	// Right := allocs.Right
+
+	cached := allocs.CatVals
+
+	//get the needed values on the CPU cache
+	catdata := f.CatData
+	for i, c := range cs {
+		cached[i] = 1 << uint(catdata[c])
+	}
+
 	/*
 
 		Exhaustive search of combinations of categories is carried out by iterating an Int and using
@@ -626,7 +635,12 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 	bestSplit = 0
 	bits := 0
 	innerimp := 0.0
+	swaper := 0
+
+	constant = true
+
 	//start at 1 to ignore the set with all on one side
+
 	for i := 1; i < nPartitions; i++ {
 
 		bits = i
@@ -635,28 +649,76 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 			bits = rand.Int()
 		}
 
-		//check the value of the j'th bit of i and
-		//send j left or right
-		(Left) = (Left)[0:0]
-		(Right) = (Right)[0:0]
-		j := 0
-		for _, c := range *cases {
+		// //check the value of the j'th bit of i and
+		// //send j left or right
+		// (*Left) = (*Left)[0:0]
+		// (*Right) = (*Right)[0:0]
+		// //j := 0
+		// for i, c := range Cases {
 
-			j = f.CatData[c]
-			if 0 != (bits & (1 << uint(j))) {
-				(Left) = append((Left), c)
-			} else {
-				(Right) = append((Right), c)
+		// 	// j = 1
+		// 	// j <<= uint(catdata[c])
+		// 	if 0 != (bits & cached[i]) {
+		// 		(*Left) = append((*Left), c)
+		// 	} else {
+		// 		(*Right) = append((*Right), c)
+		// 	}
+
+		// }
+
+		// //skip cases where the split didn't do any splitting
+		// if len(*Left) < leafSize || len(*Right) < leafSize {
+		// 	continue
+		// }
+
+		// innerimp = parentImp
+		// innerimp -= target.SplitImpurity(Left, Right, nil, allocs)
+
+		length := len(cs)
+		l := -1
+		r := length
+
+		//for range here passes tests but doesn't have good accuracy on larger forest coverage dataset
+		for j := 0; j < r; j++ {
+			//swaper = cs[j]
+			if 0 != (bits & cached[j]) { //Left
+				l++
+				//Never used for two way split
+				// if j != l {
+
+				// 	swaper = cs[j]
+				// 	cs[j] = cs[l]
+				// 	cs[l] = swaper
+				// 	j--
+				// }
+			} else { //Right
+				r--
+				swaper = cs[j]
+				cs[j] = cs[r]
+				cs[r] = swaper
+
+				swaper = cached[j]
+				cached[j] = cached[r]
+				cached[r] = swaper
+				j--
 			}
-
 		}
+		//constant = l == -1 || r == length
+		//fmt.Printf("constant %v\n", constant)
+		l++
 
 		//skip cases where the split didn't do any splitting
-		if len(Left) < leafSize || len(Right) < leafSize {
+		if l < leafSize || len(cs)-r < leafSize {
 			continue
 		}
 
-		innerimp = parentImp - target.SplitImpurity(&Left, &Right, nil, allocs)
+		allocs.LM = cs[:l]
+		allocs.RM = cs[r:]
+
+		constant = false
+
+		innerimp = parentImp
+		innerimp -= target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -727,12 +789,13 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 			i--
 		}
 	}
-	constant = l == -1 || r == length
+	//constant = l == -1 || r == length
 	//fmt.Printf("constant %v\n", constant)
 	l++
 
 	//skip cases where the split didn't do any splitting
-	if l < leafSize || len(cs)-l < leafSize {
+	if l < leafSize || len(cs)-r < leafSize {
+		constant = true
 		return
 	}
 	a.LM = cs[:l]
