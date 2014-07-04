@@ -152,7 +152,7 @@ func main() {
 
 	if num {
 		fmt.Println("Numerical OneHot encoding.")
-		data.EncodeToNum()
+		data = data.EncodeToNum()
 	}
 
 	foldis := make([][]int, 0, folds)
@@ -215,6 +215,18 @@ func main() {
 
 		}
 	}
+	encode := false
+
+	for _, f := range data.Data {
+		if f.NCats() > 0 {
+			encode = true
+		}
+	}
+
+	encoded := data
+	if encode && (writelibsvm || writeall) {
+		encoded = data.EncodeToNum()
+	}
 
 	trainis := make([]int, 0, foldsize*(folds-1))
 	//Write training and testing matrixes
@@ -244,8 +256,8 @@ func main() {
 
 		if writelibsvm || writeall {
 			trainW, testW := openfiles(trainfn+".libsvm", testfn+".libsvm")
-			CloudForest.WriteLibSvmCases(data, foldis[i], *targetname, testW)
-			CloudForest.WriteLibSvmCases(data, trainis, *targetname, trainW)
+			CloudForest.WriteLibSvmCases(encoded, foldis[i], *targetname, testW)
+			CloudForest.WriteLibSvmCases(encoded, trainis, *targetname, trainW)
 		}
 
 		fmt.Printf("Wrote fold %v. %v testing cases and %v training cases.\n", i, len(foldis[i]), len(trainis))

@@ -602,8 +602,10 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 	allocs *BestSplitAllocs) (bestSplit int, impurityDecrease float64, constant bool) {
 
 	impurityDecrease = minImp
-	left := *allocs.Left
-	right := *allocs.Right
+	l := allocs.Left
+	Left := *l
+	r := allocs.Right
+	Right := *r
 	/*
 
 		Exhaustive search of combinations of categories is carried out by iterating an Int and using
@@ -635,26 +637,26 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 
 		//check the value of the j'th bit of i and
 		//send j left or right
-		left = left[0:0]
-		right = right[0:0]
+		(Left) = (Left)[0:0]
+		(Right) = (Right)[0:0]
 		j := 0
 		for _, c := range *cases {
 
 			j = f.CatData[c]
 			if 0 != (bits & (1 << uint(j))) {
-				left = append(left, c)
+				(Left) = append((Left), c)
 			} else {
-				right = append(right, c)
+				(Right) = append((Right), c)
 			}
 
 		}
 
 		//skip cases where the split didn't do any splitting
-		if len(left) < leafSize || len(right) < leafSize {
+		if len(Left) < leafSize || len(Right) < leafSize {
 			continue
 		}
 
-		innerimp = parentImp - target.SplitImpurity(&left, &right, nil, allocs)
+		innerimp = parentImp - target.SplitImpurity(&Left, &Right, nil, allocs)
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits

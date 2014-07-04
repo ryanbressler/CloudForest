@@ -156,17 +156,24 @@ func WriteLibSvmCases(data *FeatureMatrix, cases []int, targetn string, outfile 
 
 	noTargetFm := &FeatureMatrix{make([]Feature, 0, len(data.Data)), make(map[string]int), data.CaseLabels}
 
+	encode := false
 	for i, f := range data.Data {
 		if i != targeti {
+			if data.Data[i].NCats() > 0 {
+				encode = true
+			}
 			noTargetFm.Map[f.GetName()] = len(noTargetFm.Data)
-			noTargetFm.Data = append(noTargetFm.Data, f.Copy())
+			noTargetFm.Data = append(noTargetFm.Data, f)
 
 		}
 	}
 
 	noTargetFm.ImputeMissing()
 
-	encodedfm := noTargetFm.EncodeToNum()
+	encodedfm := noTargetFm
+	if encode {
+		encodedfm = noTargetFm.EncodeToNum()
+	}
 
 	oucsv := csv.NewWriter(outfile)
 	oucsv.Comma = ' '
