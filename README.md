@@ -130,8 +130,12 @@ leafcount -train train.fm -rfpred forest.sf -leaves leaves.tsv -branches branche
 #Generate training and testing folds
 nfold -fm data.fm
 
-#growforest with interanal training and testing
+#growforest with internal training and testing
 growforest -train train_0.fm -target N:FeatureName -test test_0.fm
+
+#growforest with internal training and testing, 10 ace feature selection permutations and
+#testing performed only using significant features
+growforest -train train_0.fm -target N:FeatureName -test test_0.fm -ace 10 -cutoff .05
 
 ```
 
