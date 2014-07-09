@@ -84,7 +84,7 @@ Quick Start
 -------------
 
 Data can be provided in a tsv based anotated feature matrix or in arff or libsvm formats with
-".arff" or ".libsvm" extensions. Details are discussed in the [Data File Formats] section below 
+".arff" or ".libsvm" extensions. Details are discussed in the [Data File Formats](Data File Formats) section below 
 and a few example data sets are included in the "data" directory.
 
 ```bash
