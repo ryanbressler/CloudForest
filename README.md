@@ -36,10 +36,11 @@ separate, optimized paths to learn splits from binary, numerical and categorical
 
 ![Benchmarks](benchmark.png "Benchmarks on heterogeneous clinical data.")
 
-The alternative and augmented algorithms it implements can offer reduced error rate especially when
-recovering a signal related to a rare event from noisy, high dimensional data prone to over-fitting 
-(as is typical in genetic studies of diseases). These methods should be included in parameter sweeps 
-to maximize accuracy.
+CloudForest offers good general accuracy and the alternative and augmented algorithms it implements can 
+offer reduced error rate for specific use cases including especially recovering a signal from noisy, 
+high dimensional data prone to over-fitting and predicting rare events and unbalanced classes
+(both of which are typical in genetic studies of diseases). These methods should be included in 
+parameter sweeps to maximize accuracy.
 
 ![Error](error.png "Balanced error rates of different augmented algorithms on an example dataset.") 
 
