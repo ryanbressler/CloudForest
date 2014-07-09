@@ -30,17 +30,17 @@ The Design Prioritizes:
 * The ability to natively handle non numerical data types and missing values.
 * Use in a multi core or multi machine environment.
 
-Depending on the data set, It can achieve quicker training times then many other popular 
-implementations. This is the result of cpu cache friendly memory utilization well suited 
-to modern processors with optimized paths to learn splits from binary and categorical data.
+It can achieve quicker training times then many other popular implementations on some datasets. 
+This is the result of cpu cache friendly memory utilization well suited to modern processors and
+separate, optimized paths to learn splits from binary, numerical and categorical data.
 
 ![Benchmarks](benchmark.png "Benchmarks on heterogeneous clinical data.")
 
-The alternative and augmented algorithms it implements can offer reduced error rate especially
-on noisy, high dimensional data prone to over-fitting (including data from genetic studies)
-and should be included in parameter sweeps.
+The alternative and augmented algorithms it implements can offer reduced error rate especially when
+recovering a signal from noisy, high dimensional data prone to over-fitting (as is typical in genetic
+studies) and should be included in parameter sweeps to maximize accuracy.
 
-![Error](error.png "Balanced error rates of different augmented algorithms.") 
+![Error](error.png "Balanced error rates of different augmented algorithms on an example dataset.") 
 
 (Work on benchmarks and optimization is ongoing, if you find a slow use case please raise an issue.)
  
