@@ -24,15 +24,19 @@ and structure analysis on heterogeneous numerical / categorical data with missin
 The Design Prioritizes:
 
 * Training speed
-* Performance on highly dimensional heterogenous datasets (e.g. genetic and clinical data).
+* Performance on highly dimensional heterogeneous datasets (e.g. genetic and clinical data).
 * An optimized set of core functionality. 
 * The flexibility to quickly implement new impurities and algorithms using the common core.
 * The ability to natively handle non numerical data types and missing values.
 * Use in a multi core or multi machine environment.
 
-It achieves better performance then many other popular implementations by combining cpu cache 
-friendly memory utailization well suited to modern processors with optimized paths to learn 
-splits from of binary and categorical data. 
+Depending on the data set, It can achieve quicker training times then many other popular 
+implementations. This is the result of cpu cache friendly memory utilization well suited 
+to modern processors with optimized paths to learn splits from binary and categorical data.
+
+![Benchmarks](benchmark.png "Benchmarks on heterogeneous clinical data.")
+
+(Work on benchmarks and optimization is ongoing, if you find a slow use case please raise an issue.)
  
 Command line utilities to grow, apply and analyze forests and do cross validation are provided or 
 CloudForest can be used as a library in go programs.
