@@ -36,6 +36,12 @@ to modern processors with optimized paths to learn splits from binary and catego
 
 ![Benchmarks](benchmark.png "Benchmarks on heterogeneous clinical data.")
 
+The alternative and augmented algorithms it implements can offer reduced error rate especially
+on noisy, high dimensional data prone to over-fitting (including data from genetic studies)
+and should be included in parameter sweeps.
+
+![Error](error.png "Balanced error rates of different augmented algorithms.") 
+
 (Work on benchmarks and optimization is ongoing, if you find a slow use case please raise an issue.)
  
 Command line utilities to grow, apply and analyze forests and do cross validation are provided or 
