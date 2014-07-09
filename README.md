@@ -13,20 +13,26 @@ and structure analysis on heterogeneous numerical / categorical data with missin
 * Adaptive Boosting (AdaBoost) Classification 
 * Gradient Boosting Tree Regression
 * Entropy, Cost driven and Class Weighted classification
-* L1 Decision Tree regression
-* Improved feature selection with artificial contrasts
+* L1/Absolute Deviance Decision Tree regression
+* Improved Feature Selection with artificial contrasts with ensembles (ACE)
 * Roughly Balanced Bagging for Unbalanced Data
 * Improved robustness using out of bag cases and artificial contrasts.
+* Support for missing values via bias correction or three way splitting.
 * Density Estimating Trees/Forests
 * Proximity/Affinity Analysis suitable for manifold learning
 
 The Design Prioritizes:
 
-* Training Speed
+* Training speed
+* Performance on highly dimensional heterogenous datasets (e.g. genetic and clinical data).
 * An optimized set of core functionality. 
 * The flexibility to quickly implement new impurities and algorithms using the common core.
-* The ability to natively handle categorical data types and missing values allowing faster learning.
+* The ability to natively handle non numerical data types and missing values.
 * Use in a multi core or multi machine environment.
+
+It achieves better performance then many other popular implementations by combining cpu cache 
+friendly memory utailization well suited to modern processors with optimized paths to learn 
+splits from of binary and categorical data. 
  
 Command line utilities to grow, apply and analyze forests and do cross validation are provided or 
 CloudForest can be used as a library in go programs.
@@ -76,6 +82,10 @@ go install -u github.com/ryanbressler/CloudForest/utils/toafm
 
 Quick Start
 -------------
+
+Data can be provided in a tsv based anotated feature matrix or in arff or libsvm formats with
+".arff" or ".libsvm" extensions. Details are discussed in the [Data File Formats] section below 
+and a few example data sets are included in the "data" directory.
 
 ```bash
 #grow a predictor forest with default parameters and save it to forest.sf
