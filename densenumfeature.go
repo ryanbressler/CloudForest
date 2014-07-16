@@ -540,7 +540,7 @@ func (f *DenseNumFeature) Mode(cases *[]int) (m float64) {
 }
 
 //Span returns the lengh along the real line spaned by the specified cases
-func (f *DenseNumFeature) Span(cases *[]int) (span float64) {
+func (f *DenseNumFeature) Span(cases *[]int, counter *[]int) (span float64) {
 	first := true
 	min := 0.0
 	max := 0.0

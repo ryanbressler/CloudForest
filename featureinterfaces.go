@@ -10,6 +10,7 @@ const constant_cutoff = 1e-7
 
 //Feature contains all methods needed for a predictor feature.
 type Feature interface {
+	Span(cases *[]int, counter *[]int) float64
 	NCats() (n int)
 	Length() (l int)
 	GetStr(i int) (value string)
@@ -46,7 +47,6 @@ type Feature interface {
 //provide access to the underlying data.
 type NumFeature interface {
 	Feature
-	Span(cases *[]int) float64
 	Get(i int) float64
 	Put(i int, v float64)
 	Predicted(cases *[]int) float64
@@ -63,7 +63,6 @@ type CatFeature interface {
 	Feature
 	CountPerCat(cases *[]int, counter *[]int)
 	MoveCountsRtoL(allocs *BestSplitAllocs, movedRtoL *[]int)
-	DistinctCats(cases *[]int, counter *[]int) int
 	CatToNum(value string) (numericv int)
 	NumToCat(i int) (value string)
 	Geti(i int) int

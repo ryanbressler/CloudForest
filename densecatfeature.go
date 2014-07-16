@@ -1053,24 +1053,31 @@ func (target *DenseCatFeature) ImpFromCounts(total int, counts *[]int) (e float6
 
 }
 
-//DistinctCats counts the number of distincts cats present in the specified cases.
-func (target *DenseCatFeature) DistinctCats(cases *[]int, counts *[]int) (total int) {
-	total = 0
+//Span counts the number of distincts cats present in the specified cases.
+func (target *DenseCatFeature) Span(cases *[]int, counts *[]int) float64 {
+	total := 0
 	counter := *counts
 	for i := range counter {
 		counter[i] = 0
 	}
+	catdata := target.CatData
+	missing := target.Missing
+	var c int
 	for _, i := range *cases {
-		if !target.Missing[i] {
-			counter[target.CatData[i]] = 1
+
+		if !missing[i] {
+			c = catdata[i]
+			if counter[c] == 0 {
+				counter[c] = 1
+				total++
+				if total == target.NCats() {
+					break
+				}
+			}
 		}
 	}
-	for _, v := range counter {
-		if v > 0 {
-			total += 1
-		}
-	}
-	return
+
+	return float64(total)
 }
 
 //Mode returns the mode category feature for the cases specified.

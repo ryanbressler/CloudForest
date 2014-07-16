@@ -18,8 +18,8 @@ and structure analysis on heterogeneous numerical / categorical data with missin
 * Roughly Balanced Bagging for Unbalanced Data
 * Improved robustness using out of bag cases and artificial contrasts.
 * Support for missing values via bias correction or three way splitting.
-* Density Estimating Trees/Forests
 * Proximity/Affinity Analysis suitable for manifold learning
+* A number of experimental splitting criteria
 
 The Design Prioritizes:
 
@@ -106,7 +106,7 @@ growforest -train train.fm -rfpred forest.sf -target B:FeatureName
 #grow a 1000 tree forest using, 16 cores and report out of bag error 
 #with minimum leafSize 8 
 growforest -train train.fm -rfpred forest.sf -target B:FeatureName -oob \
--nThreads 16 -nTrees 1000 -leafSize 8
+-nCores 16 -nTrees 1000 -leafSize 8
 
 #grow a 1000 tree forest evaluating half the features as candidates at each 
 #split and reporting out of bag error after each tree to watch for convergence

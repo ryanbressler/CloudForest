@@ -51,9 +51,9 @@ func (target *DensityTarget) Impurity(cases *[]int, counter *[]int) (e float64) 
 		switch f.(type) {
 		case CatFeature:
 			bigenoughcounter := make([]int, f.NCats())
-			e /= float64(f.(CatFeature).DistinctCats(cases, &bigenoughcounter))
+			e /= f.Span(cases, &bigenoughcounter)
 		case NumFeature:
-			e /= f.(NumFeature).Span(cases)
+			e /= f.Span(cases, nil)
 		}
 	}
 
@@ -69,10 +69,10 @@ func (target *DensityTarget) FindPredicted(cases []int) string {
 	for _, f := range *target.Features {
 		switch f.(type) {
 		case CatFeature:
-			counter := make([]int, f.NCats())
-			e /= float64(f.(CatFeature).DistinctCats(&cases, &counter))
+			bigenoughcounter := make([]int, f.NCats())
+			e /= f.Span(&cases, &bigenoughcounter)
 		case NumFeature:
-			e /= f.(NumFeature).Span(&cases)
+			e /= f.Span(&cases, nil)
 		}
 	}
 

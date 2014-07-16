@@ -62,6 +62,12 @@ func main() {
 	var includeRE string
 	flag.StringVar(&includeRE, "includeRE", "", "Filter features that DON'T match this RE.")
 
+	var unlabeled string
+	flag.StringVar(&unlabeled, "trans_unlabeled", "", "Class to treat as unlabeled for transduction forests.")
+
+	var trans_alpha float64
+	flag.Float64Var(&trans_alpha, "trans_alpha", 10.0, "Weight of unsupervised term in transduction impurity.")
+
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
 
@@ -471,6 +477,12 @@ func main() {
 
 				fmt.Println("Using Adaptive Boosting.")
 				targetf = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
+
+			}
+
+			if unlabeled != "" {
+				fmt.Println("Using traduction forests with unlabeled class: ", unlabeled)
+				targetf = CloudForest.NewTransTarget(targetf.(CloudForest.CatFeature), &data.Data, unlabeled, trans_alpha, nSamples)
 
 			}
 			target = targetf
