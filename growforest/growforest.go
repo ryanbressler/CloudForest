@@ -68,6 +68,9 @@ func main() {
 	var trans_alpha float64
 	flag.Float64Var(&trans_alpha, "trans_alpha", 10.0, "Weight of unsupervised term in transduction impurity.")
 
+	var trans_beta float64
+	flag.Float64Var(&trans_beta, "trans_beta", 0.0, "Multiple to penalize unlabeled class by.")
+
 	var nTrees int
 	flag.IntVar(&nTrees, "nTrees", 100, "Number of trees to grow in the predictor.")
 
@@ -482,7 +485,7 @@ func main() {
 
 			if unlabeled != "" {
 				fmt.Println("Using traduction forests with unlabeled class: ", unlabeled)
-				targetf = CloudForest.NewTransTarget(targetf.(CloudForest.CatFeature), &data.Data, unlabeled, trans_alpha, nSamples)
+				targetf = CloudForest.NewTransTarget(targetf.(CloudForest.CatFeature), &data.Data, unlabeled, trans_alpha, trans_beta, nSamples)
 
 			}
 			target = targetf

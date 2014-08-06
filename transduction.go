@@ -29,6 +29,7 @@ type TransTarget struct {
 	Features  *[]Feature
 	Unlabeled int
 	Alpha     float64
+	Beta      float64
 	N         int
 	MaxCats   int
 }
@@ -38,7 +39,7 @@ Density in the specified Features fm (excluding any with the same name as t), co
 provided in "unlabeled" as unlabeled for transduction. Alpha is the weight of the unspervised term relative to
 the supervised and ncases is the number of cases that will be called at the root of the tree (may be depreciated as not needed).
 */
-func NewTransTarget(t CatFeature, fm *[]Feature, unlabeled string, alpha float64, ncases int) *TransTarget {
+func NewTransTarget(t CatFeature, fm *[]Feature, unlabeled string, alpha, beta float64, ncases int) *TransTarget {
 	maxcats := 0
 	for _, f := range *fm {
 		if f.NCats() > maxcats {
@@ -46,7 +47,7 @@ func NewTransTarget(t CatFeature, fm *[]Feature, unlabeled string, alpha float64
 		}
 	}
 
-	return &TransTarget{t, fm, t.CatToNum(unlabeled), alpha, ncases, maxcats}
+	return &TransTarget{t, fm, t.CatToNum(unlabeled), alpha, beta, ncases, maxcats}
 
 }
 
@@ -54,18 +55,22 @@ func NewTransTarget(t CatFeature, fm *[]Feature, unlabeled string, alpha float64
 TransTarget.SplitImpurity is a density estimating version of SplitImpurity.
 */
 func (target *TransTarget) SplitImpurity(l *[]int, r *[]int, m *[]int, allocs *BestSplitAllocs) (impurityDecrease float64) {
-	nl := float64(len(*l))
-	nr := float64(len(*r))
-	nm := 0.0
+	if target.Alpha == 0.0 {
+		impurityDecrease = target.CatFeature.SplitImpurity(l, r, m, allocs)
+	} else {
+		nl := float64(len(*l))
+		nr := float64(len(*r))
+		nm := 0.0
 
-	impurityDecrease = nl * target.Impurity(l, allocs.LCounter)
-	impurityDecrease += nr * target.Impurity(r, allocs.RCounter)
-	if m != nil && len(*m) > 0 {
-		nm = float64(len(*m))
-		impurityDecrease += nm * target.Impurity(m, allocs.Counter)
+		impurityDecrease = nl * target.Impurity(l, allocs.LCounter)
+		impurityDecrease += nr * target.Impurity(r, allocs.RCounter)
+		if m != nil && len(*m) > 0 {
+			nm = float64(len(*m))
+			impurityDecrease += nm * target.Impurity(m, allocs.Counter)
+		}
+
+		impurityDecrease /= nl + nr + nm
 	}
-
-	impurityDecrease /= nl + nr + nm
 	return
 }
 
@@ -78,7 +83,12 @@ func (target *TransTarget) UpdateSImpFromAllocs(l *[]int, r *[]int, m *[]int, al
 func (target *TransTarget) Impurity(cases *[]int, counter *[]int) (e float64) {
 	//TODO: filter out unlabeled cases from the call to target.CatFeature.Impurity at least for
 	//multiclass problems
-	return target.CatFeature.Impurity(cases, counter) + target.Alpha*target.Density(cases, counter)
+	if target.Alpha == 0.0 {
+		e = target.CatFeature.Impurity(cases, counter)
+	} else {
+		e = target.CatFeature.Impurity(cases, counter) + target.Alpha*target.Density(cases, counter)
+	}
+	return
 }
 
 /*TransTarget.Density uses an impurity designed to maximize the density within each side of the split
@@ -131,12 +141,18 @@ func (target *TransTarget) FindPredicted(cases []int) string {
 		counts[target.Geti(i)] += 1
 
 	}
-	max := 0
+	max := 0.0
+	vf := 0.0
 	m := target.Unlabeled
 	for k, v := range counts {
-		if v > max && k != target.Unlabeled {
+		if k == target.Unlabeled {
+			vf = target.Beta * float64(v)
+		} else {
+			vf = float64(v)
+		}
+		if vf > max {
 			m = k
-			max = v
+			max = vf
 		}
 	}
 
