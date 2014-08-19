@@ -18,12 +18,20 @@ func main() {
 	libsvmtarget := flag.String("libsvmtarget",
 		"", "Output lib svm with the named feature in the first position.")
 
+	anontarget := flag.String("anontarget",
+		"", "Strip strings with named feature in the first position.")
+
 	flag.Parse()
 
 	//Parse Data
 	data, err := CloudForest.LoadAFM(*fm)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if *anontarget != "" {
+		data.StripStrings(*anontarget)
+
 	}
 
 	//anotate with type information

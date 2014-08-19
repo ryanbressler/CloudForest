@@ -19,6 +19,44 @@ type FeatureMatrix struct {
 	CaseLabels []string
 }
 
+func (fm *FeatureMatrix) StripStrings(target string) {
+
+	for i := range fm.CaseLabels {
+		fm.CaseLabels[i] = fmt.Sprintf("%v", i)
+	}
+
+	for i, f := range fm.Data {
+		if f.GetName() == target {
+			fm.Data[i] = fm.Data[0]
+			fm.Data[0] = f
+			break
+		}
+
+	}
+
+	fm.Map = make(map[string]int)
+
+	for i, f := range fm.Data {
+		name := fmt.Sprintf("%v", i)
+		fm.Map[name] = i
+		switch f.(type) {
+		case *DenseNumFeature:
+			f.(*DenseNumFeature).Name = name
+		case *DenseCatFeature:
+			f.(*DenseCatFeature).Name = name
+			f.(*DenseCatFeature).Map = make(map[string]int)
+			for j, v := range f.(*DenseCatFeature).Back {
+				v = fmt.Sprintf("%v", j)
+				f.(*DenseCatFeature).Back[j] = v
+				f.(*DenseCatFeature).Map[v] = i
+
+			}
+
+		}
+	}
+	return
+}
+
 func (fm *FeatureMatrix) EncodeToNum() *FeatureMatrix {
 	out := &FeatureMatrix{make([]Feature, 0, len(fm.Data)),
 		make(map[string]int),
