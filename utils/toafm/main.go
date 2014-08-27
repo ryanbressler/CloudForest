@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
+	"fmt"
 	"github.com/ryanbressler/CloudForest"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -21,6 +24,9 @@ func main() {
 	anontarget := flag.String("anontarget",
 		"", "Strip strings with named feature in the first position.")
 
+	blacklist := flag.String("blacklist",
+		"", "A list of feature id's to exclude from the set of predictors.")
+
 	flag.Parse()
 
 	//Parse Data
@@ -28,6 +34,54 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	blacklisted := 0
+	blacklistis := make([]bool, len(data.Data))
+	if *blacklist != "" {
+		fmt.Printf("Loading blacklist from: %v\n", *blacklist)
+		blackfile, err := os.Open(*blacklist)
+		if err != nil {
+			log.Fatal(err)
+		}
+		tsv := csv.NewReader(blackfile)
+		tsv.Comma = '\t'
+		for {
+			id, err := tsv.Read()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				log.Fatal(err)
+			}
+			if id[0] == *anontarget || id[0] == *libsvmtarget {
+				continue
+			}
+			i, ok := data.Map[id[0]]
+			if !ok {
+				fmt.Printf("Ignoring blacklist feature not found in data: %v\n", id[0])
+				continue
+			}
+			if !blacklistis[i] {
+				blacklisted += 1
+				blacklistis[i] = true
+			}
+
+		}
+		blackfile.Close()
+
+	}
+
+	newdata := make([]CloudForest.Feature, 0, len(data.Data)-blacklisted)
+	newmap := make(map[string]int, len(data.Data)-blacklisted)
+
+	for i, f := range data.Data {
+		if !blacklistis[i] {
+			newmap[f.GetName()] = len(newdata)
+			newdata = append(newdata, f)
+		}
+	}
+
+	data.Data = newdata
+	data.Map = newmap
 
 	if *anontarget != "" {
 		data.StripStrings(*anontarget)

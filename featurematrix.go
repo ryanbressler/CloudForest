@@ -37,12 +37,15 @@ func (fm *FeatureMatrix) StripStrings(target string) {
 	fm.Map = make(map[string]int)
 
 	for i, f := range fm.Data {
-		name := fmt.Sprintf("%v", i)
-		fm.Map[name] = i
+
 		switch f.(type) {
 		case *DenseNumFeature:
+			name := fmt.Sprintf("N:%v", i)
+			fm.Map[name] = i
 			f.(*DenseNumFeature).Name = name
 		case *DenseCatFeature:
+			name := fmt.Sprintf("C:%v", i)
+			fm.Map[name] = i
 			f.(*DenseCatFeature).Name = name
 			f.(*DenseCatFeature).Map = make(map[string]int)
 			for j, v := range f.(*DenseCatFeature).Back {
