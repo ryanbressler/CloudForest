@@ -332,15 +332,24 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 			if lastsplit == 0 {
 				allocs.LM = sorted[:i]
 				allocs.RM = sorted[i:]
-				innerimp = parentImp
-				innerimp -= target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+				if parentImp < 0 {
+					innerimp = target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+				} else {
+					innerimp = parentImp
+					innerimp -= target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+				}
+
 				lastsplit = i
 			} else {
 				allocs.LM = sorted[:i]
 				allocs.RM = sorted[i:]
 				allocs.MM = sorted[lastsplit:i]
-				innerimp = parentImp
-				innerimp -= target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
+				if parentImp < 0 {
+					innerimp = target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+				} else {
+					innerimp = parentImp
+					innerimp -= target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
+				}
 				lastsplit = i
 			}
 

@@ -457,7 +457,12 @@ func (f *DenseCatFeature) BestCatSplitIterBig(target Target, cases *[]int, paren
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(&left, &right, nil, allocs)
+			if parentImp < 0 {
+				nextImp = target.SplitImpurity(&left, &right, nil, allocs)
+			} else {
+				nextImp = parentImp
+				nextImp -= target.SplitImpurity(&left, &right, nil, allocs)
+			}
 
 			if nextImp > innerImp {
 				innerSplit.Set(nextSplit)
@@ -551,7 +556,13 @@ func (f *DenseCatFeature) BestCatSplitIter(target Target, cases *[]int, parentIm
 				continue
 			}
 
-			nextImp = parentImp - target.SplitImpurity(&left, &right, nil, allocs)
+			if parentImp < 0 {
+				nextImp = target.SplitImpurity(&left, &right, nil, allocs)
+			} else {
+
+				nextImp = parentImp
+				nextImp -= target.SplitImpurity(&left, &right, nil, allocs)
+			}
 
 			if nextImp > innerImp {
 				innerSplit = nextSplit
@@ -717,8 +728,13 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 
 		constant = false
 
-		innerimp = parentImp
-		innerimp -= target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+		if parentImp < 0 {
+			innerimp = target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+		} else {
+
+			innerimp = parentImp
+			innerimp -= target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+		}
 
 		if innerimp > impurityDecrease {
 			bestSplit = bits
@@ -801,7 +817,12 @@ func (f *DenseCatFeature) BestBinSplit(target Target,
 	a.LM = cs[:l]
 	a.RM = cs[r:]
 
-	impurityDecrease = parentImp - target.SplitImpurity(&a.LM, &a.RM, nil, a)
+	if parentImp < 0 {
+		impurityDecrease = target.SplitImpurity(&a.LM, &a.RM, nil, a)
+	} else {
+
+		impurityDecrease = parentImp - target.SplitImpurity(&a.LM, &a.RM, nil, a)
+	}
 
 	bestSplit = 1
 
@@ -884,7 +905,12 @@ func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp
 			continue
 		}
 
-		innerImp = parentImp - target.SplitImpurity(&left, &right, nil, allocs)
+		if parentImp < 0 {
+			innerImp = target.SplitImpurity(&left, &right, nil, allocs)
+		} else {
+			innerImp = parentImp
+			innerImp -= target.SplitImpurity(&left, &right, nil, allocs)
+		}
 
 		if innerImp > impurityDecrease {
 			bestSplit.Set(bits)

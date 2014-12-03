@@ -169,6 +169,9 @@ func main() {
 	var testfm string
 	flag.StringVar(&testfm, "test", "", "Data to test the model on.")
 
+	var scikitforest string
+	flag.StringVar(&scikitforest, "scikitforest", "", "Write out a (partially complete) scikit style forest in json.")
+
 	var noseed bool
 	flag.BoolVar(&noseed, "noseed", false, "Don't seed the random number generator from time.")
 
@@ -542,6 +545,12 @@ func main() {
 		imppnt = CloudForest.NewRunningMeans(len(data.Data))
 	}
 
+	var scikikittrees []CloudForest.ScikitTree
+
+	if scikitforest != "" {
+		scikikittrees = make([]CloudForest.ScikitTree, 0, nTrees)
+	}
+
 	//****************** Good Stuff Stars Here ;) ******************//
 
 	trainingStart := time.Now()
@@ -672,6 +681,12 @@ func main() {
 						forestwriter.WriteTree(tree, treesStarted)
 					}
 
+					if scikitforest != "" {
+						skt := CloudForest.NewScikitTree(nFeatures)
+						CloudForest.BuildScikitTree(0, tree.Root, skt)
+						scikikittrees = append(scikikittrees, *skt)
+					}
+
 					if dotest && foresti == nForest-1 {
 						trees = append(trees, tree)
 
@@ -793,6 +808,19 @@ func main() {
 
 	trainingEnd := time.Now()
 	fmt.Printf("Total training time (seconds): %v\n", trainingEnd.Sub(trainingStart).Seconds())
+
+	if scikitforest != "" {
+		skfile, err := os.Create(scikitforest)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer skfile.Close()
+		skencoder := json.NewEncoder(skfile)
+		err = skencoder.Encode(scikikittrees)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
