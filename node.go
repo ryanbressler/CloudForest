@@ -21,7 +21,6 @@ type Node struct {
 	Missing    *Node
 	Pred       string
 	Splitter   *Splitter
-	Members    []int
 }
 
 //vist each child node with the supplied function
