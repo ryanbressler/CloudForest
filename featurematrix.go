@@ -172,7 +172,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 
 	parentImp := target.Impurity(cases, allocs.Counter)
 	nConstants = nConstantsBefore
-	if parentImp <= minImp {
+	if parentImp <= minImp && parentImp >= 0 {
 		return
 	}
 

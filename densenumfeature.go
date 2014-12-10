@@ -345,7 +345,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 				allocs.RM = sorted[i:]
 				allocs.MM = sorted[lastsplit:i]
 				if parentImp < 0 {
-					innerimp = target.SplitImpurity(&allocs.LM, &allocs.RM, nil, allocs)
+					innerimp = target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
 				} else {
 					innerimp = parentImp
 					innerimp -= target.UpdateSImpFromAllocs(&allocs.LM, &allocs.RM, nil, allocs, &allocs.MM)
