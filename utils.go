@@ -10,6 +10,12 @@ import (
 	"sync"
 )
 
+func ParseFloat(s string) float64 {
+	frac, _ := strconv.ParseFloat(s, 64)
+	return frac
+
+}
+
 //RunningMean is a thread safe strut for keeping track of running means as used in
 //importance calculations. (TODO: could this be made lock free?)
 type RunningMean struct {
