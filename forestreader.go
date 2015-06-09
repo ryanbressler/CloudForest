@@ -91,6 +91,14 @@ func (fr *ForestReader) ReadTree() (tree *Tree, forest *Forest, err error) {
 		case strings.HasPrefix(line, "FOREST"):
 			forest = new(Forest)
 			forest.Target = parsed["TARGET"]
+			i, ok := parsed["INTERCEPT"]
+			if ok {
+				intercept, err := strconv.ParseFloat(i, 64)
+				if err != nil {
+					log.Print("Error parsing forest intercept value ", err)
+				}
+				forest.Intercept = intercept
+			}
 
 		case strings.HasPrefix(line, "TREE"):
 			intree = true

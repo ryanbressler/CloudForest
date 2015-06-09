@@ -27,7 +27,7 @@ func TestFileFormats(t *testing.T) {
 	}
 
 	cattarget := fm.Data[1]
-	forest := GrowRandomForest(fm, cattarget.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, false, nil)
+	forest := GrowRandomForest(fm, cattarget.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, 0, false, false, false, false, nil)
 
 	count := 0
 	for _, tree := range forest.Trees {
