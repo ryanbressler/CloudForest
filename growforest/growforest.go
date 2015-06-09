@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
-	"github.com/ryanbressler/CloudForest/stats"
 	"io"
 	"log"
 	"math"
@@ -17,6 +15,9 @@ import (
 	"runtime/pprof"
 	"sync"
 	"time"
+
+	"github.com/ryanbressler/CloudForest"
+	"github.com/ryanbressler/CloudForest/stats"
 )
 
 func main() {
@@ -678,7 +679,7 @@ func main() {
 					}
 
 					if forestwriter != nil && foresti == nForest-1 {
-						forestwriter.WriteTree(tree, treesStarted)
+						forestwriter.WriteTree(tree, treesFinished)
 					}
 
 					if scikitforest != "" {
