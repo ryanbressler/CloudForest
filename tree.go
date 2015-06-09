@@ -100,6 +100,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 	oob []int,
 	mTry int,
 	leafSize int,
+	maxDepth int,
 	splitmissing bool,
 	force bool,
 	vet bool,
@@ -125,7 +126,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 
 		nconstants = nconstantsbefore
 
-		if (2 * leafSize) <= len(*innercases) {
+		if (depth < maxDepth || maxDepth <= 0) && (2*leafSize) <= len(*innercases) {
 			//SampleFirstN(&candidates, &innercanidates, mTry, 0)
 			//innercanidates = candidates[:mTry]
 
@@ -181,6 +182,7 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 	oob []int,
 	mTry int,
 	leafSize int,
+	maxDepth int,
 	splitmissing bool,
 	force bool,
 	vet bool,
@@ -215,7 +217,7 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 			innercases = cases[node.start:node.end]
 			nconstants = node.nconstants
 
-			if (2 * leafSize) <= len(innercases) {
+			if (depth < maxDepth || maxDepth <= 0) && (2*leafSize) <= len(innercases) {
 
 				fi, split, impDec, nconstants = fm.BestSplitter(target, &innercases, &candidates, mTry, &oob, leafSize, force, vet, evaloob, extraRandom, allocs, nconstants)
 
@@ -359,8 +361,9 @@ func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 }
 
 //Partition partitions all of the cases in a FeatureMatrix.
-func (t *Tree) Partition(fm *FeatureMatrix) *[][]int {
+func (t *Tree) Partition(fm *FeatureMatrix) (*[][]int, *[]string) {
 	leaves := make([][]int, 0)
+	preds := make([]string, 0)
 	ncases := fm.Data[0].Length()
 	cases := make([]int, 0, ncases)
 	for i := 0; i < ncases; i++ {
@@ -370,10 +373,11 @@ func (t *Tree) Partition(fm *FeatureMatrix) *[][]int {
 	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil { // I'm in a leaf node
 			leaves = append(leaves, cases)
+			preds = append(preds, n.Pred)
 		}
 
 	}, fm, cases, 0)
-	return &leaves
+	return &leaves, &preds
 
 }
 
