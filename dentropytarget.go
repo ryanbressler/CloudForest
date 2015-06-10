@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -79,6 +80,37 @@ func (target *DEntropyTarget) ImpFromCounts(total int, counts *[]int) (e float64
 	}
 	return
 
+}
+
+func (target *DEntropyTarget) FindPredicted(cases []int) (pred string) {
+	prob_true := 0.0
+	t := target.CatToNum("True")
+	weightedvoted := true
+	if weightedvoted {
+		count := 0.0
+		total := 0.0
+		for _, i := range cases {
+			ti := target.Geti(i)
+			cost := target.Costs[ti]
+			if ti == t {
+				count += cost
+			}
+			total += cost
+
+		}
+		prob_true = count / total
+
+	} else {
+		count := 0
+		for _, i := range cases {
+			if target.Geti(i) == t {
+				count++
+			}
+
+		}
+		prob_true = float64(count) / float64(len(cases))
+	}
+	return fmt.Sprintf("%v", prob_true)
 }
 
 //DEntropyTarget.Impurity implements categorical entropy as sum(pj*log2(pj)) where pj
