@@ -27,7 +27,7 @@ func BenchmarkIris(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		tree := NewTree()
-		tree.Grow(fm, target, cases, candidates, nil, 2, 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, candidates, nil, 2, 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 	}
 }
@@ -51,7 +51,7 @@ func BenchmarkBoston(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		tree := NewTree()
-		tree.Grow(fm, target, cases, candidates, nil, 2, 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, candidates, nil, 2, 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 	}
 }

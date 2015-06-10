@@ -38,6 +38,8 @@ func GetAllClassificationTargets(f CatFeature) []Target {
 		NewEntropyTarget(f),
 		NewAdaBoostTarget(f.Copy().(CatFeature)),
 		NewWRFTarget(f, costs),
+		//NewGradBoostClassTarget(f, .001),
+		//NewHDistanceTarget(f),
 		//regret,
 	}
 
@@ -46,6 +48,7 @@ func GetAllClassificationTargets(f CatFeature) []Target {
 func GetAllRegressionTargets(f NumFeature) []Target {
 	return []Target{f,
 		&L1Target{f},
+		//NewGradBoostTarget(f.Copy().(NumFeature), .001),
 		//NewOrdinalTarget(f),
 		//&GradBoostTarget{f.Copy().(NumFeature), .1},
 		//NewNumAdaBoostTarget(f.Copy().(NumFeature)),
@@ -80,12 +83,12 @@ func TestWierdTargets(t *testing.T) {
 			//&DensityTarget{&fm.Data, fm.Data[0].Length()},
 			regret,
 			NewOrdinalTarget(numtarget),
-			&GradBoostTarget{numtarget.Copy().(NumFeature), .1},
+			NewGradBoostTarget(numtarget.Copy().(NumFeature), .1),
 			NewNumAdaBoostTarget(numtarget.Copy().(NumFeature)),
 		}
 
 		for _, target := range targets {
-			forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, false, nil)
+			forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, 0, false, false, false, false, nil)
 			if len(forest.Trees) != 10 {
 				t.Errorf("%T didn't grow 10 trees.", target)
 			}
@@ -100,7 +103,7 @@ func TestWierdTargets(t *testing.T) {
 		target := &DensityTarget{&fm.Data, fm.Data[0].Length()}
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), cattarget)
-		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, 0, false, false, false, false, false, nil, nil, allocs)
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
 		if count < 1 {
@@ -128,7 +131,7 @@ func TestTreeTargets(t *testing.T) {
 	for _, target := range regressiontargets {
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
@@ -153,7 +156,7 @@ func TestTreeTargets(t *testing.T) {
 		tree := NewTree()
 
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, 3, 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, 3, 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 		count := 0
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
@@ -227,7 +230,7 @@ func TestMissing(t *testing.T) {
 	for _, target := range regressiontargets {
 		tree := NewTree()
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, 0, true, false, false, false, false, nil, nil, allocs)
 
 		votes := NewNumBallotBox(numtarget.Length())
 
@@ -240,7 +243,7 @@ func TestMissing(t *testing.T) {
 
 		tree = NewTree()
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 		votes = NewNumBallotBox(numtarget.Length())
 
@@ -253,7 +256,7 @@ func TestMissing(t *testing.T) {
 
 		tree = NewTree()
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 		votes = NewNumBallotBox(numtarget.Length())
 
@@ -273,7 +276,7 @@ func TestMissing(t *testing.T) {
 		tree := NewTree()
 
 		allocs := NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, true, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, 0, true, false, false, false, false, nil, nil, allocs)
 
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -287,7 +290,7 @@ func TestMissing(t *testing.T) {
 		tree = NewTree()
 
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fm, target, cases, canidates, nil, len(canidates), 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 		catvotes = NewCatBallotBox(cattarget.Length())
 
@@ -301,7 +304,7 @@ func TestMissing(t *testing.T) {
 		tree = NewTree()
 
 		allocs = NewBestSplitAllocs(len(cases), target)
-		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, false, false, false, false, false, nil, nil, allocs)
+		tree.Grow(fmimputed, target, cases, canidates, nil, len(canidates), 1, 0, false, false, false, false, false, nil, nil, allocs)
 
 		catvotes = NewCatBallotBox(cattarget.Length())
 
@@ -365,7 +368,7 @@ func TestIris(t *testing.T) {
 	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, false, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, 0, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -407,7 +410,7 @@ func TestIris(t *testing.T) {
 
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, false, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, 0, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -421,6 +424,94 @@ func TestIris(t *testing.T) {
 		}
 		t.Logf("Log: 10 tree classification of iris with .05 missing using %T had error: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
 
+	}
+
+}
+
+//Test classification target typs on iris data set. Also test arff loading.
+func TestTwoClassIris(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping classification tests on iris data set.")
+	}
+	candidates := []int{1, 2, 3, 4}
+	// irisreader := strings.NewReader(irisarff)
+	// fm := ParseARFF(irisreader)
+	// targeti := 4
+
+	irisreader := strings.NewReader(irislibsvm)
+	fm := ParseLibSVM(irisreader)
+	targeti := 0
+
+	cattarget := fm.Data[targeti].(*DenseCatFeature)
+
+	//Make a two class problem.
+	for i := 0; i < cattarget.Length(); i++ {
+		if cattarget.Geti(i) == 2 {
+			cattarget.Puti(i, 0)
+		}
+
+	}
+	pos_class := cattarget.NumToCat(1)
+	classtargets := []Target{
+		NewHDistanceTarget(cattarget, pos_class),
+		NewGradBoostClassTarget(cattarget, .1, pos_class),
+		//NewNPTarget(cattarget, cattarget.NumToCat(0), .005, 1000),
+	}
+
+	for _, target := range classtargets {
+		trainingStart := time.Now()
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 100, 1, 0, false, false, false, false, nil)
+		trainingEnd := time.Now()
+
+		err := 0.0
+		numtarget := cattarget.EncodeToNum()[1].(NumFeature)
+		switch target.(type) {
+		case *GradBoostClassTarget:
+			catvotes := NewSumBallotBox(cattarget.Length())
+
+			for _, tree := range forest.Trees {
+				tree.Vote(fm, catvotes)
+			}
+			for i := 0; i < cattarget.Length(); i++ {
+				pred := Expit(catvotes.TallyNum(i) + target.(*GradBoostClassTarget).Prior)
+				actual := numtarget.Get(i)
+
+				//fmt.Println(pred, actual)
+
+				pred -= actual
+				err += pred * pred
+
+			}
+
+			err /= float64(cattarget.Length())
+
+			if err > 0.05 {
+				t.Errorf("Error: Classification of iris using %T had error: %v", target, err)
+			}
+
+		default:
+			catvotes := NewNumBallotBox(cattarget.Length())
+
+			for _, tree := range forest.Trees {
+				tree.Vote(fm, catvotes)
+			}
+
+			err = catvotes.TallySquaredError(numtarget)
+		}
+
+		t.Logf("Log: 10 tree classification of iris using %T had error: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
+
+	}
+
+	//put some missing values in
+	for j, Feature := range fm.Data {
+		if j != targeti {
+			for i := 0; i < Feature.Length(); i++ {
+				if rand.Float64() < .05 {
+					Feature.PutMissing(i)
+				}
+			}
+		}
 	}
 
 }
@@ -448,7 +539,7 @@ func TestBoston(t *testing.T) {
 	targets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 	for _, target := range targets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, 0, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
@@ -477,7 +568,7 @@ func TestBoston(t *testing.T) {
 
 	for _, target := range targets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, false, false, false, false, nil)
+		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, 0, false, false, false, false, nil)
 		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
