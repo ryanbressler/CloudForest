@@ -20,6 +20,10 @@ func main() {
 		"", "The name of a file to write categorical vote totals to.")
 	var num bool
 	flag.BoolVar(&num, "mean", false, "Force numeric (mean) voting.")
+	var sum bool
+	flag.BoolVar(&sum, "sum", false, "Force numeric sum voting (for gradient boosting etc).")
+	var expit bool
+	flag.BoolVar(&expit, "expit", false, "Expit (inverst logit) transform data (for gradient boosting classification).")
 	var cat bool
 	flag.BoolVar(&cat, "mode", false, "Force categorical (mode) voting.")
 
@@ -52,11 +56,15 @@ func main() {
 	}
 
 	var bb CloudForest.VoteTallyer
-	if !cat && (num || strings.HasPrefix(forest.Target, "N")) {
-		bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
-	} else {
-		bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
+	switch {
+	case sum:
+		bb = CloudForest.NewSumBallotBox(data.Data[0].Length())
 
+	case !cat && (num || strings.HasPrefix(forest.Target, "N")):
+		bb = CloudForest.NewNumBallotBox(data.Data[0].Length())
+
+	default:
+		bb = CloudForest.NewCatBallotBox(data.Data[0].Length())
 	}
 
 	for _, tree := range forest.Trees {
@@ -76,7 +84,25 @@ func main() {
 			if hasTarget {
 				actual = data.Data[targeti].GetStr(i)
 			}
-			fmt.Fprintf(predfile, "%v\t%v\t%v\n", l, bb.Tally(i), actual)
+
+			result := ""
+
+			if sum || forest.Intercept != 0.0 {
+				numresult := 0.0
+				if sum {
+					numresult = bb.(*CloudForest.SumBallotBox).TallyNum(i) + forest.Intercept
+				} else {
+					numresult = bb.(*CloudForest.NumBallotBox).TallyNum(i) + forest.Intercept
+				}
+				if expit {
+					numresult = CloudForest.Expit(numresult)
+				}
+				result = fmt.Sprintf("%v", numresult)
+
+			} else {
+				result = bb.Tally(i)
+			}
+			fmt.Fprintf(predfile, "%v\t%v\t%v\n", l, result, actual)
 		}
 	}
 

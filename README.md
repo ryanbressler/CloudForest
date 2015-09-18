@@ -11,10 +11,11 @@ and structure analysis on heterogeneous numerical / categorical data with missin
 
 * Breiman and Cutler's Random Forest for Classification and Regression
 * Adaptive Boosting (AdaBoost) Classification 
-* Gradient Boosting Tree Regression
+* Gradient Boosting Tree Regression and Two Class Classification
+* Hellinger Distance Trees for Classification
 * Entropy, Cost driven and Class Weighted classification
 * L1/Absolute Deviance Decision Tree regression
-* Improved Feature Selection with artificial contrasts with ensembles (ACE)
+* Improved Feature Selection via artificial contrasts with ensembles (ACE)
 * Roughly Balanced Bagging for Unbalanced Data
 * Improved robustness using out of bag cases and artificial contrasts.
 * Support for missing values via bias correction or three way splitting.
@@ -57,7 +58,7 @@ http://godoc.org/github.com/ryanbressler/CloudForest
 Pull requests, spelling corrections and bug reports are welcome; Code Repo and Issue tracker can be found at:
 https://github.com/ryanbressler/CloudForest
 
-CloudForest is being developed in the Shumelivich Lab at the Institute for Systems
+CloudForest was created in the Shumelivich Lab at the Institute for Systems
 Biology.
 
 ([Build status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master) includes accuracy tests on 
@@ -173,6 +174,7 @@ And equals signs and quotes are optional for other parameters:
    -train="featurematrix.afm": AFM formated feature matrix containing training data.
    -rfpred="rface.sf": File name to output predictor forest in sf format.
    -leafSize="0": The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.
+   -maxDepth=0: Maximum tree depth. Ignored if 0.
    -mTry="0": Number of candidate features for each split as a count (ex: 10) or portion of total (ex: .5). Ceil(sqrt(nFeatures)) if <=0.
    -nSamples="0": The number of cases to sample (with replacement) for each tree as a count (ex: 10) or portion of total (ex: .5). If <=0 set to total number of cases.
    -nTrees=100: Number of trees to grow in the predictor.
@@ -209,7 +211,6 @@ And equals signs and quotes are optional for other parameters:
    -gbt=0: Use gradient boosting with the specified learning rate.
    -l1=false: Use l1 norm regression (target must be numeric).
    -ordinal=false: Use ordinal regression (target must be numeric).
-   -adaboost=false: Use Adaptive boosting (highly experimental for regression).
  ```
 
 ### Classification Options ###
@@ -220,7 +221,13 @@ And equals signs and quotes are optional for other parameters:
    -balance=false: Balance bagging of samples by target class for unbalanced classification.
    -cost="": For categorical targets, a json string to float map of the cost of falsely identifying each category.
    -entropy=false: Use entropy minimizing classification (target must be categorical).
+   -hellinger=false: Build trees using hellinger distance.
+   -positive="True": Positive class to output probabilities for.
    -rfweights="": For categorical targets, a json string to float map of the weights to use for each category in Weighted RF.
+   -NP=false: Do approximate Neyman-Pearson classification.
+   -NP_a=0.1: Constraint on percision in NP classification [0,1]
+   -NP_k=100: Weight of constraint in NP classification [0,Inf+)
+   -NP_pos="1": Class label to constrain percision in NP classification.
  ```
 
 Note: rfweights and cost should use json to specify the weights and or costs per class using the strings used to represent the class in the boolean or categorical feature:
@@ -256,11 +263,13 @@ applyforest applies a forest to the specified feature matrix and outputs predict
 
 ```
 Usage of applyforest:
+  -expit=false: Expit (inverst logit) transform data (for gradient boosting classification).
   -fm="featurematrix.afm": AFM formated feature matrix containing data.
   -mean=false: Force numeric (mean) voting.
   -mode=false: Force categorical (mode) voting.
   -preds="": The name of a file to write the predictions into.
   -rfpred="rface.sf": A predictor forest.
+  -sum=false: Force numeric sum voting (for gradient boosting etc).
   -votes="": The name of a file to write categorical vote totals to.
 ```
 

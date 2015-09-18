@@ -5,7 +5,7 @@ import ()
 const maxExhaustiveCats = 5
 const maxNonRandomExahustive = 10
 const maxNonBigCats = 30
-const minImp = 0.0
+const minImp = 1e-7
 const constant_cutoff = 1e-7
 
 //Feature contains all methods needed for a predictor feature.
@@ -54,6 +54,7 @@ type NumFeature interface {
 	Norm(i int, v float64) float64
 	Error(cases *[]int, predicted float64) (e float64)
 	Less(i int, j int) bool
+	SumAndSumSquares(cases *[]int) (float64, float64)
 }
 
 //CatFeature contains the methods of Feature plus methods needed to implement
@@ -91,5 +92,10 @@ type Target interface {
 //tree should be given and boost the target for the next tree.
 type BoostingTarget interface {
 	Target
-	Boost(partition *[][]int) (weight float64)
+	Boost(partition *[][]int, preds *[]string) (weight float64)
+}
+
+type TargetWithIntercept interface {
+	Target
+	Intercept() float64
 }

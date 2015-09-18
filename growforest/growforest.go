@@ -53,6 +53,9 @@ func main() {
 	var StringleafSize string
 	flag.StringVar(&StringleafSize, "leafSize", "0", "The minimum number of cases on a leaf node. If <=0 will be inferred to 1 for classification 4 for regression.")
 
+	var maxDepth int
+	flag.IntVar(&maxDepth, "maxDepth", 0, "Maximum tree depth. Ignored if 0.")
+
 	var shuffleRE string
 	flag.StringVar(&shuffleRE, "shuffleRE", "", "A regular expression to identify features that should be shuffled.")
 
@@ -106,6 +109,9 @@ func main() {
 	var vet bool
 	flag.BoolVar(&vet, "vet", false, "Penalize potential splitter impurity decrease by subtracting the best split of a permuted target.")
 
+	var positive string
+	flag.StringVar(&positive, "positive", "True", "Positive class to output probabilities for.")
+
 	var NP bool
 	flag.BoolVar(&NP, "NP", false, "Do approximate Neyman-Pearson classification.")
 
@@ -141,6 +147,9 @@ func main() {
 
 	var adaboost bool
 	flag.BoolVar(&adaboost, "adaboost", false, "Use Adaptive boosting for regression/classification.")
+
+	var hellinger bool
+	flag.BoolVar(&hellinger, "hellinger", false, "Build trees using hellinger distance.")
 
 	var gradboost float64
 	flag.Float64Var(&gradboost, "gbt", 0.0, "Use gradient boosting with the specified learning rate.")
@@ -397,7 +406,7 @@ func main() {
 	var target CloudForest.Target
 	if density {
 		fmt.Println("Estimating Density.")
-		target = &CloudForest.DensityTarget{&data.Data, nSamples}
+		target = &CloudForest.DensityTarget{&data.Data, nNonMissing}
 	} else {
 
 		switch targetf.(type) {
@@ -415,7 +424,7 @@ func main() {
 			switch {
 			case gradboost != 0.0:
 				fmt.Println("Using Gradient Boosting.")
-				targetf = &CloudForest.GradBoostTarget{targetf.(CloudForest.NumFeature), gradboost}
+				targetf = CloudForest.NewGradBoostTarget(targetf.(CloudForest.NumFeature), gradboost)
 
 			case adaboost:
 				fmt.Println("Using Numeric Adaptive Boosting.")
@@ -479,16 +488,24 @@ func main() {
 				fmt.Println("Using entropy minimization.")
 				targetf = &CloudForest.EntropyTarget{targetf.(CloudForest.CatFeature)}
 
-			case boost:
+			case adaboost:
 
 				fmt.Println("Using Adaptive Boosting.")
 				targetf = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
+
+			case hellinger:
+				fmt.Println("Using Hellinger Distance with postive class:", positive)
+				targetf = CloudForest.NewHDistanceTarget(targetf.(CloudForest.CatFeature), positive)
+
+			case gradboost != 0.0:
+				fmt.Println("Using Gradient Boosting Classification with postive class:", positive)
+				targetf = CloudForest.NewGradBoostClassTarget(targetf.(CloudForest.CatFeature), gradboost, positive)
 
 			}
 
 			if unlabeled != "" {
 				fmt.Println("Using traduction forests with unlabeled class: ", unlabeled)
-				targetf = CloudForest.NewTransTarget(targetf.(CloudForest.CatFeature), &data.Data, unlabeled, trans_alpha, trans_beta, nSamples)
+				targetf = CloudForest.NewTransTarget(targetf.(CloudForest.CatFeature), &data.Data, unlabeled, trans_alpha, trans_beta, nNonMissing)
 
 			}
 			target = targetf
@@ -504,6 +521,10 @@ func main() {
 		}
 		defer forestfile.Close()
 		forestwriter = CloudForest.NewForestWriter(forestfile)
+		switch target.(type) {
+		case CloudForest.TargetWithIntercept:
+			forestwriter.WriteForestHeader(0, *targetname, target.(CloudForest.TargetWithIntercept).Intercept())
+		}
 	}
 	//****************** Setup For ACE ********************************//
 	var aceImps [][]float64
@@ -578,11 +599,11 @@ func main() {
 
 				tree := CloudForest.NewTree()
 				tree.Target = *targetname
-				cases := make([]int, 0, nSamples)
-				oobcases := make([]int, 0, nSamples)
+				cases := make([]int, 0, nNonMissing)
+				oobcases := make([]int, 0, nNonMissing)
 
 				if nobag {
-					for i := 0; i < nSamples; i++ {
+					for i := 0; i < nNonMissing; i++ {
 						if !targetf.IsMissing(i) {
 							cases = append(cases, i)
 						}
@@ -618,12 +639,13 @@ func main() {
 
 					if nobag && nSamples != nCases {
 						cases = cases[0:0]
-						for i := 0; i < nSamples; i++ {
+						for i := 0; i < nCases; i++ {
 							if !targetf.IsMissing(i) {
 								cases = append(cases, i)
 							}
 						}
-						CloudForest.SampleFirstN(&cases, nil, nCases, 0)
+						CloudForest.SampleFirstN(&cases, &cases, nSamples, 0)
+
 					}
 
 					if oob || evaloob {
@@ -640,10 +662,10 @@ func main() {
 					}
 
 					if jungle {
-						tree.GrowJungle(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
+						tree.GrowJungle(data, target, cases, canidates, oobcases, mTry, leafSize, maxDepth, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
 
 					} else {
-						tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
+						tree.Grow(data, target, cases, canidates, oobcases, mTry, leafSize, maxDepth, splitmissing, force, vet, evaloob, extra, imppnt, depthUsed, allocs)
 					}
 					if mmdpnt != nil {
 						for i, v := range *depthUsed {
@@ -657,7 +679,8 @@ func main() {
 
 					if boost {
 						boostMutex.Lock()
-						weight = targetf.(CloudForest.BoostingTarget).Boost(tree.Partition(data))
+						ls, ps := tree.Partition(data)
+						weight = targetf.(CloudForest.BoostingTarget).Boost(ls, ps)
 						boostMutex.Unlock()
 						if weight == math.Inf(1) {
 							fmt.Printf("Boosting Reached Weight of %v\n", weight)

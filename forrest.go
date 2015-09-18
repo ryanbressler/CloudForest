@@ -5,8 +5,9 @@ import ()
 //Forest represents a collection of decision trees grown to predict Target.
 type Forest struct {
 	//Forest string
-	Target string
-	Trees  []*Tree
+	Target    string
+	Trees     []*Tree
+	Intercept float64
 }
 
 /*
@@ -35,13 +36,19 @@ func GrowRandomForest(fm *FeatureMatrix,
 	mTry int,
 	nTrees int,
 	leafSize int,
+	maxDepth int,
 	splitmissing bool,
 	force bool,
 	vet bool,
 	evaloob bool,
 	importance *[]*RunningMean) (f *Forest) {
 
-	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees)}
+	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees), 0.0}
+
+	switch target.(type) {
+	case TargetWithIntercept:
+		f.Intercept = target.(TargetWithIntercept).Intercept()
+	}
 
 	//Slices for reuse during search for best splitter.
 	allocs := NewBestSplitAllocs(nSamples, target)
@@ -51,10 +58,11 @@ func GrowRandomForest(fm *FeatureMatrix,
 		cases := SampleWithReplacment(nSamples, nCases)
 
 		f.Trees = append(f.Trees, NewTree())
-		f.Trees[i].Grow(fm, target, cases, candidates, nil, mTry, leafSize, splitmissing, force, vet, evaloob, false, importance, nil, allocs)
+		f.Trees[i].Grow(fm, target, cases, candidates, nil, mTry, leafSize, maxDepth, splitmissing, force, vet, evaloob, false, importance, nil, allocs)
 		switch target.(type) {
 		case BoostingTarget:
-			f.Trees[i].Weight = target.(BoostingTarget).Boost(f.Trees[i].Partition(fm))
+			ls, ps := f.Trees[i].Partition(fm)
+			f.Trees[i].Weight = target.(BoostingTarget).Boost(ls, ps)
 		}
 	}
 	return
