@@ -6,26 +6,28 @@ import (
 	"sync"
 )
 
-//CatBallot is used insideof CatBallotBox to record catagorical votes in a thread safe
+//SumBallot is used insideof SumBallotBox to record sum votes in a thread safe
 //manner.
 type SumBallot struct {
 	Mutex sync.Mutex
 	Sum   float64
 }
 
-//NewCatBallot returns a pointer to an initalized CatBallot with a 0 size Map.
+//NewSumBallot returns a pointer to an initalized SumBallot with a 0 size Map.
 func NewSumBallot() (cb *SumBallot) {
 	cb = new(SumBallot)
 	cb.Sum = 0.0
 	return
 }
 
-//CatBallotBox keeps track of votes by trees in a thread safe manner.
+//SumBallotBox keeps track of votes by trees in a thread safe manner.
+//It should be used with gradient boosting when a sum instead of an average
+//or mode is desired.
 type SumBallotBox struct {
 	Box []*SumBallot
 }
 
-//NewCatBallotBox builds a new ballot box for the number of cases specified by "size".
+//NewSumBallotBox builds a new ballot box for the number of cases specified by "size".
 func NewSumBallotBox(size int) *SumBallotBox {
 	bb := SumBallotBox{
 		make([]*SumBallot, 0, size)}
@@ -35,8 +37,8 @@ func NewSumBallotBox(size int) *SumBallotBox {
 	return &bb
 }
 
-//Vote registers a vote that case "casei" should be predicted to be the
-//category "pred".
+//Vote registers a vote that case "casei" should have pred added to its
+//sum.
 func (bb *SumBallotBox) Vote(casei int, pred string, weight float64) {
 	v, err := strconv.ParseFloat(pred, 64)
 	if err == nil {
@@ -48,8 +50,8 @@ func (bb *SumBallotBox) Vote(casei int, pred string, weight float64) {
 }
 
 //Tally tallies the votes for the case specified by i as
-//if it is a Categorical or boolean feature. Ie it returns the mode
-//(the most frequent value) of all votes.
+//if it is a Categorical or boolean feature. Ie it returns the sum
+//of all votes.
 func (bb *SumBallotBox) Tally(i int) (predicted string) {
 	predicted = "NA"
 	predicted = fmt.Sprintf("%v", bb.TallyNum(i))
@@ -68,17 +70,7 @@ func (bb *SumBallotBox) TallyNum(i int) (predicted float64) {
 }
 
 /*
-TallyError returns the balanced classification error for categorical features.
-
-1 - sum((sum(Y(xi)=Y'(xi))/|xi|))
-
-where
-Y are the labels
-Y' are the estimated labels
-xi is the set of samples with the ith actual label
-
-Case for which the true category is not known are ignored.
-
+TallyError is non functional here.
 */
 func (bb *SumBallotBox) TallyError(feature Feature) (e float64) {
 

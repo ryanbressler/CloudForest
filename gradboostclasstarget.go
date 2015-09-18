@@ -19,7 +19,9 @@ func Expit(x float64) (out float64) {
 }
 
 /*
-GradBoostTarget wraps a numerical feature as a target for us in Gradiant Boosting Trees
+GradBoostClassTarget wraps a numerical feature as a target for us in Two Class Gradiant Boosting Trees.
+
+It should be used with SumBallotBox and expit transformed to get class probabilities.
 */
 type GradBoostClassTarget struct {
 	*GradBoostTarget

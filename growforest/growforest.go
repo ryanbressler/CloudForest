@@ -494,7 +494,7 @@ func main() {
 				targetf = CloudForest.NewAdaBoostTarget(targetf.(CloudForest.CatFeature))
 
 			case hellinger:
-				fmt.Println("Using Hellinger Distance.")
+				fmt.Println("Using Hellinger Distance with postive class:", positive)
 				targetf = CloudForest.NewHDistanceTarget(targetf.(CloudForest.CatFeature), positive)
 
 			case gradboost != 0.0:

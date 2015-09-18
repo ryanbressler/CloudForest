@@ -3,7 +3,9 @@ package CloudForest
 import ()
 
 /*
-GradBoostTarget wraps a numerical feature as a target for us in Gradiant Boosting Trees
+GradBoostTarget wraps a numerical feature as a target for us in Gradiant Boosting Trees.
+
+It should be used with the SumBallotBox.
 */
 type GradBoostTarget struct {
 	NumFeature

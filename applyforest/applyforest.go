@@ -23,7 +23,7 @@ func main() {
 	var sum bool
 	flag.BoolVar(&sum, "sum", false, "Force numeric sum voting (for gradient boosting etc).")
 	var expit bool
-	flag.BoolVar(&expit, "expit", false, "Expit (inverst logit) transform data.")
+	flag.BoolVar(&expit, "expit", false, "Expit (inverst logit) transform data (for gradient boosting classification).")
 	var cat bool
 	flag.BoolVar(&cat, "mode", false, "Force categorical (mode) voting.")
 
