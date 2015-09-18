@@ -2,6 +2,7 @@ CloudForest
 ==============
 
 [![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest) 
+[![GoDoc](https://godoc.org/github.com/ryanbressler/CloudForest?status.svg)](https://godoc.org/github.com/ryanbressler/CloudForest)
 
 Fast, flexible, multi-threaded ensembles of decision trees for machine
 learning in pure Go (golang). 
