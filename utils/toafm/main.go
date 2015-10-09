@@ -4,7 +4,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
+	"github.com/lytics/CloudForest"
 	"io"
 	"log"
 	"os"
