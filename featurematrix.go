@@ -447,21 +447,7 @@ func LoadAFM(filename string) (fm *FeatureMatrix, err error) {
 func ParseFeature(record []string) Feature {
 	capacity := len(record)
 	switch record[0][0:2] {
-	case "N:":
-		f := &DenseNumFeature{
-			nil,
-			make([]bool, 0, capacity),
-			record[0],
-			false}
-		f.NumData = make([]float64, 0, capacity)
-
-		for i := 1; i < len(record); i++ {
-			f.Append(record[i])
-
-		}
-		return f
-
-	default:
+	case "C:":
 		f := &DenseCatFeature{
 			&CatMap{make(map[string]int, 0),
 				make([]string, 0, 0)},
@@ -476,6 +462,21 @@ func ParseFeature(record []string) Feature {
 
 		}
 		return f
+
+	default:
+		f := &DenseNumFeature{
+			nil,
+			make([]bool, 0, capacity),
+			record[0],
+			false}
+		f.NumData = make([]float64, 0, capacity)
+
+		for i := 1; i < len(record); i++ {
+			f.Append(record[i])
+		}
+
+		return f
+
 	}
 
 }
