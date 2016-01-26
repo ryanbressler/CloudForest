@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
 	"runtime"
 	"strings"
+
+	"github.com/lytics/CloudForest"
 )
 
 func main() {

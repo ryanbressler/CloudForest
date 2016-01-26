@@ -663,7 +663,7 @@ func (f *DenseNumFeature) CopyInTo(copyf Feature) {
 //ImputeMissing imputes the missing values in a feature to the mean or mode of the feature.
 func (f *DenseNumFeature) ImputeMissing() {
 	cases := make([]int, 0, len(f.Missing))
-	for i, _ := range f.Missing {
+	for i := range f.Missing {
 		cases = append(cases, i)
 	}
 	mean := 0.0

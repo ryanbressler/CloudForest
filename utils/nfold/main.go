@@ -4,10 +4,11 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
 	"io"
 	"log"
 	"os"
+
+	"github.com/lytics/CloudForest"
 )
 
 func openfiles(trainfn string, testfn string) (trainW io.WriteCloser, testW io.WriteCloser) {

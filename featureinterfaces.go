@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 const maxExhaustiveCats = 5
 const maxNonRandomExahustive = 10
 const maxNonBigCats = 30

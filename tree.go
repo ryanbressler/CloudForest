@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 type nodeAndCases struct {
 	n          *Node
 	start      int
@@ -194,12 +192,12 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 
 	//var innercanidates []int
 	var impDec float64
-	nodes := []nodeAndCases{nodeAndCases{t.Root, 0, len(cases), 0, nil, false}}
+	nodes := []nodeAndCases{{t.Root, 0, len(cases), 0, nil, false}}
 	var depth, nconstants, start, end, fi, firstThisLevel int
 	var split interface{}
 
-	innercases := cases[0:len(cases)]
-	innercases2 := cases[0:len(cases)]
+	innercases := cases[0:]
+	innercases2 := cases[0:]
 
 	for {
 		//Extend Nodes

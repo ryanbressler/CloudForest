@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 /*CatMap is for mapping categorical values to integers.
 It contains:
 

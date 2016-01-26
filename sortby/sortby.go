@@ -4,8 +4,6 @@ of floats as needed in random forest training. It is about 30-40% faster then th
 standard sort.*/
 package sortby
 
-import ()
-
 //SortBy will sort the values in cases and vals by the values in vals in increasing order.
 //If vals is longer then cases only the coresponding section will be sorted.
 func SortBy(cases *[]int, vals *[]float64) {

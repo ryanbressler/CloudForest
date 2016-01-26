@@ -4,11 +4,12 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/lytics/CloudForest"
 )
 
 func main() {
