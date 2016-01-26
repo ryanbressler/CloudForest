@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 //Forest represents a collection of decision trees grown to predict Target.
 type Forest struct {
 	//Forest string
@@ -29,21 +27,8 @@ itter indicates weather to use iterative splitting for all categorical features 
 with more then 6 categories.
 */
 
-func GrowRandomForest(fm *FeatureMatrix,
-	target Target,
-	candidates []int,
-	nSamples int,
-	mTry int,
-	nTrees int,
-	leafSize int,
-	maxDepth int,
-	splitmissing bool,
-	force bool,
-	vet bool,
-	evaloob bool,
-	importance *[]*RunningMean) (f *Forest) {
-
-	f = &Forest{target.GetName(), make([]*Tree, 0, nTrees), 0.0}
+func GrowRandomForest(fm *FeatureMatrix, target Target, candidates []int, nSamples int, mTry int, nTrees int, leafSize int, maxDepth int, splitmissing bool, force bool, vet bool, evaloob bool, importance *[]*RunningMean) *Forest {
+	f := &Forest{target.GetName(), make([]*Tree, 0, nTrees), 0.0}
 
 	switch target.(type) {
 	case TargetWithIntercept:
@@ -57,7 +42,10 @@ func GrowRandomForest(fm *FeatureMatrix,
 		nCases := fm.Data[0].Length()
 		cases := SampleWithReplacment(nSamples, nCases)
 
-		f.Trees = append(f.Trees, NewTree())
+		tree := NewTree()
+		tree.Target = target.GetName()
+		f.Trees = append(f.Trees, tree)
+
 		f.Trees[i].Grow(fm, target, cases, candidates, nil, mTry, leafSize, maxDepth, splitmissing, force, vet, evaloob, false, importance, nil, allocs)
 		switch target.(type) {
 		case BoostingTarget:
@@ -65,5 +53,5 @@ func GrowRandomForest(fm *FeatureMatrix,
 			f.Trees[i].Weight = target.(BoostingTarget).Boost(ls, ps)
 		}
 	}
-	return
+	return f
 }

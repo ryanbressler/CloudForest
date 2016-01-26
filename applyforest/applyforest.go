@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/lytics/CloudForest"
 )
 
 func main() {
@@ -125,7 +126,7 @@ func main() {
 		for i, box := range cbb.Box {
 			fmt.Fprintf(votefile, "%v", data.CaseLabels[i])
 
-			for j, _ := range cbb.CatMap.Back {
+			for j := range cbb.CatMap.Back {
 				total := 0.0
 				total = box.Map[j]
 

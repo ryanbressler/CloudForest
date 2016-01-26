@@ -18,7 +18,7 @@ func NewNumAdaBoostTarget(f NumFeature) (abt *NumAdaBoostTarget) {
 	nCases := f.Length()
 	abt = &NumAdaBoostTarget{f, make([]float64, nCases), 0.0}
 	cases := make([]int, nCases)
-	for i, _ := range abt.Weights {
+	for i := range abt.Weights {
 		abt.Weights[i] = 1 / float64(nCases)
 		cases[i] = i
 	}

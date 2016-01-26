@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 //BestSplitAllocs contains reusable allocations for split searching and evaluation.
 //Seprate instances should be used in each go routing doing learning.
 type BestSplitAllocs struct {

@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 /*
 RegretTarget wraps a categorical feature for use in regret driven classification.
 The ith entry in costs should contain the cost of misclassifying a case that actually

@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 //VoteTallyer  is used to tabulate votes by trees and is implemented by feature type specific
 //structs like NumBallotBox and CatBallotBox.
 //Vote should register a cote that casei should be predicted as pred.
