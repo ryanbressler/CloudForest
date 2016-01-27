@@ -1,10 +1,7 @@
 package CloudForest
 
 import (
-	//"fmt"
-	//"math"
-	"github.com/ryanbressler/CloudForest/sortby"
-	//"sort"
+	"github.com/lytics/CloudForest/sortby"
 )
 
 /*SortableFeature is a wrapper for a feature and set of cases that satisfies the
