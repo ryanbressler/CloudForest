@@ -198,7 +198,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		if lcans > nDrawnConstants+lastSample {
 
 			randi = lastSample
-			randi += rand.Intn(lcans - nDrawnConstants - lastSample)
+			randi += allocs.Rnd.Intn(lcans - nDrawnConstants - lastSample)
 			//randi = lastSample + rand.Intn(nnonconstant-lastSample)
 			if randi >= lcans-nConstants {
 				nDrawnConstants++

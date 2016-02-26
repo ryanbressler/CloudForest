@@ -313,7 +313,7 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		lasti := leafSize - 1
 
 		if randomSplit {
-			leafSize = leafSize + rand.Intn(stop-leafSize)
+			leafSize = leafSize + allocs.Rnd.Intn(stop-leafSize)
 			lasti = leafSize - 1
 			stop = leafSize + 1
 
