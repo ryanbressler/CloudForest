@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -19,11 +20,7 @@ N:Const5	0	0	0	0	0	0	0	1
 N:Const6	0	0	0	0	0	0	0	1`
 
 func TestBestSplitter(t *testing.T) {
-	//wierd targets that don't meat the performance standards
-	//so we check to make sure they at least grow trees
-	fmReader := strings.NewReader(constantsfm)
-
-	fm := ParseAFM(fmReader)
+	fm := readFm()
 
 	target := fm.Data[0]
 	cases := &[]int{0, 1, 2, 3, 4, 5, 6}
@@ -65,4 +62,37 @@ func TestBestSplitter(t *testing.T) {
 			t.Errorf("BestSplitter couldn't find non constant feature and six constants with %v known constants fi: %v split: %v impDex: %v nconstants: %v ", i, fi, split, impDec, nconstants)
 		}
 	}
+}
+
+func TestFmWrite(t *testing.T) {
+	fm := readFm()
+
+	writer := &bytes.Buffer{}
+	if err := fm.WriteFM(writer, "\t", true); err != nil {
+		t.Fatalf("could not write feature matrix: %v", err)
+	}
+
+	if writer.String() == "" {
+		t.Fatalf("could not write FM - buffer is empty")
+	}
+	firstLen := writer.Len()
+
+	writer = &bytes.Buffer{}
+	if err := fm.WriteFM(writer, "\t", false); err != nil {
+		t.Fatalf("could not write feature matrix: %v", err)
+	}
+
+	if writer.String() == "" {
+		t.Fatalf("could not write FM - buffer is empty")
+	}
+	secondLen := writer.Len()
+
+	if firstLen != secondLen {
+		t.Fatalf("expected buffers to have the same length: %v != %v", firstLen, secondLen)
+	}
+}
+
+func readFm() *FeatureMatrix {
+	fmReader := strings.NewReader(constantsfm)
+	return ParseAFM(fmReader)
 }

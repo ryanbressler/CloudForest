@@ -131,7 +131,75 @@ func (fm *FeatureMatrix) WriteCases(w io.Writer, cases []int) (err error) {
 	}
 
 	return
+}
 
+type fmIt func() ([]string, bool)
+
+func rowIter(fm *FeatureMatrix) fmIt {
+	var ct int
+	var header bool
+	max := fm.Data[0].Length()
+
+	return func() ([]string, bool) {
+		var vals []string
+
+		if !header {
+			for i := 0; i < len(fm.Data); i++ {
+				vals = append(vals, fm.Data[i].GetName())
+			}
+			header = true
+			return vals, true
+		}
+
+		if ct < max {
+			for i := 0; i < len(fm.Data); i++ {
+				vals = append(vals, fm.Data[i].GetStr(ct))
+			}
+			ct++
+			return vals, true
+		}
+		return nil, false
+	}
+}
+
+func colIter(fm *FeatureMatrix) fmIt {
+	var ct int
+	max := len(fm.Data)
+
+	return func() ([]string, bool) {
+
+		if ct < max {
+			var vals []string
+			vals = append(vals, fm.Data[ct].GetName())
+
+			for i := 0; i < fm.Data[ct].Length(); i++ {
+				vals = append(vals, fm.Data[ct].GetStr(i))
+			}
+			ct++
+			return vals, true
+		}
+		return nil, false
+	}
+}
+
+func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, transpose bool) error {
+	var iter fmIt
+
+	if !transpose {
+		iter = colIter(fm)
+	} else {
+		iter = rowIter(fm)
+	}
+
+	next, ok := iter()
+	for ok {
+		if _, err := fmt.Fprintln(w, strings.Join(next, sep)); err != nil {
+			return err
+		}
+		next, ok = iter()
+	}
+
+	return nil
 }
 
 /*
