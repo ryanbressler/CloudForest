@@ -92,6 +92,13 @@ func TestFmWrite(t *testing.T) {
 	}
 }
 
+func TestMat64(t *testing.T) {
+	fm := readFm()
+
+	dense := fm.Mat64()
+	t.Logf("%+v", dense)
+}
+
 func readFm() *FeatureMatrix {
 	fmReader := strings.NewReader(constantsfm)
 	return ParseAFM(fmReader)

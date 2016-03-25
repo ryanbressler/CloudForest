@@ -8,7 +8,10 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"strconv"
 	"strings"
+
+	"github.com/gonum/matrix/mat64"
 )
 
 //FeatureMatrix contains a slice of Features and a Map to look of the index of a feature
@@ -200,6 +203,31 @@ func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, transpose bool) error 
 	}
 
 	return nil
+}
+
+func (fm *FeatureMatrix) Mat64() *mat64.Dense {
+	c := len(fm.Data)
+	r := len(fm.CaseLabels)
+	dense := mat64.NewDense(r, c, nil)
+
+	var col int
+
+	iter := rowIter(fm)
+	next, ok := iter()
+
+	for ok {
+		fmt.Println(next)
+		for j, val := range next {
+			flt, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				continue
+			}
+			dense.Set(col, j, flt)
+		}
+		next, ok = iter()
+	}
+
+	return dense
 }
 
 /*
