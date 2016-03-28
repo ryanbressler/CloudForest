@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/bmizerany/assert"
+	"github.com/gonum/matrix/mat64"
 )
 
 //A toy feature matrix where either of the first
@@ -90,6 +93,22 @@ func TestFmWrite(t *testing.T) {
 	if firstLen != secondLen {
 		t.Fatalf("expected buffers to have the same length: %v != %v", firstLen, secondLen)
 	}
+}
+
+func TestMat64(t *testing.T) {
+	fm := readFm()
+	dense := fm.Mat64()
+
+	compareCol := func(i int, exp []float64) {
+		col := mat64.Col(nil, i, dense)
+		assert.Equal(t, len(col), len(exp))
+		for i := range exp {
+			assert.Equal(t, col[i], exp[i])
+		}
+	}
+
+	compareCol(1, []float64{0, 0, 0, 0, 0, 1, 1, 1})
+	compareCol(2, []float64{0, 0, 0, 0, 0, 0, 0, 1})
 }
 
 func readFm() *FeatureMatrix {
