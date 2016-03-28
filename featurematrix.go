@@ -170,7 +170,6 @@ func colIter(fm *FeatureMatrix) fmIt {
 	max := len(fm.Data)
 
 	return func() ([]string, bool) {
-
 		if ct < max {
 			var vals []string
 			vals = append(vals, fm.Data[ct].GetName())
@@ -206,25 +205,23 @@ func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, transpose bool) error 
 }
 
 func (fm *FeatureMatrix) Mat64() *mat64.Dense {
-	c := len(fm.Data)
-	r := len(fm.CaseLabels)
-	dense := mat64.NewDense(r, c, nil)
-
-	var col int
+	dense := mat64.NewDense(len(fm.CaseLabels), len(fm.Data), nil)
 
 	iter := rowIter(fm)
-	next, ok := iter()
 
-	for ok {
-		fmt.Println(next)
-		for j, val := range next {
-			flt, err := strconv.ParseFloat(val, 64)
-			if err != nil {
-				continue
-			}
-			dense.Set(col, j, flt)
+	// get the header
+	_, ok := iter()
+	if !ok {
+		return nil
+	}
+
+	var idx int
+	for row, ok := iter(); ok; idx++ {
+		for j, val := range row {
+			flt, _ := strconv.ParseFloat(val, 64)
+			dense.Set(idx, j, flt)
 		}
-		next, ok = iter()
+		row, ok = iter()
 	}
 
 	return dense
