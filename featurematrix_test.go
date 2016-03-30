@@ -69,9 +69,10 @@ func TestBestSplitter(t *testing.T) {
 
 func TestFmWrite(t *testing.T) {
 	fm := readFm()
+	header := true
 
 	writer := &bytes.Buffer{}
-	if err := fm.WriteFM(writer, "\t", true); err != nil {
+	if err := fm.WriteFM(writer, "\t", header, true); err != nil {
 		t.Fatalf("could not write feature matrix: %v", err)
 	}
 
@@ -81,7 +82,7 @@ func TestFmWrite(t *testing.T) {
 	firstLen := writer.Len()
 
 	writer = &bytes.Buffer{}
-	if err := fm.WriteFM(writer, "\t", false); err != nil {
+	if err := fm.WriteFM(writer, "\t", header, false); err != nil {
 		t.Fatalf("could not write feature matrix: %v", err)
 	}
 
@@ -97,7 +98,7 @@ func TestFmWrite(t *testing.T) {
 
 func TestMat64(t *testing.T) {
 	fm := readFm()
-	dense := fm.Mat64()
+	dense := fm.Mat64(false)
 
 	compareCol := func(i int, exp []float64) {
 		col := mat64.Col(nil, i, dense)
