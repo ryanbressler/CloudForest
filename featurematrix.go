@@ -138,19 +138,19 @@ func (fm *FeatureMatrix) WriteCases(w io.Writer, cases []int) (err error) {
 
 type fmIt func() ([]string, bool)
 
-func rowIter(fm *FeatureMatrix) fmIt {
+func rowIter(fm *FeatureMatrix, header bool) fmIt {
 	var ct int
-	var header bool
+	var ok bool
 	max := fm.Data[0].Length()
 
 	return func() ([]string, bool) {
 		var vals []string
 
-		if !header {
+		if header && !ok {
 			for i := 0; i < len(fm.Data); i++ {
 				vals = append(vals, fm.Data[i].GetName())
 			}
-			header = true
+			ok = true
 			return vals, true
 		}
 
@@ -165,14 +165,16 @@ func rowIter(fm *FeatureMatrix) fmIt {
 	}
 }
 
-func colIter(fm *FeatureMatrix) fmIt {
+func colIter(fm *FeatureMatrix, header bool) fmIt {
 	var ct int
 	max := len(fm.Data)
 
 	return func() ([]string, bool) {
 		if ct < max {
 			var vals []string
-			vals = append(vals, fm.Data[ct].GetName())
+			if header {
+				vals = append(vals, fm.Data[ct].GetName())
+			}
 
 			for i := 0; i < fm.Data[ct].Length(); i++ {
 				vals = append(vals, fm.Data[ct].GetStr(i))
@@ -184,13 +186,13 @@ func colIter(fm *FeatureMatrix) fmIt {
 	}
 }
 
-func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, transpose bool) error {
+func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, header, transpose bool) error {
 	var iter fmIt
 
 	if !transpose {
-		iter = colIter(fm)
+		iter = colIter(fm, header)
 	} else {
-		iter = rowIter(fm)
+		iter = rowIter(fm, header)
 	}
 
 	next, ok := iter()
@@ -204,18 +206,24 @@ func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, transpose bool) error 
 	return nil
 }
 
-func (fm *FeatureMatrix) Mat64() *mat64.Dense {
-	dense := mat64.NewDense(len(fm.CaseLabels), len(fm.Data), nil)
+func (fm *FeatureMatrix) Mat64(transpose bool) *mat64.Dense {
+	var (
+		idx   int
+		iter  fmIt
+		dense *mat64.Dense
+	)
 
-	iter := rowIter(fm)
+	ncol := len(fm.Data)
+	nrow := len(fm.CaseLabels)
 
-	// get the header
-	_, ok := iter()
-	if !ok {
-		return nil
+	if !transpose {
+		iter = rowIter(fm, false)
+		dense = mat64.NewDense(nrow, ncol, nil)
+	} else {
+		iter = colIter(fm, false)
+		dense = mat64.NewDense(ncol, nrow+1, nil)
 	}
 
-	var idx int
 	for row, ok := iter(); ok; idx++ {
 		for j, val := range row {
 			flt, _ := strconv.ParseFloat(val, 64)
@@ -438,10 +446,14 @@ func (fm *FeatureMatrix) LoadCases(data *csv.Reader, rowlabels bool) {
 //N: indicating numerical, C: indicating categorical or B: indicating boolean
 //For this parser features without N: are assumed to be categorical
 func ParseAFM(input io.Reader) *FeatureMatrix {
+	return Parse(input, '\t')
+}
+
+func Parse(input io.Reader, sep rune) *FeatureMatrix {
 	data := make([]Feature, 0, 100)
 	lookup := make(map[string]int, 0)
 	tsv := csv.NewReader(input)
-	tsv.Comma = '\t'
+	tsv.Comma = sep
 	headers, err := tsv.Read()
 	if err == io.EOF {
 		return &FeatureMatrix{data, lookup, headers[1:]}
