@@ -206,7 +206,7 @@ func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, header, transpose bool
 	return nil
 }
 
-func (fm *FeatureMatrix) Mat64(transpose bool) *mat64.Dense {
+func (fm *FeatureMatrix) Mat64(header, transpose bool) *mat64.Dense {
 	var (
 		idx   int
 		iter  fmIt
@@ -217,10 +217,10 @@ func (fm *FeatureMatrix) Mat64(transpose bool) *mat64.Dense {
 	nrow := len(fm.CaseLabels)
 
 	if !transpose {
-		iter = rowIter(fm, false)
+		iter = rowIter(fm, header)
 		dense = mat64.NewDense(nrow, ncol, nil)
 	} else {
-		iter = colIter(fm, false)
+		iter = colIter(fm, header)
 		dense = mat64.NewDense(ncol, nrow+1, nil)
 	}
 

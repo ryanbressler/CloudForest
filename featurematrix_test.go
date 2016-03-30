@@ -98,7 +98,7 @@ func TestFmWrite(t *testing.T) {
 
 func TestMat64(t *testing.T) {
 	fm := readFm()
-	dense := fm.Mat64(false)
+	dense := fm.Mat64(false, false)
 
 	compareCol := func(i int, exp []float64) {
 		col := mat64.Col(nil, i, dense)
