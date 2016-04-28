@@ -13,38 +13,42 @@ var (
 )
 
 func TestJackKnife(t *testing.T) {
-	predReader := csvReader(t, predFilePath)
-	predStr, err := predReader.Read()
-	if err != nil {
-		t.Fatalf("could not read file %s: %v", predFilePath, err)
-	}
-	preds := strToFloat(t, predStr)
-	t.Logf("length: %v", len(preds))
-
-	inbagReader := csvReader(t, inBagFilePath)
-	inbagStr, err := inbagReader.ReadAll()
-	if err != nil {
-		t.Fatalf("could not read file %s: %v", inBagFilePath, err)
-	}
-	inbag := make([][]float64, len(inbagStr))
-	for i, v := range inbagStr {
-		inbag[i] = strToFloat(t, v)
-	}
-
-	t.Logf("length: %v", inbag[0][4])
+	// read data
+	preds := readCsv(t, predFilePath)
+	inbag := readCsv(t, inBagFilePath)
 
 	// run jackknife
-	mean, variance := JackKnife(preds, inbag)
-	t.Logf("preds: %v, variance: %v", mean, variance)
+	predictions, err := JackKnife(preds, inbag)
+	if err != nil {
+		t.Fatalf("error jack-knifing: %v", err)
+	}
+
+	if len(predictions) != 2 {
+		t.Fatal("expected 2 mean/variance to be returned")
+	}
+
+	for i, pred := range predictions {
+		t.Logf("(%dth) prediction: %+v", i, pred)
+	}
 }
 
-func csvReader(t *testing.T, file string) *csv.Reader {
+func readCsv(t *testing.T, file string) [][]float64 {
 	predFile, err := os.Open(file)
 	if err != nil {
 		t.Fatalf("could not open file %s: %v", predFile, err)
 	}
 
-	return csv.NewReader(predFile)
+	reader := csv.NewReader(predFile)
+	all, err := reader.ReadAll()
+	if err != nil {
+		t.Fatalf("could not read file %s: %v", file, err)
+	}
+
+	values := make([][]float64, len(all))
+	for i, v := range all {
+		values[i] = strToFloat(t, v)
+	}
+	return values
 }
 
 func strToFloat(t *testing.T, values []string) []float64 {

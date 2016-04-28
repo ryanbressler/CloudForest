@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 
 	"github.com/drewlanenga/govector"
 )
@@ -173,58 +174,84 @@ func (f *Forest) PredictAll(fm *FeatureMatrix) []float64 {
 	return predictions
 }
 
-func JackKnife(predictions []float64, inbag [][]float64) (float64, float64) {
+type Prediction struct {
+	Value    float64
+	Variance float64
+}
+
+func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
+	if len(predictionSlice) == 0 || len(inbag) == 0 {
+		return nil, fmt.Errorf("prediction and inbag size must be equal")
+	}
+
+	m := len(predictionSlice)
+	n := len(inbag)
+	B := float64(len(predictionSlice[0]))
+	B2 := B * B
+
 	var (
-		n   = len(inbag)
-		B   = float64(len(predictions))
-		B2  = B * B
-		sum = float64(0)
+		avgPreds = make([]float64, m)
+		sums     = make([]float64, m)
+		nvars    = make([]float64, n)
+		output   = make([]*Prediction, m)
+		wg       sync.WaitGroup
+		wg2      sync.WaitGroup
 	)
 
-	preds := govector.Vector(predictions)
-	avgPred := preds.Mean()
-	preds = preds.Apply(func(f float64) float64 { return f - avgPred })
+	// normalize the prediction slices
+	for i, predictions := range predictionSlice {
+		wg.Add(1)
+		go func(idx int, p []float64) {
+			defer wg.Done()
 
-	// calculate the raw infinitesimal jack-knife value
-	for i := 0; i < n; i++ {
-		val, err := govector.DotProduct(govector.Vector(inbag[i]), preds)
-		if err != nil {
-			fmt.Printf("err!!! %v\n", err)
-			continue
-		}
+			preds := govector.Vector(p)
+			avgPred := preds.Mean()
 
-		val *= val
-
-		val /= B2
-
-		sum += val
+			predictionSlice[idx] = preds.Apply(func(f float64) float64 { return f - avgPred })
+			avgPreds[idx] = avgPred
+		}(i, predictions)
 	}
+	wg.Wait()
+
+	// calculate the raw infinitesimal jackknife values
+	for i, preds := range predictionSlice {
+		wg2.Add(1)
+		go func(idx int, p []float64) {
+			defer wg2.Done()
+			sum := 0.0
+			for i := 0; i < n; i++ {
+				val, err := govector.DotProduct(govector.Vector(inbag[i]), p)
+				if err != nil {
+					fmt.Printf("err!!! %v\n", err)
+					continue
+				}
+
+				val *= val
+				val /= B2
+				sum += val
+			}
+			sums[idx] = sum
+		}(i, preds)
+	}
+	wg2.Wait()
 
 	// normalize the IJ value with Monte-Carlo bias correction
-	var (
-		nvars    = make([]float64, n)
-		variance float64
-		nvar     float64
-		bootVar  float64
-	)
 	for i := 0; i < n; i++ {
-		// correct variance
-		variance = govector.Vector(inbag[i]).Variance()
-		//variance *= float64((n - 1) / n)
-		nvars[i] = variance
+		nvars[i] = govector.Vector(inbag[i]).Variance()
+	}
+	nvar := govector.Vector(nvars).Mean()
+
+	for idx, preds := range predictionSlice {
+		bv := 0.0
+		for i := 0; i < len(preds); i++ {
+			bv += preds[i] * preds[i]
+		}
+		output[idx] = &Prediction{
+			Value:    avgPreds[idx],
+			Variance: sums[idx] - float64(n)*nvar*(bv/B)/B,
+		}
+
 	}
 
-	nvar = govector.Vector(nvars).Mean()
-
-	for i := 0; i < preds.Len(); i++ {
-		bootVar += preds[i] * preds[i]
-	}
-
-	bootVar /= B
-
-	biasCorrection := float64(n) * nvar * bootVar / B
-
-	vars := sum - biasCorrection
-
-	return avgPred, vars
+	return output, nil
 }
