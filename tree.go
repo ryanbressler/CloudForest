@@ -338,10 +338,7 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 func (t *Tree) GetLeaves(fm *FeatureMatrix, fbycase *SparseCounter) []Leaf {
 	leaves := make([]Leaf, 0)
 	ncases := fm.Data[0].Length()
-	cases := make([]int, 0, ncases)
-	for i := 0; i < ncases; i++ {
-		cases = append(cases, i)
-	}
+	cases := makeCases(ncases)
 
 	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil { // I'm in a leaf node
@@ -363,10 +360,7 @@ func (t *Tree) Partition(fm *FeatureMatrix) (*[][]int, *[]string) {
 	leaves := make([][]int, 0)
 	preds := make([]string, 0)
 	ncases := fm.Data[0].Length()
-	cases := make([]int, 0, ncases)
-	for i := 0; i < ncases; i++ {
-		cases = append(cases, i)
-	}
+	cases := makeCases(ncases)
 
 	t.Root.Recurse(func(n *Node, cases []int, depth int) {
 		if n.Left == nil && n.Right == nil { // I'm in a leaf node
@@ -390,13 +384,7 @@ type Leaf struct {
 //into bb *BallotBox. Since BallotBox is not thread safe trees should not vote
 //into the same BallotBox in parallel.
 func (t *Tree) Vote(fm *FeatureMatrix, bb VoteTallyer) {
-	ncases := fm.Data[0].Length()
-	cases := make([]int, 0, ncases)
-	for i := 0; i < ncases; i++ {
-		cases = append(cases, i)
-	}
-
-	t.VoteCases(fm, bb, cases)
+	t.VoteCases(fm, bb, makeCases(fm.Data[0].Length()))
 }
 
 //VoteCases casts a vote for the predicted value of each case in fm *FeatureMatrix.
@@ -417,4 +405,12 @@ func (t *Tree) VoteCases(fm *FeatureMatrix, bb VoteTallyer, cases []int) {
 			}
 		}
 	}, fm, cases, 0)
+}
+
+func makeCases(n int) []int {
+	cases := make([]int, n)
+	for i := range cases {
+		cases[i] = i
+	}
+	return cases
 }
