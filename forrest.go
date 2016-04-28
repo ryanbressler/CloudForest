@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
@@ -172,39 +173,58 @@ func (f *Forest) PredictAll(fm *FeatureMatrix) []float64 {
 	return predictions
 }
 
-func JackKnife(predictions []float64, inbag [][]float64) float64 {
+func JackKnife(predictions []float64, inbag [][]float64) (float64, float64) {
 	var (
-		n       = len(inbag)
-		B       = float64(len(inbag))
-		B2      = B * B
-		sum     = float64(0)
-		preds   = govector.Vector(predictions)
-		avgPred = preds.Mean()
+		n   = len(inbag)
+		B   = float64(len(predictions))
+		B2  = B * B
+		sum = float64(0)
 	)
 
+	preds := govector.Vector(predictions)
+	avgPred := preds.Mean()
 	preds = preds.Apply(func(f float64) float64 { return f - avgPred })
 
+	// calculate the raw infinitesimal jack-knife value
 	for i := 0; i < n; i++ {
 		val, err := govector.DotProduct(govector.Vector(inbag[i]), preds)
 		if err != nil {
+			fmt.Printf("err!!! %v\n", err)
 			continue
 		}
 
 		val *= val
+
 		val /= B2
+
 		sum += val
 	}
-	return sum
 
-	/*
+	// normalize the IJ value with Monte-Carlo bias correction
+	var (
+		nvars    = make([]float64, n)
+		variance float64
+		nvar     float64
+		bootVar  float64
+	)
+	for i := 0; i < n; i++ {
+		// correct variance
+		variance = govector.Vector(inbag[i]).Variance()
+		//variance *= float64((n - 1) / n)
+		nvars[i] = variance
+	}
 
-	   #
-	   # Apply Monte Carlo bias correction
-	   #
+	nvar = govector.Vector(nvars).Mean()
 
-	   N.var = mean(Matrix::rowMeans(N^2) - Matrix::rowMeans(N)^2)
-	   boot.var = rowSums(pred.centered^2) / B
-	   bias.correction = n * N.var * boot.var / B
-	   vars = raw.IJ - bias.correction
-	*/
+	for i := 0; i < preds.Len(); i++ {
+		bootVar += preds[i] * preds[i]
+	}
+
+	bootVar /= B
+
+	biasCorrection := float64(n) * nvar * bootVar / B
+
+	vars := sum - biasCorrection
+
+	return avgPred, vars
 }

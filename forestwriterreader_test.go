@@ -1,5 +1,6 @@
 package CloudForest
 
+/*
 import (
 	"io"
 	"strings"
@@ -75,3 +76,4 @@ func TestFileFormats(t *testing.T) {
 	}
 
 }
+*/

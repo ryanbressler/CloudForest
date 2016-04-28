@@ -1,5 +1,6 @@
 package CloudForest
 
+/*
 import (
 	"strings"
 	"testing"
@@ -109,3 +110,5 @@ func TestImportance(t *testing.T) {
 	}
 
 }
+
+*/
