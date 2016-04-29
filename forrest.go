@@ -22,10 +22,10 @@ type Forest struct {
 	Intercept float64
 }
 
-type FullForest struct {
-	Forest
+type ForestModel struct {
+	Forest      *Forest
 	InBag       [][]float64
-	Predictions []float64
+	Predictions [][]float64
 	Importance  *[]*RunningMean
 }
 
@@ -84,16 +84,18 @@ itter indicates weather to use iterative splitting for all categorical features 
 with more then 6 categories.
 */
 
-func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *FullForest {
+func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *ForestModel {
 	var (
 		targetName = target.GetName()
+		allocs     = NewBestSplitAllocs(config.NSamples, target)
+		importance = NewRunningMeans(config.NSamples)
+		nCases     = fm.Data[0].Length()
 		trees      = make([]*Tree, config.NTrees)
 		inbag      = make([][]float64, config.NTrees)
 		candidates = make([]int, 0, len(fm.Data)-1)
-		allocs     = NewBestSplitAllocs(config.NSamples, target)
-		importance = NewRunningMeans(config.NSamples)
 	)
 
+	// construct list of candidate features
 	for i, feature := range fm.Data {
 		if feature.GetName() != targetName {
 			candidates = append(candidates, i)
@@ -101,8 +103,6 @@ func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *F
 	}
 
 	for i := 0; i < config.NTrees; i++ {
-		nCases := fm.Data[0].Length()
-
 		var cases []int
 		if config.Replace {
 			cases = SampleWithReplacment(config.NSamples, nCases)
@@ -110,6 +110,7 @@ func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *F
 			cases = SampleWithoutReplacement(config.NSamples, nCases)
 		}
 
+		// if in-bag, keep track of the cases
 		if config.InBag {
 			inbag[i] = make([]float64, config.NSamples)
 			for _, c := range cases {
@@ -140,32 +141,36 @@ func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *F
 		)
 	}
 
-	f := &FullForest{
-		Forest: Forest{
-			Trees:  trees,
-			Target: targetName,
-		},
-	}
+	forest := &Forest{Trees: trees, Target: targetName}
+	full := &ForestModel{Forest: forest, Importance: importance}
 
 	if config.InBag {
-		f.InBag = inbag
-		f.Predictions = f.PredictAll(fm)
+		full.InBag = inbag
+		full.Predictions = forest.PredictAll(fm)
 	}
 
-	return f
+	return full
 }
 
-func (f *Forest) PredictAll(fm *FeatureMatrix) []float64 {
-	cases := makeCases(fm.Data[0].Length())
-	predictions := make([]float64, len(f.Trees))
+// PredictAll returns the predictions
+func (f *Forest) PredictAll(fm *FeatureMatrix) [][]float64 {
+	n := fm.Data[0].Length()
+	cases := makeCases(n)
+	predictions := make([][]float64, n)
+
+	for i := range predictions {
+		predictions[i] = make([]float64, len(f.Trees))
+	}
 
 	for i, tree := range f.Trees {
 		tree.Root.Recurse(func(n *Node, cases []int, depth int) {
 			if n.Left == nil && n.Right == nil {
-				if val, err := strconv.ParseFloat(n.Pred, 64); err == nil {
-					predictions[i] = val
-				} else {
-					predictions[i] = math.NaN()
+				for _, j := range cases {
+					if val, err := strconv.ParseFloat(n.Pred, 64); err == nil {
+						predictions[j][i] = val
+					} else {
+						predictions[j][i] = math.NaN()
+					}
 				}
 			}
 		}, fm, cases, 0)
@@ -174,20 +179,30 @@ func (f *Forest) PredictAll(fm *FeatureMatrix) []float64 {
 	return predictions
 }
 
+// Prediction consists of a predicted Value and it's associated variance
 type Prediction struct {
 	Value    float64
 	Variance float64
 }
 
+// JackKnife estimates the variance of the predicted value from the RandomForest
+// using an infinitesimal jackknife estimator for the variance.
+//
+// predictionSlice is a list of the complete predictions for each observation
+// inbag is the inbag samples used by the RandomForest
+//
+// returns a Prediction for each value in the predictionSlice
 func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 	if len(predictionSlice) == 0 || len(inbag) == 0 {
 		return nil, fmt.Errorf("prediction and inbag size must be equal")
 	}
 
-	m := len(predictionSlice)
-	n := len(inbag)
-	B := float64(len(predictionSlice[0]))
-	B2 := B * B
+	var (
+		m  = len(predictionSlice)
+		n  = len(inbag)
+		B  = float64(len(predictionSlice[0]))
+		B2 = B * B
+	)
 
 	var (
 		avgPreds = make([]float64, m)
@@ -195,7 +210,6 @@ func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 		nvars    = make([]float64, n)
 		output   = make([]*Prediction, m)
 		wg       sync.WaitGroup
-		wg2      sync.WaitGroup
 	)
 
 	// normalize the prediction slices
@@ -214,10 +228,11 @@ func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 	wg.Wait()
 
 	// calculate the raw infinitesimal jackknife values
+	// V_{i, j} = \sum_{i, n} Cov( inbag[i], pred ) ^ 2
 	for i, preds := range predictionSlice {
-		wg2.Add(1)
+		wg.Add(1)
 		go func(idx int, p []float64) {
-			defer wg2.Done()
+			defer wg.Done()
 			sum := 0.0
 			for i := 0; i < n; i++ {
 				val, err := govector.DotProduct(govector.Vector(inbag[i]), p)
@@ -233,7 +248,7 @@ func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 			sums[idx] = sum
 		}(i, preds)
 	}
-	wg2.Wait()
+	wg.Wait()
 
 	// normalize the IJ value with Monte-Carlo bias correction
 	for i := 0; i < n; i++ {
@@ -246,6 +261,7 @@ func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 		for i := 0; i < len(preds); i++ {
 			bv += preds[i] * preds[i]
 		}
+
 		output[idx] = &Prediction{
 			Value:    avgPreds[idx],
 			Variance: sums[idx] - float64(n)*nvar*(bv/B)/B,

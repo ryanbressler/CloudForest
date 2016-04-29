@@ -1,6 +1,5 @@
 package CloudForest
 
-/*
 import (
 	"math/rand"
 	"strings"
@@ -88,8 +87,16 @@ func TestWierdTargets(t *testing.T) {
 			NewNumAdaBoostTarget(numtarget.Copy().(NumFeature)),
 		}
 
+		config := &ForestConfig{
+			NSamples: fm.Data[0].Length(),
+			MTry:     3,
+			NTrees:   10,
+			LeafSize: 1,
+		}
+
 		for _, target := range targets {
-			forest := GrowRandomForest(fm, target, canidates, fm.Data[0].Length(), 3, 10, 1, 0, false, false, false, false, nil)
+			model := GrowRandomForest(fm, target, config)
+			forest := model.Forest
 			if len(forest.Trees) != 10 {
 				t.Errorf("%T didn't grow 10 trees.", target)
 			}
@@ -325,7 +332,7 @@ func TestIris(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping classification tests on iris data set.")
 	}
-	candidates := []int{1, 2, 3, 4}
+
 	// irisreader := strings.NewReader(irisarff)
 	// fm := ParseARFF(irisreader)
 	// targeti := 4
@@ -367,9 +374,19 @@ func TestIris(t *testing.T) {
 
 	cattarget := fm.Data[targeti]
 	classtargets := GetAllClassificationTargets(cattarget.(*DenseCatFeature))
+
+	config := &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     3,
+		NTrees:   10,
+		LeafSize: 1,
+		InBag:    true,
+	}
+
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, 0, false, false, false, false, nil)
+		model := GrowRandomForest(fm, target.(Feature), config)
+		forest := model.Forest
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -408,10 +425,12 @@ func TestIris(t *testing.T) {
 
 	//need to get again for boosting target
 	classtargets = GetAllClassificationTargets(cattarget.(*DenseCatFeature))
+	config.NTrees = 20
 
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 20, 1, 0, false, false, false, false, nil)
+		model := GrowRandomForest(fm, target.(Feature), config)
+		forest := model.Forest
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
 
@@ -434,7 +453,7 @@ func TestTwoClassIris(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping classification tests on iris data set.")
 	}
-	candidates := []int{1, 2, 3, 4}
+
 	// irisreader := strings.NewReader(irisarff)
 	// fm := ParseARFF(irisreader)
 	// targeti := 4
@@ -459,9 +478,17 @@ func TestTwoClassIris(t *testing.T) {
 		//NewNPTarget(cattarget, cattarget.NumToCat(0), .005, 1000),
 	}
 
+	config := &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     3,
+		NTrees:   100,
+		LeafSize: 1,
+	}
+
 	for _, target := range classtargets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 3, 100, 1, 0, false, false, false, false, nil)
+		model := GrowRandomForest(fm, target.(Feature), config)
+		forest := model.Forest
 		trainingEnd := time.Now()
 
 		err := 0.0
@@ -534,13 +561,20 @@ func TestBoston(t *testing.T) {
 		t.Errorf("Boston feature matrix has %v case labels, %v values not 506", len(fm.CaseLabels), fm.Data[0].Length())
 	}
 
-	candidates := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+	config := &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     4,
+		NTrees:   20,
+		LeafSize: 1,
+		InBag:    true,
+	}
 
 	numtarget := fm.Data[fm.Map["class"]]
 	targets := GetAllRegressionTargets(numtarget.(*DenseNumFeature))
 	for _, target := range targets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, 0, false, false, false, false, nil)
+		model := GrowRandomForest(fm, target.(Feature), config)
+		forest := model.Forest
 		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
@@ -569,7 +603,8 @@ func TestBoston(t *testing.T) {
 
 	for _, target := range targets {
 		trainingStart := time.Now()
-		forest := GrowRandomForest(fm, target.(Feature), candidates, fm.Data[0].Length(), 4, 20, 1, 0, false, false, false, false, nil)
+		model := GrowRandomForest(fm, target.(Feature), config)
+		forest := model.Forest
 		trainingEnd := time.Now()
 		numvotes := NewNumBallotBox(numtarget.Length())
 
@@ -1314,4 +1349,3 @@ var boston_housing = `% 1. Title: Boston Housing Data
 %
 %
 %`
-*/

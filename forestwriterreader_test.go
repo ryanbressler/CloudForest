@@ -1,6 +1,5 @@
 package CloudForest
 
-/*
 import (
 	"io"
 	"strings"
@@ -12,7 +11,6 @@ func TestFileFormats(t *testing.T) {
 	//Write out a fm and read it back in
 	pipereader, pipewriter := io.Pipe()
 	cases := []int{0, 1, 2, 3, 4, 5, 6, 7}
-	candidates := []int{2, 3, 4}
 
 	fm1 := ParseAFM(strings.NewReader(fm))
 
@@ -28,14 +26,19 @@ func TestFileFormats(t *testing.T) {
 	}
 
 	cattarget := fm.Data[1]
-	forest := GrowRandomForest(fm, cattarget.(Feature), candidates, fm.Data[0].Length(), 3, 10, 1, 0, false, false, false, false, nil)
+	config := &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     3,
+		NTrees:   10,
+		LeafSize: 1,
+	}
+	ff := GrowRandomForest(fm, cattarget.(Feature), config)
 
 	count := 0
-	for _, tree := range forest.Trees {
-
+	for _, tree := range ff.Forest.Trees {
 		tree.Root.Recurse(func(*Node, []int, int) { count++ }, fm, cases, 0)
-
 	}
+
 	if count < 30 {
 		t.Errorf("Trees before send to file has only %v nodes.", count)
 	}
@@ -44,7 +47,7 @@ func TestFileFormats(t *testing.T) {
 
 	go func() {
 		fw := NewForestWriter(pipewriter)
-		fw.WriteForest(forest)
+		fw.WriteForest(ff.Forest)
 		pipewriter.Close()
 	}()
 
@@ -76,4 +79,3 @@ func TestFileFormats(t *testing.T) {
 	}
 
 }
-*/
