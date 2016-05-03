@@ -291,7 +291,7 @@ func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 
 			output[idx] = &Prediction{
 				Value:    avgPreds[idx],
-				Variance: math.Max(0.0, variance),
+				Variance: variance,
 			}
 		}(i, preds)
 	}

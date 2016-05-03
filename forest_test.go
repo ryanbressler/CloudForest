@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"encoding/csv"
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -23,12 +24,17 @@ func TestJackKnife(t *testing.T) {
 		t.Fatalf("error jack-knifing: %v", err)
 	}
 
-	if len(predictions) != 2 {
-		t.Fatal("expected 2 mean/variance to be returned")
-	}
+	if os.Getenv("EXPORT_JACKKNIFE") != "" {
+		file, err := os.Create("validation.csv")
+		if err != nil {
+			t.Fatalf("error creating file: %v", err)
+		}
+		defer file.Close()
 
-	for i, pred := range predictions {
-		t.Logf("(%dth) prediction: %+v", i, pred)
+		fmt.Fprintln(file, "prediction, variance")
+		for _, pred := range predictions {
+			fmt.Fprintf(file, "%v, %v\n", pred.Value, pred.Variance)
+		}
 	}
 }
 
