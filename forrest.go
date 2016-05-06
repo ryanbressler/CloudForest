@@ -14,21 +14,22 @@ var (
 	mTryClassification = func(x int) int { return int(math.Ceil(math.Sqrt(float64(x)))) }
 )
 
-//Forest represents a collection of decision trees grown to predict Target.
+//Forest represents a collection of decision trees grown to predict the Target
 type Forest struct {
-	//Forest string
 	Target    string
 	Trees     []*Tree
 	Intercept float64
 }
 
+// ForestModel is a complete view of the RandomForest
 type ForestModel struct {
-	Forest      *Forest
-	InBag       [][]float64
-	Predictions [][]float64
-	Importance  *[]*RunningMean
+	Forest      *Forest         // The underlying Rf
+	InBag       [][]float64     // InBag samples used by the RF
+	Predictions [][]float64     // Predicted values of te input data based on OOB samples
+	Importance  *[]*RunningMean // Variable Importance for the RF
 }
 
+// ForestConfig is used to configure and tune the RandomForest
 type ForestConfig struct {
 	NSamples     int
 	NTrees       int
@@ -206,13 +207,16 @@ type Prediction struct {
 	Variance float64
 }
 
-// JackKnife estimates the variance of the predicted value from the RandomForest
-// using an infinitesimal jackknife estimator for the variance.
+// JackKnife estimates the variance of the predicted values from the RandomForest
+// using an infinitesimal jackknife estimator for the variance, given the
+// in-bag samples used by the RandomForest, and the predicted values from each tree.
 //
-// predictionSlice is a list of the complete predictions for each observation
-// inbag is the inbag samples used by the RandomForest
+// The underlying algorithm is described in detail in the paper:
+// "Confidence Intervals for Random Forests: The JackKnife and the Infinitesimal JackKnife"
+//  by Wager S., et al. http://arxiv.org/pdf/1311.4555.pdf
 //
-// returns a Prediction for each value in the predictionSlice
+// The complete R implementation is available here: https://github.com/swager/randomForestCI
+//
 func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 	if len(predictionSlice) == 0 || len(inbag) == 0 {
 		return nil, fmt.Errorf("prediction and inbag size must be equal")
