@@ -39,8 +39,15 @@ func TestImportance(t *testing.T) {
 	}
 
 	//standard
-	imppnt := NewRunningMeans(len(fm.Data))
-	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, 0, false, false, false, false, imppnt)
+	config := &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     6,
+		NTrees:   nTrees,
+		LeafSize: 1,
+	}
+
+	ff := GrowRandomForest(fm, numtarget.(Feature), config)
+	imppnt := ff.Importance
 	//TODO read importance scores and verify RM and LSTAT come out on top
 
 	roomimp := imp((*imppnt)[fm.Map["RM"]].Read())
@@ -62,8 +69,9 @@ func TestImportance(t *testing.T) {
 	}
 
 	//vetting
-	imppnt = NewRunningMeans(len(fm.Data))
-	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, 0, false, false, true, false, imppnt)
+	config.Vet = true
+	ff = GrowRandomForest(fm, numtarget.(Feature), config)
+	imppnt = ff.Importance
 	//TODO read importance scores and verify RM and LSTAT come out on top
 
 	roomimp = imp((*imppnt)[fm.Map["RM"]].Read())
@@ -86,8 +94,8 @@ func TestImportance(t *testing.T) {
 
 	//evaloob
 	//vetting
-	imppnt = NewRunningMeans(len(fm.Data))
-	_ = GrowRandomForest(fm, numtarget.(Feature), candidates, fm.Data[0].Length(), 6, nTrees, 1, 0, false, false, false, true, imppnt)
+	ff = GrowRandomForest(fm, numtarget.(Feature), config)
+	imppnt = ff.Importance
 	//TODO read importance scores and verify RM and LSTAT come out on top
 
 	roomimp = imp((*imppnt)[fm.Map["RM"]].Read())

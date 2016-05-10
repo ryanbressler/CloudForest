@@ -136,10 +136,18 @@ func SampleFirstN(deck *[]int, samples *[]int, n int, nconstants int) {
 SampleWithReplacment samples nSamples random draws from [0,totalCases) with replacement
 for use in selecting cases to grow a tree from.
 */
-func SampleWithReplacment(nSamples int, totalCases int) (cases []int) {
-	cases = make([]int, 0, nSamples)
+func SampleWithReplacment(nSamples, totalCases int) []int {
+	cases := make([]int, nSamples)
 	for i := 0; i < nSamples; i++ {
-		cases = append(cases, rand.Intn(totalCases))
+		cases[i] = rand.Intn(totalCases)
 	}
-	return
+	return cases
+}
+
+/*
+SampleWithoutReplacement samples nSamples random draws from [0, totalCases] w/o replacement
+for use in selecting cases to grow a tree from.
+*/
+func SampleWithoutReplacement(nSamples, totalCases int) []int {
+	return rand.Perm(totalCases)[:nSamples]
 }
