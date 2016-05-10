@@ -234,7 +234,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 				casept = oob
 			}
 
-			allocs.ContrastTarget.(Feature).ShuffleCases(casept)
+			allocs.ContrastTarget.(Feature).ShuffleCases(casept, allocs)
 			_, vetImp, _ = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, extraRandom, allocs)
 			inerImp = inerImp - vetImp
 		}

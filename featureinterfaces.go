@@ -34,7 +34,7 @@ type Feature interface {
 	Copy() (copy Feature)
 	CopyInTo(copy Feature)
 	Shuffle()
-	ShuffleCases(cases *[]int)
+	ShuffleCases(cases *[]int, allocs *BestSplitAllocs)
 	ImputeMissing()
 	GetName() string
 	Append(v string)
