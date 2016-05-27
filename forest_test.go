@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -12,6 +13,28 @@ var (
 	predFilePath  = "preds.csv"
 	inBagFilePath = "n.csv"
 )
+
+func TestPartial(t *testing.T) {
+	irisreader := strings.NewReader(irislibsvm)
+	fm := ParseLibSVM(irisreader)
+
+	for i, feature := range fm.Data {
+		t.Logf("feature %d: %s", i, feature.GetName())
+	}
+
+	tgt := fm.Data[0]
+	model := GrowRandomForest(fm, tgt, &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     2,
+		NTrees:   500,
+		LeafSize: 1,
+	})
+
+	forest := model.Forest
+	x, y := P(forest, fm, "2")
+	t.Log(x)
+	t.Log(y)
+}
 
 func TestJackKnife(t *testing.T) {
 	// read data

@@ -311,3 +311,74 @@ func avgVar(val [][]float64) float64 {
 	}
 	return govector.Vector(vars).Mean()
 }
+
+func P(x *Forest, data *FeatureMatrix, class string) (a, b []float64) {
+	idx, ok := data.Map[class]
+	if !ok {
+		return nil, nil
+	}
+
+	xv := data.Data[idx]
+	switch xv.(type) {
+	case *DenseCatFeature:
+		return nil, nil
+	}
+
+	n := xv.Length()
+	vals := make([]float64, n)
+	uniq := make(map[string]struct{})
+	for i := 0; i < xv.Length(); i++ {
+		uniq[xv.GetStr(i)] = struct{}{}
+		str := xv.GetStr(i)
+		val, err := strconv.ParseFloat(str, 64)
+		if err != nil {
+			continue
+		}
+		vals[i] = val
+	}
+
+	nPts := minInt(len(uniq), 51)
+	valVec := govector.Vector(vals)
+	xPt := seq(valVec.Min(), valVec.Max(), nPts)
+	yPt := make([]float64, nPts)
+
+	for i := range xPt {
+		xData := data
+		xData.Data[idx] = &DenseNumFeature{
+			NumData: rep(xPt[i], n),
+			Missing: make([]bool, n),
+			Name:    xv.GetName(),
+		}
+
+		//		fmt.Printf("here: %+v\n", xData.Data[idx])
+
+		preds := x.Predict(xData)
+		yPt[i] = govector.Vector(preds).Mean()
+	}
+
+	return xPt, yPt
+}
+
+func rep(val float64, n int) []float64 {
+	output := make([]float64, n)
+	for i := range output {
+		output[i] = val
+	}
+	return output
+}
+
+func seq(start, end float64, n int) []float64 {
+	output := make([]float64, n)
+	step := (end - start) / float64(n)
+	for i := range output {
+		output[i] = start + (step * float64(i))
+	}
+	return output
+}
+
+func minInt(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
