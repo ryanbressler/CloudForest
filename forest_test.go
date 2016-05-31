@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/bmizerany/assert"
 )
 
 var (
@@ -46,18 +48,35 @@ func TestPartial(t *testing.T) {
 		NTrees:   500,
 		LeafSize: 1,
 	})
-
 	forest := model.Forest
-	x, y := PDP(forest, fm, "3")
+
+	// Partial Dependency Plot with 1 variable
+	deps, err := forest.PDP(fm, "3")
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, nil, deps)
 
 	if os.Getenv("WRITEDATA") != "" {
-		writeSlice("x.csv", x)
-		writeSlice("y.csv", y)
+		writeDeps("singleDep.csv", deps)
+	}
+
+	// Partial Dependency Plot with 2 variables
+	deps, err = forest.PDP(fm, "3", "2")
+	assert.Equal(t, nil, err)
+	assert.NotEqual(t, nil, deps)
+
+	if os.Getenv("WRITEDATA") != "" {
+		writeDeps("doubleDep.csv", deps)
 	}
 }
 
-func writeSlice(name string, vals []float64) {
-	f, _ := os.Create(name)
+func writeDeps(name string, vals [][]float64) {
+	file, _ := os.Create(name)
+	for _, val := range vals {
+		writeSlice(file, val)
+	}
+}
+
+func writeSlice(f *os.File, vals []float64) {
 	str := make([]string, len(vals))
 	for i, v := range vals {
 		str[i] = strconv.FormatFloat(v, 'f', -1, 64)

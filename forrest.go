@@ -246,7 +246,6 @@ func JackKnife(predictionSlice, inbag [][]float64) ([]*Prediction, error) {
 
 			preds := govector.Vector(p)
 			avgPred := preds.Mean()
-
 			predictionSlice[idx] = preds.Apply(func(f float64) float64 { return f - avgPred })
 			avgPreds[idx] = avgPred
 		}(i, predictions)
@@ -309,19 +308,119 @@ func avgVar(val [][]float64) float64 {
 	for i := 0; i < len(val); i++ {
 		vars[i] = govector.Vector(val[i]).Variance()
 	}
-	return govector.Vector(vars).Mean()
+	return meanSlice(vars)
 }
 
-func PDP(x *Forest, data *FeatureMatrix, class string) (a, b []float64) {
-	idx, ok := data.Map[class]
+const maxSplits = 51
+
+// PDP calculates the partial dependency of 1 or 2 classes
+// NOTE: this is currently only functional for regression trees, not classification trees
+func (x *Forest) PDP(data *FeatureMatrix, classes ...string) ([][]float64, error) {
+	numClasses := len(classes)
+	switch numClasses {
+	case 0:
+		return nil, fmt.Errorf("must provide at least one class")
+	case 1:
+		return x.singlePDP(data, classes[0]), nil
+	case 2:
+		return x.doublePDP(data, classes[0], classes[1]), nil
+	default:
+		return nil, fmt.Errorf("too many classes provided")
+	}
+}
+
+// singlePDP calculates the partial dependency of a single class
+func (x *Forest) singlePDP(data *FeatureMatrix, class string) [][]float64 {
+	xv, idx, ok := toSeq(data, class)
 	if !ok {
-		return nil, nil
+		return nil
 	}
 
-	xv := data.Data[idx]
-	switch xv.(type) {
-	case *DenseCatFeature:
-		return nil, nil
+	xData := data
+	n := data.Data[0].Length()
+	output := make([][]float64, len(xv.values))
+
+	old := xData.Data[idx]
+	defer func() {
+		data.Data[idx] = old
+	}()
+
+	for i, val := range xv.values {
+		xData.Data[idx] = &DenseNumFeature{
+			NumData: rep(val, n),
+			Missing: make([]bool, n),
+			Name:    xv.name,
+		}
+
+		output[i] = []float64{val, meanSlice(x.Predict(xData))}
+	}
+
+	return output
+}
+
+// doublePDP calculates the partial dependency of two classes
+func (x *Forest) doublePDP(data *FeatureMatrix, classA, classB string) [][]float64 {
+	xv, xIdx, ok := toSeq(data, classA)
+	if !ok {
+		return nil
+	}
+
+	yv, yIdx, ok := toSeq(data, classB)
+	if !ok {
+		return nil
+	}
+
+	xData := data
+	n := data.Data[0].Length()
+	output := make([][]float64, len(xv.values)*len(yv.values))
+	i := 0
+
+	oldX := xData.Data[xIdx]
+	oldY := xData.Data[yIdx]
+	defer func() {
+		data.Data[xIdx] = oldX
+		data.Data[yIdx] = oldY
+	}()
+
+	for _, valX := range xv.values {
+		for _, valY := range yv.values {
+			xData.Data[yIdx] = &DenseNumFeature{
+				NumData: rep(valY, n),
+				Missing: make([]bool, n),
+				Name:    yv.name,
+			}
+
+			xData.Data[xIdx] = &DenseNumFeature{
+				NumData: rep(valX, n),
+				Missing: make([]bool, n),
+				Name:    xv.name,
+			}
+
+			output[i] = []float64{
+				valX,
+				valY,
+				meanSlice(x.Predict(xData)),
+			}
+			i++
+		}
+	}
+	return output
+}
+
+type featureSeq struct {
+	name   string
+	values []float64
+}
+
+func toSeq(data *FeatureMatrix, class string) (*featureSeq, int, bool) {
+	idx, ok := data.Map[class]
+	if !ok {
+		return nil, 0, false
+	}
+
+	xv, ok := data.Data[idx].(*DenseNumFeature)
+	if !ok {
+		return nil, 0, false
 	}
 
 	n := xv.Length()
@@ -337,25 +436,21 @@ func PDP(x *Forest, data *FeatureMatrix, class string) (a, b []float64) {
 		vals[i] = val
 	}
 
-	nPts := minInt(len(uniq), 51)
-	valVec := govector.Vector(vals)
-	xPt := seq(valVec.Min(), valVec.Max(), nPts)
-	yPt := make([]float64, nPts)
+	nPts := minInt(len(uniq), maxSplits)
+	xPt := seq(minSlice(vals), maxSlice(vals), nPts)
+	return &featureSeq{xv.GetName(), xPt}, idx, true
+}
 
-	for i := range xPt {
-		xData := data
-		xData.Data[idx] = &DenseNumFeature{
-			NumData: rep(xPt[i], n),
-			Missing: make([]bool, n),
-			Name:    xv.GetName(),
-		}
+func meanSlice(x []float64) float64 {
+	return govector.Vector(x).Mean()
+}
 
-		preds := x.Predict(xData)
+func minSlice(x []float64) float64 {
+	return govector.Vector(x).Min()
+}
 
-		yPt[i] = govector.Vector(preds).Mean()
-	}
-
-	return xPt, yPt
+func maxSlice(x []float64) float64 {
+	return govector.Vector(x).Max()
 }
 
 func rep(val float64, n int) []float64 {
@@ -368,11 +463,14 @@ func rep(val float64, n int) []float64 {
 
 func seq(start, end float64, n int) []float64 {
 	output := make([]float64, n)
+	if start > end || n == 0 {
+		return output
+	}
+
 	step := (end - start) / float64(n-1)
 	for i := range output {
 		output[i] = start + (step * float64(i))
 	}
-	fmt.Printf("length: %d\n", len(output))
 	return output
 }
 
