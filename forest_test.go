@@ -18,22 +18,53 @@ func TestPartial(t *testing.T) {
 	irisreader := strings.NewReader(irislibsvm)
 	fm := ParseLibSVM(irisreader)
 
-	for i, feature := range fm.Data {
-		t.Logf("feature %d: %s", i, feature.GetName())
+	if os.Getenv("WRITEDATA") != "" {
+		iris, err := os.Create("iris.csv")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, feature := range fm.Data {
+			str := make([]string, feature.Length())
+			for i := 0; i < feature.Length(); i++ {
+				str[i] = feature.GetStr(i)
+			}
+			iris.WriteString(strings.Join(str, ","))
+			iris.Write([]byte("\n"))
+		}
+
+		if err := iris.Close(); err != nil {
+			t.Fatal(err)
+		}
 	}
 
+	// make a good model
 	tgt := fm.Data[0]
 	model := GrowRandomForest(fm, tgt, &ForestConfig{
 		NSamples: fm.Data[0].Length(),
-		MTry:     2,
+		MTry:     3,
 		NTrees:   500,
 		LeafSize: 1,
 	})
 
 	forest := model.Forest
-	x, y := P(forest, fm, "2")
-	t.Log(x)
-	t.Log(y)
+	x, y := PDP(forest, fm, "3")
+
+	if os.Getenv("WRITEDATA") != "" {
+		writeSlice("x.csv", x)
+		writeSlice("y.csv", y)
+	}
+}
+
+func writeSlice(name string, vals []float64) {
+	f, _ := os.Create(name)
+	str := make([]string, len(vals))
+	for i, v := range vals {
+		str[i] = strconv.FormatFloat(v, 'f', -1, 64)
+	}
+
+	f.WriteString(strings.Join(str, ","))
+	f.Write([]byte("\n"))
 }
 
 func TestJackKnife(t *testing.T) {

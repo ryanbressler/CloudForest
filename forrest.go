@@ -312,7 +312,7 @@ func avgVar(val [][]float64) float64 {
 	return govector.Vector(vars).Mean()
 }
 
-func P(x *Forest, data *FeatureMatrix, class string) (a, b []float64) {
+func PDP(x *Forest, data *FeatureMatrix, class string) (a, b []float64) {
 	idx, ok := data.Map[class]
 	if !ok {
 		return nil, nil
@@ -350,9 +350,8 @@ func P(x *Forest, data *FeatureMatrix, class string) (a, b []float64) {
 			Name:    xv.GetName(),
 		}
 
-		//		fmt.Printf("here: %+v\n", xData.Data[idx])
-
 		preds := x.Predict(xData)
+
 		yPt[i] = govector.Vector(preds).Mean()
 	}
 
@@ -369,10 +368,11 @@ func rep(val float64, n int) []float64 {
 
 func seq(start, end float64, n int) []float64 {
 	output := make([]float64, n)
-	step := (end - start) / float64(n)
+	step := (end - start) / float64(n-1)
 	for i := range output {
 		output[i] = start + (step * float64(i))
 	}
+	fmt.Printf("length: %d\n", len(output))
 	return output
 }
 
