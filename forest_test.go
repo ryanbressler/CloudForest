@@ -16,15 +16,14 @@ var (
 	inBagFilePath = "n.csv"
 )
 
-func TestPartial(t *testing.T) {
+func TestPartialDependency(t *testing.T) {
 	irisreader := strings.NewReader(irislibsvm)
 	fm := ParseLibSVM(irisreader)
 
+	// write dataset to CSV for R comparison/validation
 	if os.Getenv("WRITEDATA") != "" {
 		iris, err := os.Create("iris.csv")
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.Equal(t, nil, err)
 
 		for _, feature := range fm.Data {
 			str := make([]string, feature.Length())
@@ -35,9 +34,8 @@ func TestPartial(t *testing.T) {
 			iris.Write([]byte("\n"))
 		}
 
-		if err := iris.Close(); err != nil {
-			t.Fatal(err)
-		}
+		err = iris.Close()
+		assert.Equal(t, nil, err)
 	}
 
 	// make a good model
@@ -51,21 +49,18 @@ func TestPartial(t *testing.T) {
 	forest := model.Forest
 
 	// Partial Dependency Plot with 1 variable
-	deps, err := forest.PDP(fm, "3")
+	single, err := PDP(forest.Predict, fm, "3")
 	assert.Equal(t, nil, err)
-	assert.NotEqual(t, nil, deps)
-
-	if os.Getenv("WRITEDATA") != "" {
-		writeDeps("singleDep.csv", deps)
-	}
+	assert.NotEqual(t, nil, single)
 
 	// Partial Dependency Plot with 2 variables
-	deps, err = forest.PDP(fm, "3", "2")
+	double, err := PDP(forest.Predict, fm, "3", "2")
 	assert.Equal(t, nil, err)
-	assert.NotEqual(t, nil, deps)
+	assert.NotEqual(t, nil, double)
 
 	if os.Getenv("WRITEDATA") != "" {
-		writeDeps("doubleDep.csv", deps)
+		writeDeps("singleDep.csv", single)
+		writeDeps("doubleDep.csv", double)
 	}
 }
 

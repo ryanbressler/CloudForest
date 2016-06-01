@@ -313,24 +313,30 @@ func avgVar(val [][]float64) float64 {
 
 const maxSplits = 51
 
-// PDP calculates the partial dependency of 1 or 2 classes
+// The Forest.Predict function is a Predictor
+// Since the PartialDependecyPlot can be used to interpret the results of
+// any tree-based model, diagnostic functions such as PDP should use the Predictor type
+// to avoid CloudForest.Forest specific context
+type Predictor func(*FeatureMatrix) []float64
+
+// PDP calculates the partial dependency of 1 or 2 classes for a given Predictor/Feature Matrix
 // NOTE: this is currently only functional for regression trees, not classification trees
-func (x *Forest) PDP(data *FeatureMatrix, classes ...string) ([][]float64, error) {
+func PDP(f Predictor, data *FeatureMatrix, classes ...string) ([][]float64, error) {
 	numClasses := len(classes)
 	switch numClasses {
 	case 0:
 		return nil, fmt.Errorf("must provide at least one class")
 	case 1:
-		return x.singlePDP(data, classes[0]), nil
+		return singlePDP(f, data, classes[0]), nil
 	case 2:
-		return x.doublePDP(data, classes[0], classes[1]), nil
+		return doublePDP(f, data, classes[0], classes[1]), nil
 	default:
 		return nil, fmt.Errorf("too many classes provided")
 	}
 }
 
 // singlePDP calculates the partial dependency of a single class
-func (x *Forest) singlePDP(data *FeatureMatrix, class string) [][]float64 {
+func singlePDP(f Predictor, data *FeatureMatrix, class string) [][]float64 {
 	xv, idx, ok := toSeq(data, class)
 	if !ok {
 		return nil
@@ -340,11 +346,13 @@ func (x *Forest) singlePDP(data *FeatureMatrix, class string) [][]float64 {
 	n := data.Data[0].Length()
 	output := make([][]float64, len(xv.values))
 
+	// reset the feature matrix
 	old := xData.Data[idx]
 	defer func() {
 		data.Data[idx] = old
 	}()
 
+	// find the mean prediction for each value in the grid
 	for i, val := range xv.values {
 		xData.Data[idx] = &DenseNumFeature{
 			NumData: rep(val, n),
@@ -352,14 +360,14 @@ func (x *Forest) singlePDP(data *FeatureMatrix, class string) [][]float64 {
 			Name:    xv.name,
 		}
 
-		output[i] = []float64{val, meanSlice(x.Predict(xData))}
+		output[i] = []float64{val, meanSlice(f(xData))}
 	}
 
 	return output
 }
 
 // doublePDP calculates the partial dependency of two classes
-func (x *Forest) doublePDP(data *FeatureMatrix, classA, classB string) [][]float64 {
+func doublePDP(f Predictor, data *FeatureMatrix, classA, classB string) [][]float64 {
 	xv, xIdx, ok := toSeq(data, classA)
 	if !ok {
 		return nil
@@ -375,6 +383,7 @@ func (x *Forest) doublePDP(data *FeatureMatrix, classA, classB string) [][]float
 	output := make([][]float64, len(xv.values)*len(yv.values))
 	i := 0
 
+	// reset the feature matrix
 	oldX := xData.Data[xIdx]
 	oldY := xData.Data[yIdx]
 	defer func() {
@@ -382,6 +391,7 @@ func (x *Forest) doublePDP(data *FeatureMatrix, classA, classB string) [][]float
 		data.Data[yIdx] = oldY
 	}()
 
+	// find the mean prediction for each value in the 2x2 grid
 	for _, valX := range xv.values {
 		for _, valY := range yv.values {
 			xData.Data[yIdx] = &DenseNumFeature{
@@ -396,11 +406,7 @@ func (x *Forest) doublePDP(data *FeatureMatrix, classA, classB string) [][]float
 				Name:    xv.name,
 			}
 
-			output[i] = []float64{
-				valX,
-				valY,
-				meanSlice(x.Predict(xData)),
-			}
+			output[i] = []float64{valX, valY, meanSlice(f(xData))}
 			i++
 		}
 	}
@@ -412,6 +418,7 @@ type featureSeq struct {
 	values []float64
 }
 
+// toSeq converts returns a sequence of values for a given feature in the FM
 func toSeq(data *FeatureMatrix, class string) (*featureSeq, int, bool) {
 	idx, ok := data.Map[class]
 	if !ok {
@@ -427,13 +434,13 @@ func toSeq(data *FeatureMatrix, class string) (*featureSeq, int, bool) {
 	vals := make([]float64, n)
 	uniq := make(map[string]struct{})
 	for i := 0; i < xv.Length(); i++ {
-		uniq[xv.GetStr(i)] = struct{}{}
 		str := xv.GetStr(i)
 		val, err := strconv.ParseFloat(str, 64)
 		if err != nil {
 			continue
 		}
 		vals[i] = val
+		uniq[str] = struct{}{}
 	}
 
 	nPts := minInt(len(uniq), maxSplits)
