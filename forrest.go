@@ -22,6 +22,10 @@ type Forest struct {
 }
 
 func (f *Forest) Copy() *Forest {
+	if f == nil {
+		return nil
+	}
+
 	trees := make([]*Tree, len(f.Trees))
 	for i, tree := range f.Trees {
 		trees[i] = tree.Copy()

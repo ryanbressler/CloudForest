@@ -23,10 +23,19 @@ func NewTree() *Tree {
 }
 
 func (t *Tree) Copy() *Tree {
+	if t == nil {
+		return nil
+	}
+
+	var root *Node
+	if t.Root != nil {
+		root = t.Root.Copy()
+	}
+
 	return &Tree{
 		Target: t.Target,
 		Weight: t.Weight,
-		Root:   t.Root.Copy(),
+		Root:   root,
 	}
 }
 
