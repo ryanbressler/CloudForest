@@ -47,6 +47,7 @@ func TestImportance(t *testing.T) {
 	}
 
 	ff := GrowRandomForest(fm, numtarget.(Feature), config)
+
 	imppnt := ff.Importance
 	//TODO read importance scores and verify RM and LSTAT come out on top
 

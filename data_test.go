@@ -386,15 +386,27 @@ func TestIris(t *testing.T) {
 	for _, target := range classtargets {
 		trainingStart := time.Now()
 		model := GrowRandomForest(fm, target.(Feature), config)
+
+		cp := model.Forest.Copy()
 		forest := model.Forest
+
 		trainingEnd := time.Now()
 		catvotes := NewCatBallotBox(cattarget.Length())
+		catvotesCp := NewCatBallotBox(cattarget.Length())
 
 		for _, tree := range forest.Trees {
 			tree.Vote(fm, catvotes)
 		}
 
+		for _, tree := range cp.Trees {
+			tree.Vote(fm, catvotesCp)
+		}
+
 		err := catvotes.TallyError(cattarget)
+		errCp := catvotesCp.TallyError(cattarget)
+		if err != errCp {
+			t.Fatal("Error: copied tree doesn't equal original tree")
+		}
 
 		switch cattarget.(type) {
 		case *AdaBoostTarget:
@@ -409,7 +421,6 @@ func TestIris(t *testing.T) {
 			}
 		}
 		t.Logf("Log: 10 tree classification of iris using %T had error: %v took: %v", target, err, trainingEnd.Sub(trainingStart))
-
 	}
 
 	//put some missing values in

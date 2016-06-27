@@ -21,6 +21,23 @@ type Forest struct {
 	Intercept float64
 }
 
+func (f *Forest) Copy() *Forest {
+	if f == nil {
+		return nil
+	}
+
+	trees := make([]*Tree, len(f.Trees))
+	for i, tree := range f.Trees {
+		trees[i] = tree.Copy()
+	}
+
+	return &Forest{
+		Target:    f.Target,
+		Intercept: f.Intercept,
+		Trees:     trees,
+	}
+}
+
 // ForestModel is a complete view of the RandomForest
 type ForestModel struct {
 	Forest      *Forest         // The underlying Rf

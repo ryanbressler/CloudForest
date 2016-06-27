@@ -12,6 +12,26 @@ type Splitter struct {
 	Left      map[string]bool
 }
 
+func (c *Splitter) Copy() *Splitter {
+	if c == nil {
+		return nil
+	}
+
+	lft := make(map[string]bool)
+	if c.Left != nil {
+		for s, b := range c.Left {
+			lft[s] = b
+		}
+	}
+
+	return &Splitter{
+		Feature:   c.Feature,
+		Numerical: c.Numerical,
+		Value:     c.Value,
+		Left:      lft,
+	}
+}
+
 //func
 
 /*
