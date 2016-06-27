@@ -21,6 +21,24 @@ type Node struct {
 	Splitter   *Splitter
 }
 
+func (n *Node) Copy() *Node {
+	if n == nil {
+		return nil
+	}
+
+	cp := &Node{
+		CodedSplit: n.CodedSplit,
+		Featurei:   n.Featurei,
+		Pred:       n.Pred,
+		Splitter:   n.Splitter.Copy(),
+	}
+
+	cp.Left = n.Left.Copy()
+	cp.Right = n.Right.Copy()
+	cp.Missing = n.Missing.Copy()
+	return cp
+}
+
 //vist each child node with the supplied function
 func (n *Node) Climb(c func(*Node)) {
 	c(n)

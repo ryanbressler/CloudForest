@@ -22,6 +22,14 @@ func NewTree() *Tree {
 	return &Tree{new(Node), "", -1.0}
 }
 
+func (t *Tree) Copy() *Tree {
+	return &Tree{
+		Target: t.Target,
+		Weight: t.Weight,
+		Root:   t.Root.Copy(),
+	}
+}
+
 //AddNode adds a node a the specified path with the specified pred value and/or
 //Splitter. Paths are specified in the same format as in rf-aces sf files, as a
 //string of 'L' and 'R'. Nodes must be added from the root up as the case where
