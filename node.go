@@ -78,8 +78,13 @@ func (n *Node) Recurse(r Recursable, fm *FeatureMatrix, cases []int, depth int) 
 	default:
 		return
 	}
-	n.Left.Recurse(r, fm, ls, depth)
-	n.Right.Recurse(r, fm, rs, depth)
+
+	if n.Left != nil {
+		n.Left.Recurse(r, fm, ls, depth)
+	}
+	if n.Right != nil {
+		n.Right.Recurse(r, fm, rs, depth)
+	}
 	if len(ms) > 0 && n.Missing != nil {
 		n.Missing.Recurse(r, fm, ms, depth)
 	}
