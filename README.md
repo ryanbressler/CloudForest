@@ -4,6 +4,8 @@ CloudForest
 [![Build Status](https://travis-ci.org/ryanbressler/CloudForest.png?branch=master)](https://travis-ci.org/ryanbressler/CloudForest) 
 [![GoDoc](https://godoc.org/github.com/ryanbressler/CloudForest?status.svg)](https://godoc.org/github.com/ryanbressler/CloudForest)
 
+[Google Group](https://groups.google.com/forum/#!forum/cloudforest-dev)
+
 Fast, flexible, multi-threaded ensembles of decision trees for machine
 learning in pure Go (golang). 
 
@@ -58,6 +60,9 @@ http://godoc.org/github.com/ryanbressler/CloudForest
 
 Pull requests, spelling corrections and bug reports are welcome; Code Repo and Issue tracker can be found at:
 https://github.com/ryanbressler/CloudForest
+
+A google discussion group can be found at:
+https://groups.google.com/forum/#!forum/cloudforest-dev
 
 CloudForest was created in the Shumelivich Lab at the Institute for Systems
 Biology.
