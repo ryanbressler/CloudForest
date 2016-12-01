@@ -198,7 +198,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 		if lcans > nDrawnConstants+lastSample {
 
 			randi = lastSample
-			randi += rand.Intn(lcans - nDrawnConstants - lastSample)
+			randi += allocs.Rnd.Intn(lcans - nDrawnConstants - lastSample)
 			//randi = lastSample + rand.Intn(nnonconstant-lastSample)
 			if randi >= lcans-nConstants {
 				nDrawnConstants++
@@ -234,7 +234,7 @@ func (fm *FeatureMatrix) BestSplitter(target Target,
 				casept = oob
 			}
 
-			allocs.ContrastTarget.(Feature).ShuffleCases(casept)
+			allocs.ContrastTarget.(Feature).ShuffleCases(casept, allocs)
 			_, vetImp, _ = f.BestSplit(allocs.ContrastTarget, casept, parentImp, leafSize, extraRandom, allocs)
 			inerImp = inerImp - vetImp
 		}

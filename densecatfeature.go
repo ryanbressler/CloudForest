@@ -657,7 +657,7 @@ func (f *DenseCatFeature) BestCatSplit(target Target,
 		bits = i
 		if !useExhaustive {
 			//generate random partition
-			bits = rand.Int()
+			bits = allocs.Rnd.Int()
 		}
 
 		// //check the value of the j'th bit of i and
@@ -859,7 +859,6 @@ func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp
 
 	bits := big.NewInt(1)
 
-	var randgn *rand.Rand
 	var maxPart *big.Int
 	useExhaustive := nCats <= maxEx
 	nPartitions := big.NewInt(2)
@@ -871,7 +870,6 @@ func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp
 		nPartitions.Lsh(nPartitions, uint(maxEx-2))
 		maxPart = big.NewInt(2)
 		maxPart.Lsh(maxPart, uint(nCats-2))
-		randgn = rand.New(rand.NewSource(0))
 	}
 
 	//iteratively build a combination of categories until they
@@ -881,7 +879,7 @@ func (f *DenseCatFeature) BestCatSplitBig(target Target, cases *[]int, parentImp
 		bits.Set(i)
 		if !useExhaustive {
 			//generate random partition
-			bits.Rand(randgn, maxPart)
+			bits.Rand(allocs.Rnd, maxPart)
 		}
 
 		//check the value of the j'th bit of i and
@@ -1163,13 +1161,13 @@ func (f *DenseCatFeature) Shuffle() {
 }
 
 //ShuffleCases does an inplace shuffle of the specified cases
-func (f *DenseCatFeature) ShuffleCases(cases *[]int) {
+func (f *DenseCatFeature) ShuffleCases(cases *[]int, allocs *BestSplitAllocs) {
 	capacity := len(*cases)
 	//shuffle
 	for j := 0; j < capacity; j++ {
 
 		targeti := (*cases)[j]
-		sourcei := (*cases)[j+rand.Intn(capacity-j)]
+		sourcei := (*cases)[j+allocs.Rnd.Intn(capacity-j)]
 		missing := f.Missing[targeti]
 		f.Missing[targeti] = f.Missing[sourcei]
 		f.Missing[sourcei] = missing

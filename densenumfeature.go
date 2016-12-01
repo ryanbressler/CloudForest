@@ -312,8 +312,8 @@ func (f *DenseNumFeature) BestNumSplit(target Target,
 		}
 		lasti := leafSize - 1
 
-		if randomSplit {
-			leafSize = leafSize + rand.Intn(stop-leafSize)
+		if randomSplit  && stop > leafSize {
+			leafSize = leafSize + allocs.Rnd.Intn(stop-leafSize)
 			lasti = leafSize - 1
 			stop = leafSize + 1
 
@@ -608,13 +608,13 @@ func (f *DenseNumFeature) Shuffle() {
 }
 
 //ShuffleCases does an inplace shuffle of the specified cases
-func (f *DenseNumFeature) ShuffleCases(cases *[]int) {
+func (f *DenseNumFeature) ShuffleCases(cases *[]int, allocs *BestSplitAllocs) {
 	capacity := len(*cases)
 	//shuffle
 	for j := 0; j < capacity; j++ {
 
 		targeti := (*cases)[j]
-		sourcei := (*cases)[j+rand.Intn(capacity-j)]
+		sourcei := (*cases)[j+allocs.Rnd.Intn(capacity-j)]
 		missing := f.Missing[targeti]
 		f.Missing[targeti] = f.Missing[sourcei]
 		f.Missing[sourcei] = missing

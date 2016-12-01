@@ -3,6 +3,7 @@ package CloudForest
 import (
 	"fmt"
 	"testing"
+	"math/rand"
 )
 
 func TestCatFeature(t *testing.T) {
@@ -234,6 +235,8 @@ func TestBigCatFeature(t *testing.T) {
 	bigfm := FeatureMatrix{[]Feature{bigf},
 		map[string]int{bigf.Name: 0},
 		[]string{bigf.Name}}
+
+	rand.Seed(1) // we want the same results every time for tests
 
 	allocs := NewBestSplitAllocs(40, boolf)
 
