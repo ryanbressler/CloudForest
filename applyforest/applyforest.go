@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
+	"github.com/lytics/CloudForest"
 	"log"
 	"os"
 	"strings"

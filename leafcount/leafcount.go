@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ryanbressler/CloudForest"
+	"github.com/lytics/CloudForest"
 	"log"
 	"os"
 	"runtime"
