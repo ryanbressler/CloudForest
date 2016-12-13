@@ -100,7 +100,8 @@ func (sc *SparseCounter) WriteTsv(writer io.Writer) {
 	for i := range sc.Map {
 		for j, val := range sc.Map[i] {
 			if _, err := fmt.Fprintf(writer, "%v\t%v\t%v\n", i, j, val); err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				return
 			}
 		}
 	}
