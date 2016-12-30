@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -23,7 +22,8 @@ var (
 	data    *CloudForest.FeatureMatrix
 	trees   []*CloudForest.Tree
 
-	nForest = 1
+	nFeatures int
+	nForest   = 1
 )
 
 func main() {
@@ -88,7 +88,7 @@ func main() {
 	regexBlacklist(blacklistis, blacklisted)
 	regexWhitelist(blacklistis, blacklisted)
 
-	nFeatures := len(data.Data) - blacklisted - 1
+	nFeatures = len(data.Data) - blacklisted - 1
 	fmt.Printf("Non Target Features : %v\n", nFeatures)
 
 	mTry := CloudForest.ParseAsIntOrFractionOfTotal(StringmTry, nFeatures)
@@ -183,11 +183,6 @@ func main() {
 	trees = make([]*CloudForest.Tree, 0, nTrees)
 
 	recordScores()
-
-	var scikikittrees []CloudForest.ScikitTree
-	if scikitforest != "" {
-		scikikittrees = make([]CloudForest.ScikitTree, 0, nTrees)
-	}
 
 	//****************** Good Stuff Stars Here ;) ******************//
 
@@ -323,11 +318,7 @@ func main() {
 						forestwriter.WriteTree(tree, treesFinished)
 					}
 
-					if scikitforest != "" {
-						skt := CloudForest.NewScikitTree(nFeatures)
-						CloudForest.BuildScikitTree(0, tree.Root, skt)
-						scikikittrees = append(scikikittrees, *skt)
-					}
+					addScikit(tree)
 
 					if dotest && foresti == nForest-1 {
 						trees = append(trees, tree)
@@ -371,18 +362,7 @@ func main() {
 	trainingEnd := time.Now()
 	fmt.Printf("Total training time (seconds): %v\n", trainingEnd.Sub(trainingStart).Seconds())
 
-	if scikitforest != "" {
-		skfile, err := os.Create(scikitforest)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer skfile.Close()
-		skencoder := json.NewEncoder(skfile)
-		err = skencoder.Encode(scikikittrees)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	writeScikit()
 
 	writeOOB(unboostedTarget)
 
