@@ -22,8 +22,9 @@ var (
 	data    *CloudForest.FeatureMatrix
 	trees   []*CloudForest.Tree
 
-	nFeatures int
-	nForest   = 1
+	nNonMissing int
+	nFeatures   int
+	nForest     = 1
 )
 
 func main() {
@@ -125,7 +126,6 @@ func main() {
 		balance = true
 	}
 
-	nNonMissing := 0
 	for i := 0; i < targetf.Length(); i++ {
 		if !targetf.IsMissing(i) {
 			nNonMissing += 1
@@ -160,7 +160,7 @@ func main() {
 
 	oobVoteTallier(targetf)
 
-	target := getTarget(targetf, nNonMissing)
+	target := getTarget(targetf)
 
 	var forestwriter *CloudForest.ForestWriter
 	if rf != "" {
@@ -188,27 +188,31 @@ func main() {
 
 	trainingStart := time.Now()
 
+	canidates := make([]int, 0, len(data.Data))
+	for i := 0; i < len(data.Data); i++ {
+		if i != targeti && !blacklistis[i] {
+			canidates = append(canidates, i)
+		}
+	}
+
 	for foresti := 0; foresti < nForest; foresti++ {
 		var treesStarted, treesFinished int
 		treesStarted = nCores
-		var recordingTree sync.Mutex
+		var recordingTreeMutex sync.Mutex
 		var waitGroup sync.WaitGroup
 
-		waitGroup.Add(nCores)
 		treechan := make(chan *CloudForest.Tree, 0)
 		for core := 0; core < nCores; core++ {
 
-			grow := func() {
+			waitGroup.Add(1)
+			go func(foresti int) {
+				defer waitGroup.Done()
+
 				weight := -1.0
-				canidates := make([]int, 0, len(data.Data))
-				for i := 0; i < len(data.Data); i++ {
-					if i != targeti && !blacklistis[i] {
-						canidates = append(canidates, i)
-					}
-				}
 
 				tree := CloudForest.NewTree()
 				tree.Target = targetname
+
 				cases := make([]int, 0, nNonMissing)
 				oobcases := make([]int, 0, nNonMissing)
 
@@ -220,19 +224,19 @@ func main() {
 					}
 				}
 
-				var depthUsed *[]int
+				depthUsed := []int{}
 				if mmdpnt != nil {
-					du := make([]int, len(data.Data))
-					depthUsed = &du
+					depthUsed = make([]int, len(data.Data))
 				}
 
 				allocs := CloudForest.NewBestSplitAllocs(nSamples, targetf)
 				for {
+
 					nCases := data.Data[0].Length()
+
 					//sample nCases case with replacement
 					if !nobag {
 						cases = cases[0:0]
-
 						if balance {
 							bSampler.Sample(&cases, nSamples)
 						} else {
@@ -243,7 +247,6 @@ func main() {
 								}
 							}
 						}
-
 					}
 
 					if nobag && nSamples != nCases {
@@ -254,38 +257,26 @@ func main() {
 							}
 						}
 						CloudForest.SampleFirstN(&cases, &cases, nSamples, 0)
-
 					}
 
-					if oob || evaloob {
-						ibcases := make([]bool, nCases)
-						for _, v := range cases {
-							ibcases[v] = true
-						}
-						oobcases = oobcases[0:0]
-						for i, v := range ibcases {
-							if !v {
-								oobcases = append(oobcases, i)
-							}
-						}
-					}
+					addOOB(cases, oobcases)
 
 					if jungle {
 						tree.GrowJungle(data, target, cases, canidates,
 							oobcases, mTry, leafSize, maxDepth, splitmissing,
-							force, vet, evaloob, extra, imppnt, depthUsed, allocs)
+							force, vet, evaloob, extra, imppnt, &depthUsed, allocs)
 
 					} else {
 						tree.Grow(data, target, cases, canidates,
 							oobcases, mTry, leafSize, maxDepth, splitmissing,
-							force, vet, evaloob, extra, imppnt, depthUsed, allocs)
+							force, vet, evaloob, extra, imppnt, &depthUsed, allocs)
 					}
 
 					if mmdpnt != nil {
-						for i, v := range *depthUsed {
+						for i, v := range depthUsed {
 							if v != 0 {
 								(*mmdpnt)[i].Add(float64(v))
-								(*depthUsed)[i] = 0
+								depthUsed[i] = 0
 							}
 
 						}
@@ -296,12 +287,11 @@ func main() {
 						ls, ps := tree.Partition(data)
 						weight = targetf.(CloudForest.BoostingTarget).Boost(ls, ps)
 						boostMutex.Unlock()
-						if weight == math.Inf(1) {
+						if math.IsInf(weight, 1) {
 							fmt.Printf("Boosting Reached Weight of %v\n", weight)
 							close(treechan)
 							break
 						}
-
 						tree.Weight = weight
 					}
 
@@ -311,7 +301,7 @@ func main() {
 
 					////////////// Lock mutext to ouput tree ////////
 					if nCores > 1 {
-						recordingTree.Lock()
+						recordingTreeMutex.Lock()
 					}
 
 					if forestwriter != nil && foresti == nForest-1 {
@@ -340,27 +330,26 @@ func main() {
 						treesStarted++
 					} else {
 						if nCores > 1 {
-							recordingTree.Unlock()
-							waitGroup.Done()
+							recordingTreeMutex.Unlock()
 						}
 						break
-
 					}
+
 					if nCores > 1 {
-						recordingTree.Unlock()
+						recordingTreeMutex.Unlock()
 					}
 				}
-			}
+			}(foresti)
 
-			go grow()
 		}
 
 		waitGroup.Wait()
+
+		//TODO:: Come up with a better name
 		acer(mTry, blacklistis, foresti)
 	}
 
-	trainingEnd := time.Now()
-	fmt.Printf("Total training time (seconds): %v\n", trainingEnd.Sub(trainingStart).Seconds())
+	fmt.Printf("Total training time (seconds): %v\n", time.Now().Sub(trainingStart).Seconds())
 
 	writeScikit()
 

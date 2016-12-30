@@ -8,7 +8,7 @@ import (
 	"github.com/ryanbressler/CloudForest"
 )
 
-func getTarget(targetf CloudForest.Target, nNonMissing int) CloudForest.Target {
+func getTarget(targetf CloudForest.Target) CloudForest.Target {
 	//****** Set up Target for Alternative Impurity  if needed *******//
 	var target CloudForest.Target
 
@@ -19,15 +19,15 @@ func getTarget(targetf CloudForest.Target, nNonMissing int) CloudForest.Target {
 
 	switch targetf.(type) {
 	case CloudForest.NumFeature:
-		return getRegressionTarget(targetf, nNonMissing)
+		return getRegressionTarget(targetf)
 	case CloudForest.CatFeature:
-		return getCategoricalTarget(targetf, nNonMissing)
+		return getCategoricalTarget(targetf)
 	}
 
 	return target
 }
 
-func getRegressionTarget(targetf CloudForest.Target, nNonMissing int) CloudForest.Target {
+func getRegressionTarget(targetf CloudForest.Target) CloudForest.Target {
 
 	fmt.Println("Performing regression.")
 
@@ -52,7 +52,7 @@ func getRegressionTarget(targetf CloudForest.Target, nNonMissing int) CloudFores
 	return targetf
 }
 
-func getCategoricalTarget(targetf CloudForest.Target, nNonMissing int) CloudForest.Target {
+func getCategoricalTarget(targetf CloudForest.Target) CloudForest.Target {
 
 	fmt.Printf("Performing classification with %v categories.\n", targetf.NCats())
 	switch {

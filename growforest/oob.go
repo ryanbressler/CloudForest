@@ -23,6 +23,22 @@ func oobVoteTallier(targetf CloudForest.Target) {
 	}
 }
 
+func addOOB(cases []int, oobcases []int) {
+	if oob || evaloob {
+		ibcases := make([]bool, data.Data[0].Length())
+		for _, v := range cases {
+			ibcases[v] = true
+		}
+
+		oobcases = oobcases[0:0]
+		for i, v := range ibcases {
+			if !v {
+				oobcases = append(oobcases, i)
+			}
+		}
+	}
+}
+
 func writeOOB(unboostedTarget CloudForest.Feature) {
 	if oob {
 		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
