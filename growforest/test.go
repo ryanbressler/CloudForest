@@ -76,9 +76,13 @@ func runTest(unboostedTarget CloudForest.Feature) {
 			}
 			fmt.Printf("Classified: %v / %v = %v\n", correct, length, float64(correct)/float64(length))
 			for i, v := range testtarget.(*CloudForest.DenseCatFeature).Back {
-				fmt.Printf("Label %v Percision (Actuall/Predicted): %v / %v = %v\n", v, falsesbypred[i], predtotals[i], float64(falsesbypred[i])/float64(predtotals[i]))
+
+				fmt.Printf("Label %v Precision (Actual/Predicted): %v / %v = %v\n",
+					v, falsesbypred[i], predtotals[i], float64(falsesbypred[i])/float64(predtotals[i]))
+
 				falses := truetotals[i] - truebytrue[i]
-				fmt.Printf("Label %v Missed/Actuall Rate: %v / %v = %v\n", v, falses, truetotals[i], float64(falses)/float64(truetotals[i]))
+				fmt.Printf("Label %v Missed/Actual Rate: %v / %v = %v\n",
+					v, falses, truetotals[i], float64(falses)/float64(truetotals[i]))
 
 			}
 			if nas != 0 {
