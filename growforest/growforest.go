@@ -185,30 +185,29 @@ func main() {
 	recordScores()
 
 	//****************** Good Stuff Stars Here ;) ******************//
-
 	trainingStart := time.Now()
-
-	canidates := make([]int, 0, len(data.Data))
-	for i := 0; i < len(data.Data); i++ {
-		if i != targeti && !blacklistis[i] {
-			canidates = append(canidates, i)
-		}
-	}
 
 	for foresti := 0; foresti < nForest; foresti++ {
 		var treesStarted, treesFinished int
 		treesStarted = nCores
+
 		var recordingTreeMutex sync.Mutex
 		var waitGroup sync.WaitGroup
 
-		treechan := make(chan *CloudForest.Tree, 0)
 		for core := 0; core < nCores; core++ {
 
 			waitGroup.Add(1)
+
 			go func(foresti int) {
 				defer waitGroup.Done()
 
 				weight := -1.0
+				canidates := make([]int, 0, len(data.Data))
+				for i := 0; i < len(data.Data); i++ {
+					if i != targeti && !blacklistis[i] {
+						canidates = append(canidates, i)
+					}
+				}
 
 				tree := CloudForest.NewTree()
 				tree.Target = targetname
@@ -289,7 +288,6 @@ func main() {
 						boostMutex.Unlock()
 						if math.IsInf(weight, 1) {
 							fmt.Printf("Boosting Reached Weight of %v\n", weight)
-							close(treechan)
 							break
 						}
 						tree.Weight = weight
@@ -314,7 +312,6 @@ func main() {
 						trees = append(trees, tree)
 
 						if treesStarted < nTrees-1 {
-							//newtree := new(CloudForest.Tree)
 							tree = CloudForest.NewTree()
 							tree.Target = targetname
 						}

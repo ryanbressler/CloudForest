@@ -14,12 +14,14 @@ func runTest(unboostedTarget CloudForest.Feature) {
 
 		testdata := data
 		testtarget := unboostedTarget
+
 		if testfm != "" {
 			var err error
 			testdata, err = CloudForest.LoadAFM(testfm)
 			if err != nil {
 				log.Fatal(err)
 			}
+
 			targeti, ok = testdata.Map[targetname]
 			if !ok {
 				log.Fatal("Target not found in test data.")
