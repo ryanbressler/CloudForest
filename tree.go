@@ -1,7 +1,5 @@
 package CloudForest
 
-import ()
-
 type nodeAndCases struct {
 	n          *Node
 	start      int
@@ -142,7 +140,7 @@ func (t *Tree) Grow(fm *FeatureMatrix,
 				if importance != nil {
 					(*importance)[fi].Add(impDec)
 				}
-				if depthUsed != nil && ((*depthUsed)[fi] == 0 || depth < (*depthUsed)[fi]) {
+				if depthUsed != nil && len(*depthUsed) != 0 && ((*depthUsed)[fi] == 0 || depth < (*depthUsed)[fi]) {
 					(*depthUsed)[fi] = depth
 				}
 				//not a leaf node so define the splitter and left and right nodes
@@ -225,7 +223,7 @@ func (t *Tree) GrowJungle(fm *FeatureMatrix,
 					if importance != nil {
 						(*importance)[fi].Add(impDec)
 					}
-					if depthUsed != nil && ((*depthUsed)[fi] == 0 || depth < (*depthUsed)[fi]) {
+					if depthUsed != nil && len(*depthUsed) != 0 && ((*depthUsed)[fi] == 0 || depth < (*depthUsed)[fi]) {
 						(*depthUsed)[fi] = depth
 					}
 
