@@ -12,7 +12,7 @@ const leafFeature = -1
 // The PiecewiseFlatForest and the ContiguousFlatForest
 // provide faster analogs of the Predict function
 type Evaluator interface {
-	Evaluate(fm *FeatureMatrix) float64
+	Evaluate(fm *FeatureMatrix) []float64
 }
 
 type FlatNode struct {
@@ -57,35 +57,40 @@ func (f *FlatTree) recurse(n *Node, idx uint32) {
 	f.recurse(n.Right, leftChild+1)
 }
 
-func (f *FlatTree) Evaluate(fm *FeatureMatrix) float64 {
-	current := uint32(0)
-	for {
-		n := f.Nodes[current]
-		// leaf node
-		if n.Feature == leafFeature {
-			val, _ := strconv.ParseFloat(n.Value, 64)
-			return val
-		}
-		switch f := fm.Data[n.Feature].(type) {
-		case *DenseNumFeature:
-			val := f.NumData[0]
-			splitValue, _ := strconv.ParseFloat(n.Value, 64)
-			if val < splitValue {
-				current = n.LeftChild
-			} else {
-				current = n.LeftChild + 1
+func (f *FlatTree) Evaluate(fm *FeatureMatrix) []float64 {
+	sz := fm.Data[0].Length()
+	preds := make([]float64, sz)
+	for i := 0; i < sz; i++ {
+		current := uint32(0)
+		for {
+			n := f.Nodes[current]
+			// leaf node
+			if n.Feature == leafFeature {
+				val, _ := strconv.ParseFloat(n.Value, 64)
+				preds[i] = val
+				break
 			}
-		case *DenseCatFeature:
-			val := f.GetStr(0)
-			splitValue := n.Value
-			if val == splitValue {
-				current = n.LeftChild
-			} else {
-				current = n.LeftChild + 1
+			switch f := fm.Data[n.Feature].(type) {
+			case *DenseNumFeature:
+				val := f.NumData[i]
+				splitValue, _ := strconv.ParseFloat(n.Value, 64)
+				if val < splitValue {
+					current = n.LeftChild
+				} else {
+					current = n.LeftChild + 1
+				}
+			case *DenseCatFeature:
+				val := f.GetStr(i)
+				splitValue := n.Value
+				if val == splitValue {
+					current = n.LeftChild
+				} else {
+					current = n.LeftChild + 1
+				}
 			}
 		}
 	}
-	return 0.0
+	return preds
 }
 
 type PiecewiseFlatForest struct {
@@ -100,12 +105,16 @@ func NewPiecewiseFlatForest(forest *Forest) *PiecewiseFlatForest {
 	return p
 }
 
-func (p *PiecewiseFlatForest) Evaluate(fm *FeatureMatrix) float64 {
-	result := 0.0
+func (p *PiecewiseFlatForest) Evaluate(fm *FeatureMatrix) []float64 {
+	sz := fm.Data[0].Length()
+	n := float64(len(p.Trees))
+	preds := make([]float64, sz)
 	for _, tree := range p.Trees {
-		result += tree.Evaluate(fm)
+		for i, pred := range tree.Evaluate(fm) {
+			preds[i] += pred / n
+		}
 	}
-	return result / float64(len(p.Trees))
+	return preds
 }
 
 type ContiguousFlatForest struct {
@@ -130,37 +139,42 @@ func NewContiguousFlatForest(forest *Forest) *ContiguousFlatForest {
 	}
 }
 
-func (c *ContiguousFlatForest) Evaluate(fm *FeatureMatrix) float64 {
-	result := 0.0
-	for _, root := range c.Roots {
-		current := root
-		for {
-			n := c.Nodes[current]
-			if n.Feature == leafFeature {
-				// im a leaf
-				val, _ := strconv.ParseFloat(n.Value, 64)
-				result += val
-				break
-			}
-			switch f := fm.Data[n.Feature].(type) {
-			case *DenseNumFeature:
-				val := f.NumData[0]
-				splitValue, _ := strconv.ParseFloat(n.Value, 64)
-				if val < splitValue {
-					current = n.LeftChild
-				} else {
-					current = n.LeftChild + 1
+func (c *ContiguousFlatForest) Evaluate(fm *FeatureMatrix) []float64 {
+	sz := fm.Data[0].Length()
+	preds := make([]float64, sz)
+	for i := 0; i < sz; i++ {
+		result := 0.0
+		for _, root := range c.Roots {
+			current := root
+			for {
+				n := c.Nodes[current]
+				if n.Feature == leafFeature {
+					// im a leaf
+					val, _ := strconv.ParseFloat(n.Value, 64)
+					result += val
+					break
 				}
-			case *DenseCatFeature:
-				val := f.GetStr(0)
-				splitValue := n.Value
-				if val == splitValue {
-					current = n.LeftChild
-				} else {
-					current = n.LeftChild + 1
+				switch f := fm.Data[n.Feature].(type) {
+				case *DenseNumFeature:
+					val := f.NumData[0]
+					splitValue, _ := strconv.ParseFloat(n.Value, 64)
+					if val < splitValue {
+						current = n.LeftChild
+					} else {
+						current = n.LeftChild + 1
+					}
+				case *DenseCatFeature:
+					val := f.GetStr(0)
+					splitValue := n.Value
+					if val == splitValue {
+						current = n.LeftChild
+					} else {
+						current = n.LeftChild + 1
+					}
 				}
 			}
 		}
+		preds[i] = result / float64(len(c.Roots))
 	}
-	return result / float64(len(c.Roots))
+	return preds
 }

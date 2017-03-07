@@ -37,14 +37,15 @@ func TestEvaluator(t *testing.T) {
 	predVal := forest.Predict(sample)[0]
 
 	evalPW := NewPiecewiseFlatForest(forest)
-	evalVal := evalPW.Evaluate(sample)
+	evalVal := evalPW.Evaluate(sample)[0]
 	assert.Equal(t, predVal, evalVal)
 
 	evalCT := NewContiguousFlatForest(forest)
-	evalVal = evalCT.Evaluate(sample)
+	evalVal = evalCT.Evaluate(sample)[0]
 	assert.Equal(t, predVal, evalVal)
 }
 
+// BenchmarkPredict-8            	    5000	    243381 ns/op
 func BenchmarkPredict(b *testing.B) {
 	forest, sample := setup()
 
@@ -55,6 +56,7 @@ func BenchmarkPredict(b *testing.B) {
 	b.StopTimer()
 }
 
+// BenchmarkFlatForest-8         	  100000	     10060 ns/op
 func BenchmarkFlatForest(b *testing.B) {
 	forest, sample := setup()
 	pw := NewPiecewiseFlatForest(forest)
@@ -66,6 +68,7 @@ func BenchmarkFlatForest(b *testing.B) {
 	b.StopTimer()
 }
 
+// BenchmarkContiguousForest-8   	  200000	      8397 ns/op
 func BenchmarkContiguousForest(b *testing.B) {
 	forest, sample := setup()
 	ct := NewContiguousFlatForest(forest)
