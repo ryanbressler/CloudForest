@@ -17,6 +17,14 @@ type DenseNumFeature struct {
 	HasMissing bool
 }
 
+func NewDenseNumFeature(name string) *DenseNumFeature {
+	return &DenseNumFeature{
+		Name:    name,
+		NumData: make([]float64, 0),
+		Missing: make([]bool, 0),
+	}
+}
+
 //Append will parse and append a single value to the end of the feature. It is generally only used
 //during data parseing.
 func (f *DenseNumFeature) Append(v string) {

@@ -11,8 +11,12 @@ const leafFeature = -1
 // decision tree evaluation strategies.
 // The PiecewiseFlatForest and the ContiguousFlatForest
 // provide faster analogs of the Predict function
-type Evaluator interface {
-	Evaluate(fm *FeatureMatrix) []float64
+type NumEvaluator interface {
+	EvaluateNum(fm *FeatureMatrix) []float64
+}
+
+type CatEvaluator interface {
+	EvaluateCat(fm *FeatureMatrix) []string
 }
 
 type FlatNode struct {
@@ -57,7 +61,7 @@ func (f *FlatTree) recurse(n *Node, idx uint32) {
 	f.recurse(n.Right, leftChild+1)
 }
 
-func (f *FlatTree) Evaluate(fm *FeatureMatrix) []float64 {
+func (f *FlatTree) EvaluateNum(fm *FeatureMatrix) []float64 {
 	sz := fm.Data[0].Length()
 	preds := make([]float64, sz)
 	for i := 0; i < sz; i++ {
@@ -68,6 +72,41 @@ func (f *FlatTree) Evaluate(fm *FeatureMatrix) []float64 {
 			if n.Feature == leafFeature {
 				val, _ := strconv.ParseFloat(n.Value, 64)
 				preds[i] = val
+				break
+			}
+			switch f := fm.Data[n.Feature].(type) {
+			case *DenseNumFeature:
+				val := f.NumData[i]
+				splitValue, _ := strconv.ParseFloat(n.Value, 64)
+				if val < splitValue {
+					current = n.LeftChild
+				} else {
+					current = n.LeftChild + 1
+				}
+			case *DenseCatFeature:
+				val := f.GetStr(i)
+				splitValue := n.Value
+				if val == splitValue {
+					current = n.LeftChild
+				} else {
+					current = n.LeftChild + 1
+				}
+			}
+		}
+	}
+	return preds
+}
+
+func (f *FlatTree) EvaluateCat(fm *FeatureMatrix) []string {
+	sz := fm.Data[0].Length()
+	preds := make([]string, sz)
+	for i := 0; i < sz; i++ {
+		current := uint32(0)
+		for {
+			n := f.Nodes[current]
+			// leaf node
+			if n.Feature == leafFeature {
+				preds[i] = n.Value
 				break
 			}
 			switch f := fm.Data[n.Feature].(type) {
@@ -105,14 +144,30 @@ func NewPiecewiseFlatForest(forest *Forest) *PiecewiseFlatForest {
 	return p
 }
 
-func (p *PiecewiseFlatForest) Evaluate(fm *FeatureMatrix) []float64 {
+func (p *PiecewiseFlatForest) EvaluateNum(fm *FeatureMatrix) []float64 {
 	sz := fm.Data[0].Length()
 	n := float64(len(p.Trees))
 	preds := make([]float64, sz)
 	for _, tree := range p.Trees {
-		for i, pred := range tree.Evaluate(fm) {
+		for i, pred := range tree.EvaluateNum(fm) {
 			preds[i] += pred / n
 		}
+	}
+	return preds
+}
+
+func (p *PiecewiseFlatForest) EvaluateCat(fm *FeatureMatrix) []string {
+	sz := fm.Data[0].Length()
+	bb := NewCatBallotBox(sz)
+	for _, tree := range p.Trees {
+		for i, pred := range tree.EvaluateCat(fm) {
+			bb.Vote(i, pred, 1.0)
+		}
+	}
+
+	preds := make([]string, sz)
+	for i := 0; i < sz; i++ {
+		preds[i] = bb.Tally(i)
 	}
 	return preds
 }
@@ -139,7 +194,7 @@ func NewContiguousFlatForest(forest *Forest) *ContiguousFlatForest {
 	}
 }
 
-func (c *ContiguousFlatForest) Evaluate(fm *FeatureMatrix) []float64 {
+func (c *ContiguousFlatForest) EvaluateNum(fm *FeatureMatrix) []float64 {
 	sz := fm.Data[0].Length()
 	preds := make([]float64, sz)
 	for i := 0; i < sz; i++ {
@@ -175,6 +230,49 @@ func (c *ContiguousFlatForest) Evaluate(fm *FeatureMatrix) []float64 {
 			}
 		}
 		preds[i] = result / float64(len(c.Roots))
+	}
+	return preds
+}
+
+func (c *ContiguousFlatForest) EvaluateCat(fm *FeatureMatrix) []string {
+	sz := fm.Data[0].Length()
+	bb := NewCatBallotBox(sz)
+
+	for i := 0; i < sz; i++ {
+		for _, root := range c.Roots {
+			current := root
+			for {
+				n := c.Nodes[current]
+				if n.Feature == leafFeature {
+					// im a leaf
+					bb.Vote(i, n.Value, 1.0)
+					break
+				}
+				switch f := fm.Data[n.Feature].(type) {
+				case *DenseNumFeature:
+					val := f.NumData[0]
+					splitValue, _ := strconv.ParseFloat(n.Value, 64)
+					if val < splitValue {
+						current = n.LeftChild
+					} else {
+						current = n.LeftChild + 1
+					}
+				case *DenseCatFeature:
+					val := f.GetStr(0)
+					splitValue := n.Value
+					if val == splitValue {
+						current = n.LeftChild
+					} else {
+						current = n.LeftChild + 1
+					}
+				}
+			}
+		}
+	}
+
+	preds := make([]string, sz)
+	for i := 0; i < sz; i++ {
+		preds[i] = bb.Tally(i)
 	}
 	return preds
 }

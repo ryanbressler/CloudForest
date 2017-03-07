@@ -7,7 +7,39 @@ import (
 	"github.com/bmizerany/assert"
 )
 
-func setup() (*Forest, *FeatureMatrix) {
+func setupCategorical() (*Forest, *FeatureMatrix) {
+	irisreader := strings.NewReader(irislibsvm)
+	fm := ParseLibSVM(irisreader)
+	targeti := 0
+	cattarget := fm.Data[targeti]
+	config := &ForestConfig{
+		NSamples: fm.Data[0].Length(),
+		MTry:     3,
+		NTrees:   10,
+		LeafSize: 1,
+	}
+
+	sample := &FeatureMatrix{
+		Data: make([]Feature, len(fm.Map)),
+		Map:  make(map[string]int),
+	}
+	for k, v := range fm.Map {
+		var feature Feature
+		if v == 0 {
+			feature = NewDenseCatFeature(k)
+		} else {
+			feature = NewDenseNumFeature(k)
+		}
+		sample.Map[k] = v
+		sample.Data[v] = feature
+		sample.Data[v].Append(fm.Data[v].GetStr(0))
+	}
+
+	model := GrowRandomForest(fm, cattarget, config)
+	return model.Forest, sample
+}
+
+func setupNumeric() (*Forest, *FeatureMatrix) {
 	boston := strings.NewReader(boston_housing)
 	fm := ParseARFF(boston)
 	target := fm.Data[fm.Map["class"]]
@@ -17,7 +49,7 @@ func setup() (*Forest, *FeatureMatrix) {
 	}
 	for k, v := range fm.Map {
 		sample.Map[k] = v
-		sample.Data[v] = &DenseNumFeature{Name: k}
+		sample.Data[v] = NewDenseNumFeature(k)
 		sample.Data[v].Append(fm.Data[v].GetStr(0))
 	}
 	config := &ForestConfig{
@@ -32,22 +64,34 @@ func setup() (*Forest, *FeatureMatrix) {
 }
 
 func TestEvaluator(t *testing.T) {
-	forest, sample := setup()
-
+	forest, sample := setupNumeric()
 	predVal := forest.Predict(sample)[0]
 
 	evalPW := NewPiecewiseFlatForest(forest)
-	evalVal := evalPW.Evaluate(sample)[0]
+	evalVal := evalPW.EvaluateNum(sample)[0]
 	assert.Equal(t, predVal, evalVal)
 
 	evalCT := NewContiguousFlatForest(forest)
-	evalVal = evalCT.Evaluate(sample)[0]
+	evalVal = evalCT.EvaluateNum(sample)[0]
 	assert.Equal(t, predVal, evalVal)
+}
+
+func TestCatEvaluator(t *testing.T) {
+	forest, sample := setupCategorical()
+	pred := forest.PredictCat(sample)[0]
+
+	pw := NewPiecewiseFlatForest(forest)
+	predPW := pw.EvaluateCat(sample)[0]
+	assert.Equal(t, pred, predPW)
+
+	ct := NewContiguousFlatForest(forest)
+	predCT := ct.EvaluateCat(sample)[0]
+	assert.Equal(t, predPW, predCT)
 }
 
 // BenchmarkPredict-8            	    5000	    243381 ns/op
 func BenchmarkPredict(b *testing.B) {
-	forest, sample := setup()
+	forest, sample := setupNumeric()
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
@@ -58,24 +102,24 @@ func BenchmarkPredict(b *testing.B) {
 
 // BenchmarkFlatForest-8         	  100000	     10060 ns/op
 func BenchmarkFlatForest(b *testing.B) {
-	forest, sample := setup()
+	forest, sample := setupNumeric()
 	pw := NewPiecewiseFlatForest(forest)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		pw.Evaluate(sample)
+		pw.EvaluateNum(sample)
 	}
 	b.StopTimer()
 }
 
 // BenchmarkContiguousForest-8   	  200000	      8397 ns/op
 func BenchmarkContiguousForest(b *testing.B) {
-	forest, sample := setup()
+	forest, sample := setupNumeric()
 	ct := NewContiguousFlatForest(forest)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		ct.Evaluate(sample)
+		ct.EvaluateNum(sample)
 	}
 	b.StopTimer()
 }

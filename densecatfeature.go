@@ -23,6 +23,20 @@ type DenseCatFeature struct {
 	HasMissing   bool
 }
 
+func NewDenseCatFeature(name string) *DenseCatFeature {
+	return &DenseCatFeature{
+		CatMap: &CatMap{
+			Map:  make(map[string]int, 0),
+			Back: make([]string, 0, 0),
+		},
+		CatData:      make([]int, 0, 0),
+		Missing:      make([]bool, 0, 0),
+		Name:         name,
+		RandomSearch: false,
+		HasMissing:   false,
+	}
+}
+
 //EncodeToNum returns numerical features doing simple binary encoding of
 //Each of the distinct catagories in the feature.
 func (f *DenseCatFeature) EncodeToNum() (fs []Feature) {
