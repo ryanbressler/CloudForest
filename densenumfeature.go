@@ -124,7 +124,13 @@ func (f *DenseNumFeature) Split(codedSplit interface{}, cases []int) (l []int, r
 
 	//Move left cases to the start and right cases to the end so that missing cases end up
 	//in between.
-	split := codedSplit.(float64)
+	var split float64
+	switch s := codedSplit.(type) {
+	case float64:
+		split = s
+	case int:
+		split = float64(s)
+	}
 
 	for i := 0; i < lastright; i++ {
 		if f.HasMissing && f.IsMissing(cases[i]) {
