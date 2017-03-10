@@ -1,6 +1,7 @@
 package CloudForest
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -57,10 +58,15 @@ func setupNumeric() (*Forest, *FeatureMatrix) {
 		MTry:     4,
 		NTrees:   20,
 		LeafSize: 1,
+		MaxDepth: 4,
 		InBag:    true,
 	}
 	model := GrowRandomForest(fm, target, config)
 	return model.Forest, sample
+}
+
+func roughlyEqual(t *testing.T, x, y float64) {
+	assert.Equal(t, fmt.Sprintf("%.4f", x), fmt.Sprintf("%.4f", y))
 }
 
 func TestEvaluator(t *testing.T) {
@@ -69,11 +75,11 @@ func TestEvaluator(t *testing.T) {
 
 	evalPW := NewPiecewiseFlatForest(forest)
 	evalVal := evalPW.EvaluateNum(sample)[0]
-	assert.Equal(t, predVal, evalVal)
+	roughlyEqual(t, predVal, evalVal)
 
 	evalCT := NewContiguousFlatForest(forest)
 	evalVal = evalCT.EvaluateNum(sample)[0]
-	assert.Equal(t, predVal, evalVal)
+	roughlyEqual(t, predVal, evalVal)
 }
 
 func TestCatEvaluator(t *testing.T) {
@@ -89,7 +95,7 @@ func TestCatEvaluator(t *testing.T) {
 	assert.Equal(t, predPW, predCT)
 }
 
-// BenchmarkPredict-8            	    5000	    243381 ns/op
+// BenchmarkPredict-8            	  100000	     12542 ns/op
 func BenchmarkPredict(b *testing.B) {
 	forest, sample := setupNumeric()
 
@@ -100,7 +106,7 @@ func BenchmarkPredict(b *testing.B) {
 	b.StopTimer()
 }
 
-// BenchmarkFlatForest-8         	  100000	     10060 ns/op
+// BenchmarkFlatForest-8         	 2000000	       821 ns/op
 func BenchmarkFlatForest(b *testing.B) {
 	forest, sample := setupNumeric()
 	pw := NewPiecewiseFlatForest(forest)
@@ -112,7 +118,7 @@ func BenchmarkFlatForest(b *testing.B) {
 	b.StopTimer()
 }
 
-// BenchmarkContiguousForest-8   	  200000	      8397 ns/op
+// BenchmarkContiguousForest-8   	 5000000	       339 ns/op
 func BenchmarkContiguousForest(b *testing.B) {
 	forest, sample := setupNumeric()
 	ct := NewContiguousFlatForest(forest)
