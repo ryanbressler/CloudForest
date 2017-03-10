@@ -1,10 +1,5 @@
 package CloudForest
 
-import (
-	"fmt"
-	"strconv"
-)
-
 const leafFeature = -1
 
 // the evaluator interface implements high performance
@@ -20,9 +15,10 @@ type CatEvaluator interface {
 }
 
 type FlatNode struct {
-	Feature   int    `json:"feature"`
-	Value     string `json:"value"`
-	LeftChild uint32 `json:"leftchild"`
+	Feature   int     `json:"feature"`
+	Float     float64 `json:"float"`
+	Value     string  `json:"value"`
+	LeftChild uint32  `json:"leftchild"`
 }
 
 type FlatTree struct {
@@ -46,15 +42,19 @@ func (f *FlatTree) recurse(n *Node, idx uint32) {
 	leftChild := uint32(len(f.Nodes))
 	f.Nodes = append(f.Nodes, make([]*FlatNode, 2)...)
 	var value string
+	var fl float64
 	switch x := n.CodedSplit.(type) {
-	case float64, int:
-		value = fmt.Sprintf("%v", x)
+	case float64:
+		fl = x
+	case int:
+		fl = float64(x)
 	case string:
 		value = x
 	}
 	f.Nodes[idx] = &FlatNode{
 		Feature:   n.Featurei,
 		Value:     value,
+		Float:     fl,
 		LeftChild: leftChild,
 	}
 	f.recurse(n.Left, leftChild)
@@ -70,14 +70,13 @@ func (f *FlatTree) EvaluateNum(fm *FeatureMatrix) []float64 {
 			n := f.Nodes[current]
 			// leaf node
 			if n.Feature == leafFeature {
-				val, _ := strconv.ParseFloat(n.Value, 64)
-				preds[i] = val
+				preds[i] = n.Float
 				break
 			}
 			switch f := fm.Data[n.Feature].(type) {
 			case *DenseNumFeature:
 				val := f.NumData[i]
-				splitValue, _ := strconv.ParseFloat(n.Value, 64)
+				splitValue := n.Float
 				if val < splitValue {
 					current = n.LeftChild
 				} else {
@@ -112,7 +111,7 @@ func (f *FlatTree) EvaluateCat(fm *FeatureMatrix) []string {
 			switch f := fm.Data[n.Feature].(type) {
 			case *DenseNumFeature:
 				val := f.NumData[i]
-				splitValue, _ := strconv.ParseFloat(n.Value, 64)
+				splitValue := n.Float
 				if val < splitValue {
 					current = n.LeftChild
 				} else {
@@ -205,14 +204,13 @@ func (c *ContiguousFlatForest) EvaluateNum(fm *FeatureMatrix) []float64 {
 				n := c.Nodes[current]
 				if n.Feature == leafFeature {
 					// im a leaf
-					val, _ := strconv.ParseFloat(n.Value, 64)
-					result += val
+					result += n.Float
 					break
 				}
 				switch f := fm.Data[n.Feature].(type) {
 				case *DenseNumFeature:
 					val := f.NumData[0]
-					splitValue, _ := strconv.ParseFloat(n.Value, 64)
+					splitValue := n.Float
 					if val < splitValue {
 						current = n.LeftChild
 					} else {
@@ -251,7 +249,7 @@ func (c *ContiguousFlatForest) EvaluateCat(fm *FeatureMatrix) []string {
 				switch f := fm.Data[n.Feature].(type) {
 				case *DenseNumFeature:
 					val := f.NumData[0]
-					splitValue, _ := strconv.ParseFloat(n.Value, 64)
+					splitValue := n.Float
 					if val < splitValue {
 						current = n.LeftChild
 					} else {
