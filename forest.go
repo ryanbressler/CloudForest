@@ -218,6 +218,21 @@ func (f *Forest) Predict(fm *FeatureMatrix) []float64 {
 	return preds
 }
 
+func (f *Forest) PredictCat(fm *FeatureMatrix) []string {
+	n := fm.Data[0].Length()
+
+	bb := NewCatBallotBox(n)
+	for _, tree := range f.Trees {
+		tree.Vote(fm, bb)
+	}
+
+	preds := make([]string, n)
+	for i := 0; i < n; i++ {
+		preds[i] = bb.Tally(i)
+	}
+	return preds
+}
+
 // Prediction consists of a predicted Value and it's associated variance
 type Prediction struct {
 	Value    float64
