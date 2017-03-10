@@ -1,5 +1,7 @@
 package CloudForest
 
+import "strconv"
+
 const leafFeature = -1
 
 // the evaluator interface implements high performance
@@ -33,8 +35,10 @@ func NewFlatTree(root *Node) *FlatTree {
 
 func (f *FlatTree) recurse(n *Node, idx uint32) {
 	if n.Left == nil && n.Right == nil {
+		fl, _ := strconv.ParseFloat(n.Pred, 64)
 		f.Nodes[idx] = &FlatNode{
 			Feature: leafFeature,
+			Float:   fl,
 			Value:   n.Pred,
 		}
 		return
