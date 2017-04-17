@@ -213,7 +213,7 @@ func (c *ContiguousFlatForest) EvaluateNum(fm *FeatureMatrix) []float64 {
 				}
 				switch f := fm.Data[n.Feature].(type) {
 				case *DenseNumFeature:
-					val := f.NumData[0]
+					val := f.NumData[i]
 					splitValue := n.Float
 					if val < splitValue {
 						current = n.LeftChild
@@ -221,7 +221,7 @@ func (c *ContiguousFlatForest) EvaluateNum(fm *FeatureMatrix) []float64 {
 						current = n.LeftChild + 1
 					}
 				case *DenseCatFeature:
-					val := f.GetStr(0)
+					val := f.GetStr(i)
 					splitValue := n.Value
 					if val == splitValue {
 						current = n.LeftChild
