@@ -2,6 +2,7 @@ package CloudForest
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"strconv"
 	"sync"
@@ -176,8 +177,15 @@ func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *F
 	return full
 }
 
-// PredictAll returns the predictions
+// PredictAll returns each tree's prediction for each case in the feature
+// matrix with a numerical target variable
 func (f *Forest) PredictAll(fm *FeatureMatrix) [][]float64 {
+
+	if fm.Data[0].NCats() != 0 {
+		log.Println("Error: the target variable is categorical, expected numerical")
+		return nil
+	}
+
 	n := fm.Data[0].Length()
 	cases := makeCases(n)
 	predictions := make([][]float64, n)
@@ -216,6 +224,35 @@ func (f *Forest) Predict(fm *FeatureMatrix) []float64 {
 		preds[i] = pred
 	}
 	return preds
+}
+
+// PredictCatAll returns each tree's prediction for each case in the feature
+// matrix with a categorical target variable
+func (f *Forest) PredictCatAll(fm *FeatureMatrix) [][]string {
+
+	if len(fm.Data) > 0 && fm.Data[0].NCats() == 0 && fm.Data[0].Length() > 0 {
+		log.Println("Error: the target variable is numerical, expected categorical")
+		return nil
+	}
+
+	l := fm.Data[0].Length()
+	cases := makeCases(l)
+	predictions := make([][]string, l)
+
+	for i := range predictions {
+		predictions[i] = make([]string, len(f.Trees))
+	}
+
+	for i, tree := range f.Trees {
+		tree.Root.Recurse(func(n *Node, cases []int, depth int) {
+			if n.Left == nil && n.Right == nil {
+				for _, j := range cases {
+					predictions[j][i] = n.Pred
+				}
+			}
+		}, fm, cases, 0)
+	}
+	return predictions
 }
 
 func (f *Forest) PredictCat(fm *FeatureMatrix) []string {
