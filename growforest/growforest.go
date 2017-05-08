@@ -928,7 +928,7 @@ func main() {
 
 		if testtarget.NCats() != 0 {
 			falselyLabelledAs := make([]int, testtarget.NCats())
-			predictedAs := make([]int, testtarget.NCats())
+			labelledAs := make([]int, testtarget.NCats())
 
 			correctlyLabelledAs := make([]int, testtarget.NCats())
 			sampleCount := make([]int, testtarget.NCats())
@@ -944,7 +944,7 @@ func main() {
 					nas++
 				} else {
 					predictedLabel := testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)
-					predictedAs[predictedLabel]++
+					labelledAs[predictedLabel]++
 					if pred == testtarget.GetStr(i) {
 						correct++
 						correctlyLabelledAs[trueLabel]++
