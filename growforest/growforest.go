@@ -847,8 +847,9 @@ func main() {
 	}
 
 	if oob {
-		fmt.Printf("Out of Bag Error : %v\n", oobVotes.TallyError(unboostedTarget))
+		fmt.Printf("Out-of-bag error: %v\n", oobVotes.TallyError(unboostedTarget))
 	}
+
 	if caseoob != "" {
 		caseoobfile, err := os.Create(caseoob)
 		if err != nil {
@@ -926,40 +927,37 @@ func main() {
 		fmt.Printf("Error: %v\n", bb.TallyError(testtarget))
 
 		if testtarget.NCats() != 0 {
-			falsesbypred := make([]int, testtarget.NCats())
-			predtotals := make([]int, testtarget.NCats())
+			falselyLabelledAs := make([]int, testtarget.NCats())
+			labelledAs := make([]int, testtarget.NCats())
 
-			truebytrue := make([]int, testtarget.NCats())
-			truetotals := make([]int, testtarget.NCats())
+			correctlyLabelledAs := make([]int, testtarget.NCats())
+			sampleCount := make([]int, testtarget.NCats())
 
 			correct := 0
 			nas := 0
 			length := testtarget.Length()
 			for i := 0; i < length; i++ {
-				truei := testtarget.(*CloudForest.DenseCatFeature).Geti(i)
-				truetotals[truei]++
+				trueLabel := testtarget.(*CloudForest.DenseCatFeature).Geti(i)
+				sampleCount[trueLabel]++
 				pred := bb.Tally(i)
 				if pred == "NA" {
 					nas++
 				} else {
-					predi := testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)
-					predtotals[predi]++
+					predictedLabel := testtarget.(*CloudForest.DenseCatFeature).CatToNum(pred)
+					labelledAs[predictedLabel]++
 					if pred == testtarget.GetStr(i) {
 						correct++
-						truebytrue[truei]++
+						correctlyLabelledAs[trueLabel]++
 					} else {
-
-						falsesbypred[predi]++
+						falselyLabelledAs[predictedLabel]++
 					}
 				}
 
 			}
-			fmt.Printf("Classified: %v / %v = %v\n", correct, length, float64(correct)/float64(length))
+			log.Printf("Correctly classified: %d / %d = %.4f\n", correct, length, float64(correct)/float64(length))
 			for i, v := range testtarget.(*CloudForest.DenseCatFeature).Back {
-				fmt.Printf("Label %v Percision (Actuall/Predicted): %v / %v = %v\n", v, falsesbypred[i], predtotals[i], float64(falsesbypred[i])/float64(predtotals[i]))
-				falses := truetotals[i] - truebytrue[i]
-				fmt.Printf("Label %v Missed/Actuall Rate: %v / %v = %v\n", v, falses, truetotals[i], float64(falses)/float64(truetotals[i]))
-
+				log.Printf("Label %v precision: %d / %d = %.4f\n", v, correctlyLabelledAs[i], labelledAs[i], float64(correctlyLabelledAs[i])/float64(labelledAs[i]))
+				log.Printf("Label %v recall: %d / %d = %.4f\n", v, correctlyLabelledAs[i], sampleCount[i], float64(correctlyLabelledAs[i])/float64(sampleCount[i]))
 			}
 			if nas != 0 {
 				fmt.Printf("Couldn't predict %v cases due to missing values.\n", nas)
