@@ -145,8 +145,7 @@ func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *F
 
 		tree := NewTree()
 		tree.Target = targetName
-		trees[i] = tree
-		trees[i].Grow(
+		tree.Grow(
 			fm,
 			target,
 			cases,
@@ -164,9 +163,22 @@ func GrowRandomForest(fm *FeatureMatrix, target Target, config *ForestConfig) *F
 			nil,
 			allocs,
 		)
+
+		// boost the target feature if the feature type allows for boosting
+		if _, ok := target.(BoostingTarget); ok {
+			ls, ps := tree.Partition(fm)
+			weight := target.(BoostingTarget).Boost(ls, ps)
+			tree.Weight = weight
+		}
+
+		trees[i] = tree
 	}
 
-	forest := &Forest{Trees: trees, Target: targetName}
+	var intercept float64
+	if _, ok := target.(TargetWithIntercept); ok {
+		intercept = target.(TargetWithIntercept).Intercept()
+	}
+	forest := &Forest{Trees: trees, Target: targetName, Intercept: intercept}
 	full := &ForestModel{Forest: forest, Importance: importance}
 
 	if config.InBag {
