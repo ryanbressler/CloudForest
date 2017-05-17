@@ -65,21 +65,17 @@ func setupNumeric() (*Forest, *FeatureMatrix) {
 	return model.Forest, sample
 }
 
-func roughlyEqual(t *testing.T, x, y float64) {
-	assert.Equal(t, fmt.Sprintf("%.4f", x), fmt.Sprintf("%.4f", y))
-}
-
 func TestEvaluator(t *testing.T) {
 	forest, sample := setupNumeric()
 	predVal := forest.Predict(sample)[0]
 
 	evalPW := NewPiecewiseFlatForest(forest)
 	evalVal := evalPW.EvaluateNum(sample)[0]
-	roughlyEqual(t, predVal, evalVal)
+	assert.Equal(t, fmt.Sprintf("%.4f", predVal), fmt.Sprintf("%.4f", evalVal))
 
 	evalCT := NewContiguousFlatForest(forest)
 	evalVal = evalCT.EvaluateNum(sample)[0]
-	roughlyEqual(t, predVal, evalVal)
+	assert.Equal(t, fmt.Sprintf("%.4f", predVal), fmt.Sprintf("%.4f", evalVal))
 }
 
 func TestCatEvaluator(t *testing.T) {
