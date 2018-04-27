@@ -60,7 +60,7 @@ class CFClassifier:
 	options = ""
 
 
-	def __init__(self, optionstring):
+    def __init__(self, optionstring):
 		self.options = optionstring
 		self.uuid = uuid.uuid1()
 
@@ -118,7 +118,7 @@ class CFClassifier:
 
 		return np.array(predictions,dtype=int)
 
-	def predict_proba(self, X):
+    def predict_proba(self, X):
 		df = pd.DataFrame(X)
 		fn = "%(uuid)s.test.cloudforest.arff"%{"uuid":self.uuid}
 		votes = "%(uuid)s.votes.cloudforest.tsv"%{"uuid":self.uuid}
@@ -166,8 +166,8 @@ class CFClassifier:
 
 
 		return np.dstack(probs)[0]
-        
+
     def	score(self,	X,	Y):
-		preds	=	self.predict(X)
-		predicted_ratio	=	float(np.sum(preds==Y))/float(len(Y))
-		return	predicted_ratio
+        preds	=	self.predict(X)
+        predicted_ratio	=	float(np.sum(preds==Y))/float(len(Y))
+        return	predicted_ratio
