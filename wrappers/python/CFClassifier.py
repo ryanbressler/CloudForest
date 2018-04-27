@@ -8,7 +8,7 @@ calls to cloudforests growforest and applyforest utilities to be called as a sci
 classifier.
 
 It works via writting uuid identified temp files to disk in the current working directory so
-it has more overhead then a pure in memory implementation but handle problems where the 
+it has more overhead then a pure in memory implementation but handle problems where the
 model is too large to fit in system memory.
 """
 
@@ -43,9 +43,9 @@ def writearff(fo, df, target="", unique=[]):
 
 		if target!="" and col == target:
 			coltype = "{%(values)s}"%{"values":",".join([str(v) for v in unique])}
-		
 
-		
+
+
 
 		fo.write("@ATTRIBUTE %(name)s %(type)s\n"%{"name":col,"type":coltype})
 
@@ -53,7 +53,7 @@ def writearff(fo, df, target="", unique=[]):
 	df.to_csv(fo, na_rep="NA", index=False, header=False)
 
 class CFClassifier:
-	"""CFClassifier wraps command line calls to cloudforest's growforest 
+	"""CFClassifier wraps command line calls to cloudforest's growforest
 	and applyforest for use as a scikit-learn Classifier. It will write
 	temporary files to your workding directory."""
 
@@ -63,21 +63,24 @@ class CFClassifier:
 	def __init__(self, optionstring):
 		self.options = optionstring
 		self.uuid = uuid.uuid1()
-	
+
 	def fit(self, X, y):
 		df = pd.DataFrame(X).copy()
 		target = "%(uuid)s.target"%{"uuid":self.uuid}
 		fn = "%(uuid)s.train.cloudforest.arff"%{"uuid":self.uuid}
 		self.forest = "%(uuid)s.forest.cloudforest.sf"%{"uuid":self.uuid}
 
-		
+
 		self.unique = np.unique(y)
 
 		#print y
-		df[target] = np.array(y,dtype=bool)
+        if len(self.unique) == 2:
+    		df[target] = np.array(y,dtype=bool)
+        else:
+            df[target] = np.array(y)
 		#print df[target]
-		
-		
+
+
 		fo = open(fn,"w")
 		writearff(fo,df,target,self.unique)
 		fo.close()
@@ -95,7 +98,7 @@ class CFClassifier:
 		df = pd.DataFrame(X)
 		fn = "%(uuid)s.test.cloudforest.arff"%{"uuid":self.uuid}
 		preds = "%(uuid)s.preds.cloudforest.tsv"%{"uuid":self.uuid}
-		
+
 		fo = open(fn,"w")
 		writearff(fo,df)
 		fo.close()
@@ -119,8 +122,8 @@ class CFClassifier:
 		df = pd.DataFrame(X)
 		fn = "%(uuid)s.test.cloudforest.arff"%{"uuid":self.uuid}
 		votes = "%(uuid)s.votes.cloudforest.tsv"%{"uuid":self.uuid}
-		
-		
+
+
 		fo = open(fn,"w")
 		writearff(fo,df)
 		fo.close()
@@ -138,7 +141,7 @@ class CFClassifier:
 		header = 0
 		votes = 0
 
-		
+
 		line = fo.next()
 		vs = line.split()[1:]
 		if vs[0]=="True" or vs[0]=="False":
@@ -163,4 +166,8 @@ class CFClassifier:
 
 
 		return np.dstack(probs)[0]
-
+        
+    def	score(self,	X,	Y):
+		preds	=	self.predict(X)
+		predicted_ratio	=	float(np.sum(preds==Y))/float(len(Y))
+		return	predicted_ratio
