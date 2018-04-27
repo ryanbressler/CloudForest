@@ -64,7 +64,7 @@ class CFClassifier:
 		self.options = optionstring
 		self.uuid = uuid.uuid1()
 
-	def fit(self, X, y):
+    def fit(self, X, y):
 		df = pd.DataFrame(X).copy()
 		target = "%(uuid)s.target"%{"uuid":self.uuid}
 		fn = "%(uuid)s.train.cloudforest.arff"%{"uuid":self.uuid}
@@ -94,7 +94,7 @@ class CFClassifier:
 
 		subprocess.call(invocation, shell=True)
 
-	def predict(self, X):
+    def predict(self, X):
 		df = pd.DataFrame(X)
 		fn = "%(uuid)s.test.cloudforest.arff"%{"uuid":self.uuid}
 		preds = "%(uuid)s.preds.cloudforest.tsv"%{"uuid":self.uuid}
