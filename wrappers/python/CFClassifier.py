@@ -53,7 +53,7 @@ def writearff(fo, df, target="", unique=[]):
 	df.to_csv(fo, na_rep="NA", index=False, header=False)
 
 class CFClassifier:
-	"""CFClassifier wraps command line calls to cloudforest's growforest
+    """CFClassifier wraps command line calls to cloudforest's growforest
 	and applyforest for use as a scikit-learn Classifier. It will write
 	temporary files to your workding directory."""
 
