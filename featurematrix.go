@@ -190,9 +190,9 @@ func (fm *FeatureMatrix) WriteFM(w io.Writer, sep string, header, transpose bool
 	var iter fmIt
 
 	if !transpose {
-		iter = colIter(fm, header)
-	} else {
 		iter = rowIter(fm, header)
+	} else {
+		iter = colIter(fm, header)
 	}
 
 	next, ok := iter()
