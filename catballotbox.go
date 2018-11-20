@@ -8,14 +8,28 @@ import (
 //manner.
 type CatBallot struct {
 	Mutex sync.Mutex
-	Map   map[int]float64
+
+	// If we use a map to tally votes, range picks categories in
+	// a non-deterministic sequence. With a map, when ties occur in votes
+	// between two categories, the first category evaluated will win.
+	// Since, with a map, the
+	// first category evaluated varies from run to run,
+	// this causes sporadic test failures when
+	// comparing the error rates on identical copies of trees.
+	//
+	// To obtain instead a deterministic voting process so
+	// that we get deterministic tests,
+	// we use a slice with a fixed category order.
+	//
+	// As a result, ties are presently awarded to the category
+	// appearing earliest in Cat.
+	//
+	Cat []float64
 }
 
-//NewCatBallot returns a pointer to an initalized CatBallot with a 0 size Map.
+//NewCatBallot returns a pointer to an initalized CatBallot with an empty (nil) Cat slice.
 func NewCatBallot() (cb *CatBallot) {
-	cb = new(CatBallot)
-	cb.Map = make(map[int]float64, 0)
-	return
+	return &CatBallot{}
 }
 
 //CatBallotBox keeps track of votes by trees in a thread safe manner.
@@ -39,12 +53,13 @@ func NewCatBallotBox(size int) *CatBallotBox {
 //Vote registers a vote that case "casei" should be predicted to be the
 //category "pred".
 func (bb *CatBallotBox) Vote(casei int, pred string, weight float64) {
+
 	predn := bb.CatToNum(pred)
 	bb.Box[casei].Mutex.Lock()
-	if _, ok := bb.Box[casei].Map[predn]; !ok {
-		bb.Box[casei].Map[predn] = 0
+	for len(bb.Box[casei].Cat) <= predn {
+		bb.Box[casei].Cat = append(bb.Box[casei].Cat, 0)
 	}
-	bb.Box[casei].Map[predn] = bb.Box[casei].Map[predn] + weight
+	bb.Box[casei].Cat[predn] += weight
 	bb.Box[casei].Mutex.Unlock()
 }
 
@@ -55,7 +70,7 @@ func (bb *CatBallotBox) Tally(i int) (predicted string) {
 	predictedn := 0
 	votes := 0.0
 	bb.Box[i].Mutex.Lock()
-	for k, v := range bb.Box[i].Map {
+	for k, v := range bb.Box[i].Cat {
 		if v > votes {
 			predictedn = k
 			votes = v
