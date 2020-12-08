@@ -26,7 +26,7 @@ Fores Fires Data Set
 ---------------------
 forestfires.fm, forestfires.trans.fm
 
-Regress on the N:area feature. Also interesting for feature imporatnce.
+Regress on the N:area feature. Also interesting for feature importance.
 
 From http://archive.ics.uci.edu/ml/datasets/Forest+Fires
 
